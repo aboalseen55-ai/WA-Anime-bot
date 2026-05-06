@@ -1,0 +1,892 @@
+import axios from 'axios';
+import sharp from 'sharp';
+import * as cheerio from 'cheerio';
+
+// الصيغ المقبولة للصور
+const ACCEPTED_IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+/**
+ * البحث عن صور شخصية أنمي باستخدام Google Images (النسخة المبسطة)
+ * @param {string} nickname - لقب العضو المرحب به
+ * @returns {Promise<Array<Buffer>>} - مصفوفة من Buffers الصور المحولة إلى JPEG
+ */
+export async function getCharacterImages(nickname) {
+    try {
+        if (!nickname || nickname.trim() === '') {
+            console.warn('⚠️ لقب العضو فارغ');
+            return [];
+        }
+
+        console.log(`🔍 جاري البحث عن صور "${nickname}" في Google Images...`);
+
+        // البحث في Google Images
+        console.log('📡 إرسال طلب البحث...');
+        const results = await googleImages.search(nickname);
+        console.log('📨 تم استلام النتائج:', typeof results, Array.isArray(results) ? `طول: ${results.length}` : 'غير مصفوفة');
+
+        // التحقق من صحة النتائج
+        if (!results || !Array.isArray(results) || results.length === 0) {
+            console.warn(`⚠️ لم يتم العثور على نتائج للبحث: ${nickname}`);
+            return [];
+        }
+
+        // أخذ أول 4 صور فقط
+        const images = results.slice(0, 4);
+        const converted = [];
+
+        console.log(`📸 تم العثور على ${images.length} صورة، جاري تحويلها إلى JPEG...`);
+
+        for (let i = 0; i < images.length; i++) {
+            try {
+                console.log(`🔍 فحص الصورة ${i + 1}:`, typeof images[i], images[i] ? 'موجود' : 'غير موجود');
+                
+                // التحقق من وجود الصورة و URL
+                if (!images[i] || !images[i].image || !images[i].image.url) {
+                    console.warn(`⚠️ الصورة ${i + 1} لا تحتوي على URL صحيح:`, images[i]);
+                    continue;
+                }
+
+                const imageUrl = images[i].image.url;
+                console.log(`🔄 تحويل الصورة ${i + 1}: ${imageUrl.substring(0, 50)}...`);
+
+                // تحميل الصورة
+                console.log(`📥 تحميل الصورة ${i + 1}...`);
+                const response = await axios.get(imageUrl, {
+                    responseType: 'arraybuffer',
+                    timeout: 15000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                });
+
+                console.log(`📦 تم تحميل الصورة ${i + 1}, حجم البيانات:`, response ? (response.data ? `${response.data.length} bytes` : 'data غير موجود') : 'response غير موجود');
+
+                // التحقق من صحة الاستجابة
+                if (!response || !response.data) {
+                    console.warn(`⚠️ فشل في تحميل الصورة ${i + 1}: استجابة غير صحيحة`);
+                    continue;
+                }
+
+                // تحويل إلى JPEG مع ضغط وتصغير
+                const jpegBuffer = await sharp(response.data)
+                    .resize({ width: 720, withoutEnlargement: true }) // تصغير للعرض 720px كحد أقصى
+                    .jpeg({ quality: 85 }) // جودة 85% لتوازن الحجم والجودة
+                    .toBuffer();
+
+                converted.push(jpegBuffer);
+                console.log(`✅ تم تحويل الصورة ${i + 1} (${jpegBuffer.length} bytes)`);
+
+            } catch (error) {
+                console.warn(`⚠️ فشل تحويل الصورة ${i + 1}: ${error.message}`);
+                // نستمر في المعالجة حتى لو فشلت صورة واحدة
+            }
+        }
+
+        console.log(`🎉 تم تحويل ${converted.length} صورة بنجاح`);
+        return converted;
+
+    } catch (error) {
+        console.error('❌ خطأ في البحث عن الصور:', error.message);
+        return [];
+    }
+}
+
+/**
+ * التحقق من أن الرابط يحتوي على صورة بصيغة مقبولة
+ * @param {string} url - رابط الصورة
+ * @returns {boolean}
+ */
+function isValidImageUrl(url) {
+    if (!url) return false;
+    
+    try {
+        // تحويل الرابط لـ lowercase للمقارنة
+        const lowerUrl = url.toLowerCase();
+        
+        // قائمة الصيغ المقبولة (تجنب WebP لأنها قد تسبب مشاكل)
+        const acceptedFormats = ['jpg', 'jpeg', 'png', 'gif'];
+        
+        // التحقق من وجود صيغة مقبولة
+        const hasValidFormat = acceptedFormats.some(format => 
+            lowerUrl.includes(`.${format}`) || 
+            lowerUrl.includes(`?`) // قد تكون الصيغة في parameters
+        );
+        
+        // التحقق من أن الرابط يبدأ بـ http ولا يحتوي على علامات مريبة
+        const isHttpUrl = (lowerUrl.startsWith('http://') || lowerUrl.startsWith('https://')) &&
+                         !lowerUrl.includes('blob:') &&
+                         !lowerUrl.includes('data:image') &&
+                         !lowerUrl.includes('vnd.ms-excel') &&
+                         !lowerUrl.includes('application/');
+        
+        // تجنب المصادر المحمية والموثوقة بشكل سيء
+        const isNotRestricted = !lowerUrl.includes('protection') &&
+                               !lowerUrl.includes('access=deny') &&
+                               !lowerUrl.includes('403') &&
+                               !lowerUrl.includes('pinterest') &&   // Pinterest محمية
+                               !lowerUrl.includes('storyblok') &&   // StoryBlok محمية
+                               !lowerUrl.includes('imgix.net');     // CDN بطيء
+        
+        // المصادر الموثوقة فقط
+        const isReliableSource = lowerUrl.includes('imgur.com') ||
+                                 lowerUrl.includes('cdn.') ||
+                                 lowerUrl.includes('.deviantart.') ||
+                                 lowerUrl.includes('artstation.com') ||
+                                 lowerUrl.includes('turboimagehost') ||
+                                 lowerUrl.includes('i.postimg.cc') ||
+                                 lowerUrl.includes('cdn-') ||
+                                 lowerUrl.includes('media.') ||
+                                 lowerUrl.includes('.akamaized.') ||
+                                 lowerUrl.includes('cloudinary') ||
+                                 lowerUrl.includes('imgbox') ||
+                                 lowerUrl.includes('images.') ||
+                                 lowerUrl.includes('static.');
+        
+        return hasValidFormat && isHttpUrl && isNotRestricted && isReliableSource;
+    } catch (error) {
+        console.error('خطأ في التحقق من رابط الصورة:', error);
+        return false;
+    }
+}
+
+/**
+ * تنظيف الروابط المشفرة من الأحرف escape و HTML entities
+ */
+function cleanEncodedUrl(url) {
+    return url
+        // إزالة HTML entities
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#x27;/g, "'")
+        // إزالة escape sequences
+        .replace(/\\u003d/g, '=')
+        .replace(/\\u002f/g, '/')
+        .replace(/\\u003a/g, ':')
+        .replace(/\\u002e/g, '.')
+        .replace(/\\u005f/g, '_')
+        .replace(/\\u002d/g, '-')
+        // إزالة الأحرف الغريبة من نهاية الرابط
+        .replace(/[&"'<>\s]*$/g, '');
+}
+
+/**
+ * البحث عن أول 4 صور صالحة لشخصية أنمي
+ * @param {string} nickname - لقب العضو المرحب به
+ * @returns {Promise<Array>} - مصفوفة من روابط الصور (حد أقصى 4)
+ */
+export async function searchCharacterImage(nickname) {
+    try {
+        if (!nickname || nickname.trim() === '') {
+            console.warn('⚠️ لقب العضو فارغ');
+            return [];
+        }
+
+        // البحث الأول: Bing Images (أسرع وأكثر موثوقية)
+        console.log(`🔍 جارٍ البحث عن "${nickname}" في Bing Images...`);
+        let imageUrls = await searchBingImages(nickname);
+
+        if (imageUrls.length > 0) {
+            return imageUrls.map(url => convertImageToSupportedFormat(url));
+        }
+
+        // البحث الثاني: Google Images (احتياطي)
+        console.log(`🔍 جارٍ البحث عن "${nickname}" في Google Images...`);
+        imageUrls = await searchGoogleImages(nickname);
+
+        if (imageUrls.length > 0) {
+            return imageUrls.map(url => convertImageToSupportedFormat(url));
+        }
+
+        // البحث الثالث: Wikipedia API (احتياطي إضافي)
+        console.log(`🔍 جارٍ البحث عن "${nickname}" في Wikipedia...`);
+        imageUrls = await searchWikipediaImages(nickname);
+
+        if (imageUrls.length > 0) {
+            return imageUrls.slice(0, 4); // أخذ أول 4 صور فقط
+        }
+
+        console.warn(`❌ فشل البحث عن صور للعضو: ${nickname}`);
+        return [];
+
+    } catch (error) {
+        console.error('❌ خطأ في البحث عن الصور:', error.message);
+        return [];
+    }
+}
+
+/**
+ * البحث في Wikipedia Images (أكثر موثوقية)
+ */
+async function searchWikipediaImages(nickname) {
+    try {
+        // تنظيف اللقب من الرموز والإيموجي
+        const cleanNickname = nickname.replace(/[🎖️⭐🏆👑💎🔥❤️✨]/g, '').trim();
+
+        // البحث في Wikipedia API
+        const searchQuery = encodeURIComponent(`${cleanNickname} (character)`);
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${searchQuery}&format=json&srlimit=5`;
+
+        const { data } = await axios.get(searchUrl, {
+            headers: {
+                'User-Agent': 'AnimeBot/1.0 (https://github.com/your-repo)'
+            },
+            timeout: 15000  // زيادة الوقت للإنترنت البطيء
+        });
+
+        if (!searchResponse.data?.query?.search?.length) {
+            return [];
+        }
+
+        // أخذ أول نتيجة بحث
+        const pageTitle = searchResponse.data.query.search[0].title;
+
+        // الحصول على صور الصفحة
+        const imagesUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(pageTitle)}&prop=images&format=json`;
+
+        const imagesResponse = await axios.get(imagesUrl, {
+            headers: {
+                'User-Agent': 'AnimeBot/1.0 (https://github.com/your-repo)'
+            },
+            timeout: 15000  // زيادة الوقت للإنترنت البطيء
+        });
+
+        const pages = imagesResponse.data?.query?.pages;
+        if (!pages) return [];
+
+        const pageId = Object.keys(pages)[0];
+        const images = pages[pageId]?.images;
+
+        if (!images || images.length === 0) return [];
+
+        const validImages = [];
+
+        // أخذ أول 4 صور صالحة
+        for (const image of images.slice(0, 10)) { // تحقق من أول 10 صور
+            if (validImages.length >= 4) break;
+
+            const imageTitle = image.title;
+            if (!imageTitle || !imageTitle.match(/\.(jpg|jpeg|png|gif|webp)$/i)) continue;
+
+            // الحصول على رابط الصورة من Wikimedia Commons
+            const imageInfoUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(imageTitle)}&prop=imageinfo&iiprop=url&format=json`;
+
+            try {
+                const imageInfoResponse = await axios.get(imageInfoUrl, {
+                    headers: {
+                        'User-Agent': 'AnimeBot/1.0 (https://github.com/your-repo)'
+                    },
+                    timeout: 8000  // زيادة الوقت قليلاً للإنترنت البطيء
+                });
+
+                const imagePages = imageInfoResponse.data?.query?.pages;
+                if (imagePages) {
+                    const imgPageId = Object.keys(imagePages)[0];
+                    const imageInfo = imagePages[imgPageId]?.imageinfo?.[0];
+
+                    if (imageInfo?.url) {
+                        const imageUrl = imageInfo.url;
+
+                        // التحقق من صحة الرابط
+                        const isValid = await verifyImageUrl(imageUrl);
+                        if (isValid) {
+                            validImages.push(imageUrl);
+                            console.log(`✅ تم إضافة صورة ${validImages.length} من Wikipedia`);
+                        }
+                    }
+                }
+            } catch (imageError) {
+                console.warn(`⚠️ فشل الحصول على معلومات الصورة ${imageTitle}: ${imageError.message}`);
+            }
+        }
+
+        return validImages;
+    } catch (error) {
+        console.error(`⚠️ فشل البحث في Wikipedia: ${error.message}`);
+        return [];
+    }
+}
+
+/**
+ * البحث في Google Images
+ */
+async function searchGoogleImages(nickname) {
+    try {
+        // بحث بسيط: اسم الشخصية مع كلمة anime فقط
+        // حاول أولاً مع اسم بدون emoji
+        const cleanNickname = nickname.replace(/[🎖️⭐🏆👑💎🔥❤️✨]/g, '').trim();
+        const searchName = cleanNickname || nickname;
+        const query = encodeURIComponent(`${searchName} anime`);
+        const url = `https://www.google.com/search?q=${query}&tbm=isch`;
+        
+        const { data } = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                'Referer': 'https://www.google.com/'
+            },
+            timeout: 20000  // زيادة الوقت للإنترنت البطيء
+        });
+        
+        // جمع جميع روابط الصور - تجنب HTML entities والأحرف الغريبة
+        const allUrlsRegex = /(https:\/\/[^\s'"<>;]*\.(?:jpg|jpeg|png|gif|webp)(?:[^\s'"<>&]*)?)/gi;
+        let matches = data.match(allUrlsRegex);
+        
+        const validImages = [];
+        
+        if (matches && matches.length > 0) {
+            // إزالة التكرار
+            const uniqueUrls = [...new Set(matches)];
+            
+            for (let imageUrl of uniqueUrls) {
+                if (validImages.length >= 4) break; // التوقف بعد 4 صور صالحة
+                
+                // تنظيف الرابط
+                imageUrl = imageUrl.replace(/[,;)}\]]*$/, '');
+                imageUrl = cleanEncodedUrl(imageUrl);
+                
+                // تخطي الروابط الداخلية والمحمية والصغيرة
+                const lowerUrl = imageUrl.toLowerCase();
+                if (lowerUrl.includes('google') || 
+                    lowerUrl.includes('gstatic') ||
+                    lowerUrl.includes('cdn-cgi') ||
+                    lowerUrl.includes('cloudflare') ||
+                    lowerUrl.includes('icon') ||
+                    lowerUrl.includes('thumb') ||
+                    lowerUrl.includes('small') ||
+                    lowerUrl.includes('pinterest') ||  // تجنب Pinterest - محمته
+                    lowerUrl.includes('storyblok') ||  // تجنب StoryBlok - محمية
+                    lowerUrl.includes('imgix.net') ||  // تجنب CDN بطيء
+                    imageUrl.length < 50) {
+                    continue;
+                }
+                
+                if (isValidImageUrl(imageUrl)) {
+                    // التحقق من صحة الرابط
+                    const isValid = await verifyImageUrl(imageUrl);
+                    if (isValid) {
+                        validImages.push(imageUrl);
+                        console.log(`✅ تم إضافة صورة ${validImages.length} من Google Images`);
+                    }
+                }
+            }
+        }
+
+        return validImages;
+    } catch (error) {
+        console.error(`⚠️ فشل البحث في Google Images: ${error.message}`);
+        return [];
+    }
+}
+
+/**
+ * البحث في Bing Images
+ */
+async function searchBingImages(nickname) {
+    try {
+        // بحث بسيط: اسم الشخصية مع كلمة anime فقط
+        // حاول أولاً مع اسم بدون emoji
+        const cleanNickname = nickname.replace(/[🎖️⭐🏆👑💎🔥❤️✨]/g, '').trim();
+        const searchName = cleanNickname || nickname;
+        const query = encodeURIComponent(`${searchName} anime`);
+        const url = `https://www.bing.com/images/search?q=${query}`;
+        
+        const { data } = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9'
+            },
+            timeout: 20000  // زيادة الوقت للإنترنت البطيء
+        });
+        
+        // جمع روابط الصور في Bing - تجنب HTML entities والأحرف الغريبة
+        const urlRegex = /(https:\/\/[^\s'"<>;]*\.(?:jpg|jpeg|png|gif|webp)(?:[^\s'"<>&]*)?)/gi;
+        let matches = data.match(urlRegex);
+        
+        const validImages = [];
+        
+        if (matches && matches.length > 0) {
+            // إزالة التكرار
+            const uniqueUrls = [...new Set(matches)];
+            
+            for (let imageUrl of uniqueUrls) {
+                if (validImages.length >= 4) break; // التوقف بعد 4 صور صالحة
+                
+                imageUrl = imageUrl.replace(/[,;)}\]]*$/, '');
+                imageUrl = cleanEncodedUrl(imageUrl);
+                
+                // تخطي روابط Bing الداخلية والمحمية والصغيرة
+                const lowerUrl = imageUrl.toLowerCase();
+                if (lowerUrl.includes('bing.com') || 
+                    lowerUrl.includes('cdn-cgi') ||
+                    lowerUrl.includes('cloudflare') ||
+                    lowerUrl.includes('icon') ||
+                    lowerUrl.includes('thumb') ||
+                    lowerUrl.includes('small') ||
+                    lowerUrl.includes('pinterest') ||   // تجنب Pinterest - محمية
+                    lowerUrl.includes('storyblok') ||   // تجنب StoryBlok - محمية
+                    lowerUrl.includes('imgix.net') ||   // تجنب CDN بطيء
+                    imageUrl.length < 50) {
+                    continue;
+                }
+                
+                if (isValidImageUrl(imageUrl)) {
+                    // التحقق من صحة الرابط
+                    const isValid = await verifyImageUrl(imageUrl);
+                    if (isValid) {
+                        validImages.push(imageUrl);
+                        console.log(`✅ تم إضافة صورة ${validImages.length} من Bing Images`);
+                    }
+                }
+            }
+        }
+
+        return validImages;
+    } catch (error) {
+        console.error(`⚠️ فشل البحث في Bing Images: ${error.message}`);
+        return [];
+    }
+}
+
+/**
+ * التحقق من أن رابط الصورة يعمل
+ */
+async function verifyImageUrl(imageUrl, retries = 1) {
+    try {
+        const response = await axios.head(imageUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout: 8000,  // زيادة الوقت للإنترنت البطيء
+            maxRedirects: 5
+        });
+        
+        // التحقق من أن الرابط يعيد صورة صحيحة
+        if (response.status === 200) {
+            const contentType = (response.headers['content-type'] || '').toLowerCase();
+
+            // قبول أي صورة بشرط ألا تكون HTML أو تطبيق
+            const isImage = contentType.startsWith('image/');
+            const isNotRestricted = !contentType.includes('text/html') && !contentType.includes('application/');
+
+            return isImage && isNotRestricted;
+        }
+
+        return false;
+    } catch (error) {
+        const status = error?.response?.status;
+        // حاول مرة ثانية عند التعرض لتقييد (429) أو مشاكل مؤقتة
+        if ((status === 429 || status === 503) && retries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return verifyImageUrl(imageUrl, retries - 1);
+        }
+
+        console.warn(`⚠️ فشل التحقق من الصورة: ${error.message}`);
+        return false;
+    }
+}
+
+/**
+ * تحويل الصورة إلى صيغة مدعومة - استخدام مباشر بدون بروكسي
+ * البروكسي لا يعمل مع المصادر المحمية
+ * @param {string} imageUrl - رابط الصورة الأصلي
+ * @returns {string} - رابط الصورة (بدون تحويل إذا كان موثوقاً)
+ */
+function convertImageToSupportedFormat(imageUrl) {
+    if (!imageUrl) return imageUrl;
+    
+    try {
+        // استخدام الرابط الأصلي مباشرة بدون بروكسي
+        // البروكسي لا يعمل مع المصادر المحمية
+        return imageUrl;
+    } catch (error) {
+        console.warn('⚠️ خطأ في معالجة الصورة:', error.message);
+        return imageUrl;
+    }
+}
+
+/**
+ * تحويل الصورة إلى JPEG
+ * @param {string} imageUrl - رابط الصورة الأصلي
+ * @returns {Promise<Buffer|null>} - Buffer الصورة المحولة أو null عند الفشل
+ */
+export async function convertImageToJpeg(imageUrl) {
+    try {
+        if (!imageUrl) return null;
+
+        console.log(`🔄 جاري تحويل الصورة إلى JPEG: ${imageUrl}`);
+
+        // تحميل الصورة
+        const response = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout: 15000
+        });
+
+        // تحويل إلى JPEG باستخدام Sharp
+        const jpegBuffer = await sharp(response.data)
+            .jpeg({ quality: 85 }) // جودة 85% لتوازن الحجم والجودة
+            .toBuffer();
+
+        console.log(`✅ تم تحويل الصورة إلى JPEG (${jpegBuffer.length} bytes)`);
+        return jpegBuffer;
+
+    } catch (error) {
+        console.error(`❌ فشل تحويل الصورة إلى JPEG: ${error.message}`);
+        return null;
+    }
+}
+
+/**
+ * تنسيق الصورة للإرسال عبر Baileys
+ * @param {string|Buffer} imageUrl - رابط الصورة أو Buffer
+ * @param {string} caption - النص المرافق للصورة
+ * @returns {Object} - كائن الصورة للإرسال
+ */
+export async function formatImageMessage(imageUrl, caption = '') {
+    if (!imageUrl) {
+        console.warn('⚠️ رابط الصورة أو Buffer فارغ');
+        return null;
+    }
+
+    // إذا كان رابط، تحقق من صحته
+    if (typeof imageUrl === 'string' && !isValidImageUrl(imageUrl)) {
+        console.warn('⚠️ رابط الصورة غير صحيح:', imageUrl);
+        return null;
+    }
+
+    // إذا كان رابط، حاول تحويله إلى JPEG
+    let imageData = imageUrl;
+    if (typeof imageUrl === 'string') {
+        const jpegBuffer = await convertImageToJpeg(imageUrl);
+        if (jpegBuffer) {
+            imageData = jpegBuffer;
+        } else {
+            // إذا فشل التحويل، استخدم الرابط الأصلي
+            imageData = { url: imageUrl };
+        }
+    }
+
+    return {
+        image: imageData,
+        caption: caption
+    };
+}
+
+/**
+ * البحث عن صور الأعلام بدقة عالية
+ * بحث متخصص للأعلام دون تخصيص إضافي
+ * @param {string} countryName - اسم الدولة (إنجليزي)
+ * @returns {Promise<string|null>} - أول رابط صورة صحيحة أو null
+ */
+export async function searchFlagImage(countryName) {
+    try {
+        if (!countryName || countryName.trim() === '') {
+            console.warn('⚠️ اسم الدولة فارغ');
+            return null;
+        }
+
+        console.log(`🚩 جاري البحث عن علم: ${countryName}...`);
+
+        // البحث الأول: Google Images مع تحديد "flag"
+        let flagUrl = await searchGoogleFlagImages(countryName);
+        if (flagUrl) return convertImageToSupportedFormat(flagUrl);
+
+        // البحث الثاني: Bing Images مع تحديد "flag"
+        flagUrl = await searchBingFlagImages(countryName);
+        if (flagUrl) return convertImageToSupportedFormat(flagUrl);
+
+        console.warn(`❌ فشل البحث عن علم ${countryName}`);
+        return null;
+
+    } catch (error) {
+        console.error(`❌ خطأ في البحث عن علم ${countryName}:`, error.message);
+        return null;
+    }
+}
+
+/**
+ * البحث في Google Images عن أعلام الدول
+ */
+async function searchGoogleFlagImages(countryName) {
+    try {
+        // البحث باستخدام "flag" فقط بدون تخصيص آخر
+        // مثال: "Japan flag" و ليس "Japan anime flag"
+        const query = encodeURIComponent(`${countryName} flag`);
+        const url = `https://www.google.com/search?q=${query}&tbm=isch`;
+
+        const { data } = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                'Referer': 'https://www.google.com/'
+            },
+            timeout: 20000  // زيادة الوقت للإنترنت البطيء
+        });
+
+        // جمع جميع روابط الصور
+        const allUrlsRegex = /(https:\/\/[^\s'"<>;]*\.(?:jpg|jpeg|png|gif|webp)(?:[^\s'"<>&]*)?)/gi;
+        let matches = data.match(allUrlsRegex);
+
+        if (!matches || matches.length === 0) {
+            console.log(`⚠️  لم يتم العثور على روابط في Google Images`);
+            return null;
+        }
+
+        // إزالة التكرار
+        const uniqueUrls = [...new Set(matches)];
+
+        // البحث عن أول رابط صحيح
+        for (let imageUrl of uniqueUrls) {
+            // تنظيف الرابط
+            imageUrl = imageUrl.replace(/[,;)}\]]*$/, '');
+            imageUrl = cleanEncodedUrl(imageUrl);
+
+            // تخطي الروابط الداخلية والمحمية والصغيرة
+            if (imageUrl.includes('google') ||
+                imageUrl.includes('gstatic') ||
+                imageUrl.includes('cdn-cgi') ||
+                imageUrl.includes('cloudflare') ||
+                imageUrl.includes('icon') ||
+                imageUrl.includes('thumb') ||
+                imageUrl.includes('small') ||
+                imageUrl.includes('favicon') ||
+                imageUrl.length < 50) {
+                continue;
+            }
+
+            if (isValidImageUrl(imageUrl)) {
+                // التحقق من صحة الرابط أنه يعمل
+                const isValid = await verifyImageUrl(imageUrl);
+                if (isValid) {
+                    console.log(`✅ تم العثور على علم ${countryName} من Google Images`);
+                    return imageUrl;
+                }
+            }
+        }
+
+        console.log(`⚠️  لم يتم العثور على رابط صالح في Google Images`);
+        return null;
+
+    } catch (error) {
+        console.error(`⚠️ فشل البحث في Google Images: ${error.message}`);
+        return null;
+    }
+}
+
+/**
+ * البحث في Bing Images عن أعلام الدول
+ */
+async function searchBingFlagImages(countryName) {
+    try {
+        // البحث باستخدام "flag" فقط
+        const query = encodeURIComponent(`${countryName} flag`);
+        const url = `https://www.bing.com/images/search?q=${query}`;
+
+        const { data } = await axios.get(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9'
+            },
+            timeout: 20000  // زيادة الوقت للإنترنت البطيء
+        });
+
+        // جمع روابط الصور
+        const urlRegex = /(https:\/\/[^\s'"<>;]*\.(?:jpg|jpeg|png|gif|webp)(?:[^\s'"<>&]*)?)/gi;
+        let matches = data.match(urlRegex);
+
+        if (!matches || matches.length === 0) {
+            console.log(`⚠️  لم يتم العثور على روابط في Bing Images`);
+            return null;
+        }
+
+        // إزالة التكرار
+        const uniqueUrls = [...new Set(matches)];
+
+        // البحث عن أول رابط صحيح
+        for (let imageUrl of uniqueUrls) {
+            imageUrl = imageUrl.replace(/[,;)}\]]*$/, '');
+            imageUrl = cleanEncodedUrl(imageUrl);
+
+            // تخطي روابط Bing الداخلية والمحمية والصغيرة
+            if (imageUrl.includes('bing.com') ||
+                imageUrl.includes('cdn-cgi') ||
+                imageUrl.includes('cloudflare') ||
+                imageUrl.includes('icon') ||
+                imageUrl.includes('thumb') ||
+                imageUrl.includes('small') ||
+                imageUrl.includes('favicon') ||
+                imageUrl.length < 50) {
+                continue;
+            }
+
+            if (isValidImageUrl(imageUrl)) {
+                // التحقق من صحة الرابط
+                const isValid = await verifyImageUrl(imageUrl);
+                if (isValid) {
+                    console.log(`✅ تم العثور على علم ${countryName} من Bing Images`);
+                    return imageUrl;
+                }
+            }
+        }
+
+        console.log(`⚠️  لم يتم العثور على رابط صالح في Bing Images`);
+        return null;
+
+    } catch (error) {
+        console.error(`⚠️ فشل البحث في Bing Images: ${error.message}`);
+        return null;
+    }
+}
+
+/**
+ * البحث عن صور الأعلام من ويكيبيديا مباشرة (استخدام API)
+ * هذه النسخة أسرع باستخدام Wikipedia API بدلاً من scraping
+ * @param {string} countryName - اسم الدولة (إنجليزي)
+ * @returns {Promise<string|null>} - رابط الصورة من Wikipedia أو null
+ */
+export async function searchFlagImageFromWikipedia(countryName) {
+    try {
+        if (!countryName || countryName.trim() === '') {
+            console.warn('⚠️ اسم الدولة فارغ');
+            return null;
+        }
+
+        console.log(`🌐 جاري البحث عن علم ${countryName} من ويكيبيديا (API)...`);
+
+        // استخدام Wikipedia API للحصول على محتوى الصفحة
+        const apiUrl = 'https://en.wikipedia.org/w/api.php';
+        const params = new URLSearchParams({
+            action: 'query',
+            format: 'json',
+            titles: countryName,
+            prop: 'pageimages',
+            piprop: 'thumbnail|original',
+            pithumbsize: 500
+        });
+
+        const response = await axios.get(`${apiUrl}?${params}`, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout: 15000  // زيادة الوقت للإنترنت البطيء
+        });
+
+        const pages = response.data.query.pages;
+        const pageId = Object.keys(pages)[0];
+        const page = pages[pageId];
+
+        if (!page.thumbnail && !page.original) {
+            console.log(`⚠️  لم يتم العثور على صورة`);
+            
+            // محاولة بحثية ثانية: البحث عن الملف مباشرة
+            return await searchWikipediaFileForFlag(countryName);
+        }
+
+        // تفضيل thumbnail (PNG) على original (SVG)
+        const imageUrl = page.thumbnail ? page.thumbnail.source : page.original.source;
+        
+        if (imageUrl.toLowerCase().includes('flag') || imageUrl.toLowerCase().includes('svg')) {
+            const isValid = await verifyImageUrl(imageUrl);
+            if (isValid) {
+                console.log(`✅ تم العثور على صورة من Wikipedia API`);
+                return imageUrl;
+            }
+        }
+
+        // محاولة بحث ثانية إذا الصورة الأولى ليست علم
+        return await searchWikipediaFileForFlag(countryName);
+
+    } catch (error) {
+        console.error(`⚠️ خطأ في البحث عن علم ${countryName}:`, error.message);
+        
+        // محاولة بحث بديل
+        try {
+            return await searchWikipediaFileForFlag(countryName);
+        } catch {
+            return null;
+        }
+    }
+}
+
+/**
+ * البحث عن ملف العلم في ويكيبيديا مباشرة
+ */
+async function searchWikipediaFileForFlag(countryName) {
+    try {
+        const apiUrl = 'https://en.wikipedia.org/w/api.php';
+        const searchQuery = `Flag of ${countryName}`;
+        
+        const params = new URLSearchParams({
+            action: 'query',
+            format: 'json',
+            list: 'search',
+            srsearch: searchQuery,
+            srnamespace: 6  // ملفات فقط
+        });
+
+        const response = await axios.get(`${apiUrl}?${params}`, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout: 15000  // زيادة الوقت للإنترنت البطيء
+        });
+
+        const results = response.data.query.search;
+        
+        if (!results || results.length === 0) {
+            console.log(`⚠️  لم يتم العثور على ملف علم في البحث`);
+            return null;
+        }
+
+        // بحث عن أول ملف يحتوي على "flag" في العنوان
+        let flagFile = results.find(r => r.title.toLowerCase().includes('flag')) || results[0];
+        const fileName = flagFile.title; // مثال: "File:Flag_of_Egypt.svg"
+
+        // استخدام API للحصول على رابط الصورة المباشر (thumburl أو url)
+        const infoParams = new URLSearchParams({
+            action: 'query',
+            format: 'json',
+            titles: fileName,
+            prop: 'imageinfo',
+            iiprop: 'url',
+            iiurlwidth: 500
+        });
+
+        const infoResponse = await axios.get(`${apiUrl}?${infoParams}`, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout: 15000  // زيادة الوقت للإنترنت البطيء
+        });
+
+        const infoPages = infoResponse.data.query.pages;
+        const infoPageId = Object.keys(infoPages)[0];
+        const infoPage = infoPages[infoPageId];
+
+        const imageUrl = infoPage?.imageinfo?.[0]?.thumburl || infoPage?.imageinfo?.[0]?.url;
+        if (!imageUrl) {
+            console.log(`⚠️  لم يتم العثور على رابط مباشر للصورة`);
+            return null;
+        }
+
+        const isValid = await verifyImageUrl(imageUrl);
+        if (isValid) {
+            console.log(`✅ تم العثور على ملف: ${fileName}`);
+            return imageUrl;
+        }
+
+        return null;
+
+    } catch (error) {
+        console.error(`⚠️ خطأ في البحث البديل:`, error.message);
+        return null;
+    }
+}
+
+export { isValidImageUrl };

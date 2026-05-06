@@ -1,0 +1,1318 @@
+﻿import { userCommands } from "../commands/user.js";
+import { handleAdminCommands } from "../commands/adminCommands.js";
+import { showCommandsList, handleCommandsChoice } from "../commands/commandsList.js";
+import { handleGreetings } from "../utils/greetings.js";
+import { isModerator, extractAndSaveUserFromMention, grantEmperorRankWithPassword, getPhoneFromJID, startGameSession, stopGameSession, generateAdminDailyReport, getDailyGameStats } from "../commands/adminSystem.js";
+import User from "../database/userModel.js";
+import { WELCOME_LINK, getKingdomIdFromGroupJid } from "../config.js";
+import { startGuessAnime, handleGuessAnimeResponse, activeGames, showLeaderboard, stopGuessAnime } from "../games/guessAnime.js";
+import { startWordGame, checkWordGuess, activeWordGames, stopWordGame, wordGameWaiting, handleWordGameModeSelection, handleWordGamePlayersSelection } from "../games/wordtype.js";
+import { startGuessCharacter, checkCharacterGuess, activeCharacterGames, characterGameWaiting, handleGuessCharacterResponse, handleCharacterPlayersSelection, stopGuessCharacter } from "../games/guessCharacter.js";
+import { startUnscrambleGame, checkUnscrambleGuess, activeUnscrambleGames, unscrambleGameWaiting, handleUnscrambleResponse, handleUnscramblePlayersSelection, stopUnscrambleGame } from "../games/unscramble.js";
+import { startWordSplitterGame, checkWordSplitterGuess, activeWordSplitterGames, wordSplitterGameWaiting, handleWordSplitterModeSelection, handleWordSplitterPlayersSelection, stopWordSplitterGame } from "../games/wordSplitter.js";
+import { startFlagGame, handleFlagGameResponse, activeGames as activeFlagGames, checkGuess as checkFlagGuess } from "../games/flagGame.js";
+import { clearAnswerQueue } from "../utils/answerQueue.js";
+
+// Ù†Ø¸Ø§Ù… Ø§Ù„Ø­Ø§Ù„Ø§Øª - Ù„ØªØªØ¨Ø¹ Ø§Ù„Ø£ÙˆØ§Ù…Ø± Ø§Ù„Ù…Ø¹Ù„Ù‚Ø© Ø§Ù„ØªÙŠ ØªØ­ØªØ§Ø¬ ØªØ£ÙƒÙŠØ¯ Ù…Ù†Ø´Ù†
+export const pendingMentions = {};
+
+// Ù†Ø¸Ø§Ù… Ø§Ù„Ø­Ø§Ù„Ø§Øª - Ù„ØªØªØ¨Ø¹ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø§Ù„Ø°ÙŠÙ† ÙŠÙ†ØªØ¸Ø±ÙˆÙ† Ø§Ø®ØªÙŠØ§Ø± Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨
+export const awaitingGameChoice = new Set();
+
+// Ù†Ø¸Ø§Ù… Ø§Ù„Ø­Ø§Ù„Ø§Øª - Ù„ØªØªØ¨Ø¹ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø§Ù„Ø°ÙŠÙ† ÙŠÙ†Ø¶Ø±ÙˆÙ† Ù„Ø§Ø®ØªÙŠØ§Ø± Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£ÙˆØ§Ù…Ø±
+export const awaitingCommandsChoice = new Set();
+
+// Ù†Ø¸Ø§Ù… Ø§Ù„Ø­Ø§Ù„Ø§Øª - Ù„ØªØªØ¨Ø¹ Ø§Ù„Ø£Ø¯Ù…Ù†Ø² Ø§Ù„Ø°ÙŠÙ† ÙŠÙ†ØªØ¸Ø±ÙˆÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ø³Ø± Ù„Ù…Ù†Ø­ Ø±ØªØ¨Ø© Ø§Ù„Ø¥Ù…Ø¨Ø±Ø§Ø·ÙˆØ±
+export const awaitingEmperorPassword = new Map();
+
+// Ù†Ø¸Ø§Ù… Ø§Ù„Ø­Ø§Ù„Ø§Øª - Ù„ØªØªØ¨Ø¹ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø§Ù„Ø¬Ø¯Ø¯ Ø§Ù„Ø°ÙŠÙ† ÙŠÙ†ØªØ¸Ø±ÙˆÙ† ØªØ³Ø¬ÙŠÙ„ Ù„Ù‚Ø¨Ù‡Ù…
+export const awaitingNicknameRegistration = new Set();
+
+// Ù†Ø¸Ø§Ù… Ø§Ù„Ø­Ø§Ù„Ø§Øª - Ù„ØªØªØ¨Ø¹ Ù…Ø±Ø§Ø­Ù„ Ø§Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ù…ØªÙ‚Ø¯Ù…Ø©
+// { userJid: { stage: 'welcome'|'nicknameInput'|'nicknameConfirmation', nickname: string } }
+export const nicknameRegistrationStages = {};
+
+// Ù†Ø¸Ø§Ù… Ø§Ù„Ø­Ø§Ù„Ø§Øª - Ù„ØªØªØ¨Ø¹ Ø§Ù„Ø£Ø¯Ù…Ù†Ø² Ø§Ù„Ø°ÙŠÙ† ÙŠÙ†ØªØ¸Ø±ÙˆÙ† Ø¥Ø±Ø³Ø§Ù„ ØµÙˆØ±Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨
+export const awaitingWelcomeImage = {};
+
+// Ù†Ø¸Ø§Ù… Ø§Ù„Ø­Ø§Ù„Ø§Øª - Ù„ØªØªØ¨Ø¹ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„Ù…Ø±Ø³Ù„Ø© Ù„Ù„ØªØ´Ø¬ÙŠØ¹ Ø¹Ù„Ù‰ Ø§Ù„ÙˆØµÙˆÙ„ Ù„Ù€ 50 Ø¹Ø¶Ùˆ
+const milestoneMessagesSent = new Set();
+
+// Ø¯Ø§Ù„Ø© Ù„Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø¹Ø¯Ø¯ Ø§Ù„Ø£Ø¹Ø¶Ø§Ø¡ ÙˆØ¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ´Ø¬ÙŠØ¹
+async function checkAndSendMilestoneMessage(sock, jid, kingdom) {
+  try {
+    // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„ØªØ­ÙÙŠØ²ÙŠØ©
+    const { ENABLE_MOTIVATIONAL_MESSAGES } = await import('../config.js');
+    if (!ENABLE_MOTIVATIONAL_MESSAGES) {
+      return; // Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„ØªØ­ÙÙŠØ²ÙŠØ© Ù…Ø¹Ø·Ù„Ø©
+    }
+
+    // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø£Ù† Ù‡Ø°Ø§ Ø§Ù„Ù‚Ø±ÙˆØ¨ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ Ù„Ù„Ù…Ù…Ù„ÙƒØ©
+    const { KINGDOMS } = await import('../config.js');
+    const kingdomData = KINGDOMS[kingdom];
+    if (!kingdomData || kingdomData.mainGroup !== jid) {
+      return; // Ù„ÙŠØ³ Ø§Ù„Ù‚Ø±ÙˆØ¨ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ
+    }
+
+    // Ø¹Ø¯ Ø£Ø¹Ø¶Ø§Ø¡ Ø§Ù„Ù‚Ø±ÙˆØ¨
+    const groupMetadata = await sock.groupMetadata(jid);
+    const memberCount = groupMetadata.participants.length;
+
+    // Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ø¦Ù„ ØªØ´Ø¬ÙŠØ¹ Ù‚Ø¨Ù„ Ø§Ù„ÙˆØµÙˆÙ„ Ù„Ù€ 50 Ø¹Ø¶Ùˆ
+    await sendMotivationalMessages(sock, jid, memberCount, kingdom);
+
+    // Ø¥Ø°Ø§ ÙˆØµÙ„Ù†Ø§ Ø¥Ù„Ù‰ 50 Ø¹Ø¶ÙˆØŒ Ø£Ø±Ø³Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠØ©
+    if (memberCount >= 50) {
+      if (!milestoneMessagesSent.has(`${kingdom}_50_members`)) {
+        const encouragementMessage = `ðŸŽ‰ *Ù…Ø¨Ø±ÙˆÙƒ! ÙˆØµÙ„ØªÙ… Ø¥Ù„Ù‰ 50 Ø¹Ø¶Ùˆ!* ðŸŽ‰
+
+ðŸ° Ø£Ù†ØªÙ… Ø§Ù„Ø¢Ù† ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± Ø§Ù„Ø£Ø³Ø·ÙˆØ±ÙŠØ© - Ù…Ù…Ù„ÙƒØ© Ø§Ù„Ù†Ø¬ÙˆÙ… Ø§Ù„Ø³ÙˆØ¯Ø§Ø¡! ðŸ°
+
+ðŸŒŸ ÙƒÙ„ ÙˆØ§Ø­Ø¯ Ù…Ù†ÙƒÙ… Ù†Ø¬Ù…Ø© Ù„Ø§Ù…Ø¹Ø© ÙÙŠ Ø³Ù…Ø§Ø¡ Ø§Ù„Ù…Ù…Ù„ÙƒØ© ðŸŒŸ
+ðŸ’ª Ù‚ÙˆØªÙƒÙ… ØªØ¬Ù…Ø¹ ÙˆÙˆØ­Ø¯ØªÙƒÙ… ØªØ¨Ù‡Ø± Ø§Ù„Ø¹ÙˆØ§Ù„Ù… ðŸ’ª
+
+ðŸŽ¯ Ø§Ù„Ø¢Ù† Ø£Ù†ØªÙ… Ù…Ø³ØªØ¹Ø¯ÙˆÙ† Ù„ÙØªØ­ ÙØ±Ø¹ Ø¬Ø¯ÙŠØ¯ Ù„Ù„Ù…Ù…Ù„ÙƒØ©! ðŸŽ¯
+ðŸš€ Ù‚Ø±ÙŠØ¨Ø§Ù‹ Ø³ØªØ­ØµÙ„ÙˆÙ† Ø¹Ù„Ù‰ Ù‚Ø±ÙˆØ¨ Ø¥Ø¶Ø§ÙÙŠ Ù„Ù„Ù…Ù…Ù„ÙƒØ© ðŸš€
+
+ðŸ† Ø§Ø³ØªÙ…Ø±ÙˆØ§ ÙÙŠ Ø§Ù„ØªÙ…ÙŠØ² ÙˆØ§Ù„Ø¥Ø¨Ø¯Ø§Ø¹ - Ù…Ø³ØªÙ‚Ø¨Ù„ÙƒÙ… Ù…Ø´Ø±Ù‚! ðŸ†
+
+ðŸ€ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± ØªÙØªØ®Ø± Ø¨ÙƒÙ…! ðŸ€
+
+ðŸŽŠ *ØªÙ‡Ø§Ù†ÙŠÙ†Ø§ Ù„Ø¬Ù…ÙŠØ¹ Ø£Ø¹Ø¶Ø§Ø¡ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ±!*
+ðŸ’« *Ø£Ù†ØªÙ… Ø§Ù„Ø£ÙØ¶Ù„ ÙˆØ§Ù„Ø£Ù‚ÙˆÙ‰!*`;
+
+        await sock.sendMessage(jid, { text: encouragementMessage });
+        milestoneMessagesSent.add(`${kingdom}_50_members`);
+        console.log(`âœ… ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ÙˆØµÙˆÙ„ Ù„Ù€ 50 Ø¹Ø¶Ùˆ Ù„Ù…Ù…Ù„ÙƒØ© ${kingdom}`);
+      }
+    }
+  } catch (error) {
+    console.error('Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ´Ø¬ÙŠØ¹:', error);
+  }
+}
+
+// Ø¯Ø§Ù„Ø© Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„ØªØ­ÙÙŠØ² Ù‚Ø¨Ù„ Ø§Ù„ÙˆØµÙˆÙ„ Ù„Ù€ 50 Ø¹Ø¶Ùˆ
+async function sendMotivationalMessages(sock, jid, memberCount, kingdom) {
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„ØªØ­ÙÙŠØ²ÙŠØ©
+  const { ENABLE_MOTIVATIONAL_MESSAGES } = await import('../config.js');
+  if (!ENABLE_MOTIVATIONAL_MESSAGES) {
+    return; // Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„ØªØ­ÙÙŠØ²ÙŠØ© Ù…Ø¹Ø·Ù„Ø©
+  }
+
+  const motivationalMilestones = [
+    { count: 40, messageKey: '40_members' },
+    { count: 45, messageKey: '45_members' },
+    { count: 48, messageKey: '48_members' },
+    { count: 49, messageKey: '49_members' }
+  ];
+
+  for (const milestone of motivationalMilestones) {
+    if (memberCount === milestone.count && !milestoneMessagesSent.has(`${kingdom}_${milestone.messageKey}`)) {
+      const remaining = 50 - memberCount;
+      const message = getMotivationalMessage(memberCount, remaining, kingdom);
+      await sock.sendMessage(jid, { text: message });
+      milestoneMessagesSent.add(`${kingdom}_${milestone.messageKey}`);
+      console.log(`âœ… ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ­ÙÙŠØ² Ù„Ù€ ${memberCount} Ø¹Ø¶Ùˆ Ù„Ù…Ù…Ù„ÙƒØ© ${kingdom}`);
+      break; // Ø£Ø±Ø³Ù„ Ø±Ø³Ø§Ù„Ø© ÙˆØ§Ø­Ø¯Ø© ÙÙ‚Ø· ÙÙŠ ÙƒÙ„ Ù…Ø±Ø©
+    }
+  }
+}
+
+// Ø¯Ø§Ù„Ø© Ø¥Ù†Ø´Ø§Ø¡ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ­ÙÙŠØ²
+function getMotivationalMessage(currentCount, remaining, kingdom) {
+  const messages = {
+    40: `ðŸš€ *Ø¯Ø¹ÙˆØ© Ù„Ù„ØªØ­Ø¯ÙŠ ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ±* ðŸš€
+
+ðŸŒŸ Ù…Ø¨Ø±ÙˆÙƒ! ÙˆØµÙ„ØªÙ… Ø¥Ù„Ù‰ 40 Ø¹Ø¶Ùˆ ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ±! ðŸŒŸ
+
+ðŸ° Ø£Ù†ØªÙ… ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± Ø§Ù„Ø£Ø³Ø·ÙˆØ±ÙŠØ© - Ù…Ù…Ù„ÙƒØ© Ø§Ù„Ù†Ø¬ÙˆÙ… Ø§Ù„Ø³ÙˆØ¯Ø§Ø¡! ðŸ°
+
+ðŸŽ¯ ØªØ¨Ù‚Ù‰ ÙÙ‚Ø· ${remaining} Ø®Ø·ÙˆØ© Ù„Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ 50 Ø¹Ø¶Ùˆ! ðŸŽ¯
+ðŸ’ª Ù‚ÙˆØªÙƒÙ… Ù…Ø°Ù‡Ù„Ø© ÙˆØ±ÙˆØ­ÙƒÙ… Ø§Ù„Ø¬Ù…Ø§Ø¹ÙŠØ© Ø±Ø§Ø¦Ø¹Ø©! ðŸ’ª
+
+ðŸš€ Ø§Ø³ØªÙ…Ø±ÙˆØ§ ÙÙŠ Ø§Ù„Ø¯Ø¹ÙˆØ© ÙˆØ§Ù„Ù…Ø´Ø§Ø±ÙƒØ© - Ø§Ù„ÙØ±Ø¹ Ø§Ù„Ø¬Ø¯ÙŠØ¯ ÙŠÙ†ØªØ¸Ø±ÙƒÙ…! ðŸš€
+ðŸŒŸ ÙƒÙ„ Ø¹Ø¶Ùˆ Ø¬Ø¯ÙŠØ¯ ÙŠÙ‚Ø±Ø¨ÙƒÙ… Ù…Ù† Ø§Ù„Ø§Ù†ØªØµØ§Ø±! ðŸŒŸ
+
+ðŸ€ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± ØªØ´Ø¬Ø¹ÙƒÙ… Ø¹Ù„Ù‰ Ø§Ù„Ø§Ø³ØªÙ…Ø±Ø§Ø±! ðŸ€
+
+ðŸ”¥ *Ø£Ù†ØªÙ… Ø¹Ù„Ù‰ Ø¨Ø¹Ø¯ ${remaining} Ø¹Ø¶Ùˆ Ù…Ù† Ø§Ù„Ø§Ù†ØªØµØ§Ø± Ø§Ù„ÙƒØ¨ÙŠØ±!*`,
+
+    45: `âš¡ *Ø§Ù‚ØªØ±Ø§Ø¨ Ø§Ù„Ù†ØµØ± ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ±* âš¡
+
+ðŸŽ¯ Ù…Ø¨Ø±ÙˆÙƒ! ÙˆØµÙ„ØªÙ… Ø¥Ù„Ù‰ 45 Ø¹Ø¶Ùˆ ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ±! ðŸŽ¯
+
+ðŸ° Ø£Ù†ØªÙ… ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± Ø§Ù„Ø£Ø³Ø·ÙˆØ±ÙŠØ© - Ù…Ù…Ù„ÙƒØ© Ø§Ù„Ù†Ø¬ÙˆÙ… Ø§Ù„Ø³ÙˆØ¯Ø§Ø¡! ðŸ°
+
+ðŸ”¥ ØªØ¨Ù‚Ù‰ ÙÙ‚Ø· ${remaining} Ø®Ø·ÙˆØ© Ù„Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ 50 Ø¹Ø¶Ùˆ! ðŸ”¥
+ðŸ’ª Ù‚ÙˆØªÙƒÙ… Ù…Ø°Ù‡Ù„Ø© ÙˆØ¥ØµØ±Ø§Ø±ÙƒÙ… ÙŠÙ„Ù‡Ù… Ø§Ù„Ø¬Ù…ÙŠØ¹! ðŸ’ª
+
+ðŸš€ Ø§Ù„ÙØ±Ø¹ Ø§Ù„Ø¬Ø¯ÙŠØ¯ Ø¹Ù„Ù‰ Ø§Ù„Ø£Ø¨ÙˆØ§Ø¨ - Ø§Ø³ØªÙ…Ø±ÙˆØ§ ÙÙŠ Ø§Ù„Ø¯Ø¹ÙˆØ©! ðŸš€
+ðŸŒŸ ÙƒÙ„ ØµØ¯ÙŠÙ‚ ØªØ¯Ø¹ÙˆÙ†Ù‡ ÙŠÙ‚Ø±Ø¨ÙƒÙ… Ù…Ù† Ø§Ù„ÙÙˆØ²! ðŸŒŸ
+
+ðŸ€ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± ØªØ¤Ù…Ù† Ø¨Ù‚Ø¯Ø±Ø§ØªÙƒÙ…! ðŸ€
+
+ðŸŽ¯ *${remaining} Ø¹Ø¶Ùˆ ÙÙ‚Ø· ÙˆØªØ­Ù‚Ù‚ÙˆÙ† Ø§Ù„Ø­Ù„Ù…!*`,
+
+    48: `ðŸ† *Ø¹Ù„Ù‰ Ø£Ø¹ØªØ§Ø¨ Ø§Ù„Ù†ØµØ± ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ±* ðŸ†
+
+ðŸŽ‰ Ù…Ø¨Ø±ÙˆÙƒ! ÙˆØµÙ„ØªÙ… Ø¥Ù„Ù‰ 48 Ø¹Ø¶Ùˆ ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ±! ðŸŽ‰
+
+ðŸ° Ø£Ù†ØªÙ… ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± Ø§Ù„Ø£Ø³Ø·ÙˆØ±ÙŠØ© - Ù…Ù…Ù„ÙƒØ© Ø§Ù„Ù†Ø¬ÙˆÙ… Ø§Ù„Ø³ÙˆØ¯Ø§Ø¡! ðŸ°
+
+âš¡ ØªØ¨Ù‚Ù‰ ÙÙ‚Ø· ${remaining} Ø®Ø·ÙˆØ© Ù„Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ 50 Ø¹Ø¶Ùˆ! âš¡
+ðŸ’ª Ù‚ÙˆØªÙƒÙ… Ù…Ø°Ù‡Ù„Ø© ÙˆØ¥ØµØ±Ø§Ø±ÙƒÙ… ÙŠØ¨Ù‡Ø± Ø§Ù„Ø¹ÙˆØ§Ù„Ù…! ðŸ’ª
+
+ðŸš€ Ø§Ù„ÙØ±Ø¹ Ø§Ù„Ø¬Ø¯ÙŠØ¯ Ø¹Ù„Ù‰ Ø¨Ø¹Ø¯ Ø®Ø·ÙˆØ§Øª - Ù„Ø§ ØªØªÙˆÙ‚ÙÙˆØ§ Ø§Ù„Ø¢Ù†! ðŸš€
+ðŸŒŸ ÙƒÙ„ Ø¬Ù‡Ø¯ ØªØ¨Ø°Ù„ÙˆÙ†Ù‡ ÙŠÙ‚Ø±Ø¨ÙƒÙ… Ù…Ù† Ø§Ù„Ù†Ø¬Ø§Ø­! ðŸŒŸ
+
+ðŸ€ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± ØªÙØ®Ø± Ø¨Ø¥ØµØ±Ø§Ø±ÙƒÙ…! ðŸ€
+
+ðŸ”¥ *Ø£Ù†ØªÙ… Ø¹Ù„Ù‰ Ø¨Ø¹Ø¯ ${remaining} Ø¹Ø¶Ùˆ Ù…Ù† Ø§Ù„Ø§Ù†ØªØµØ§Ø± Ø§Ù„ØªØ§Ø±ÙŠØ®ÙŠ!*`,
+
+    49: `ðŸŽ¯ *Ø§Ù„Ù„Ù…Ø³Ø© Ø§Ù„Ø£Ø®ÙŠØ±Ø© ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ±* ðŸŽ¯
+
+ðŸŽŠ Ù…Ø¨Ø±ÙˆÙƒ! ÙˆØµÙ„ØªÙ… Ø¥Ù„Ù‰ 49 Ø¹Ø¶Ùˆ ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ±! ðŸŽŠ
+
+ðŸ° Ø£Ù†ØªÙ… ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± Ø§Ù„Ø£Ø³Ø·ÙˆØ±ÙŠØ© - Ù…Ù…Ù„ÙƒØ© Ø§Ù„Ù†Ø¬ÙˆÙ… Ø§Ù„Ø³ÙˆØ¯Ø§Ø¡! ðŸ°
+
+ðŸ”¥ ØªØ¨Ù‚Ù‰ Ø®Ø·ÙˆØ© ÙˆØ§Ø­Ø¯Ø© ÙÙ‚Ø· Ù„Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ 50 Ø¹Ø¶Ùˆ! ðŸ”¥
+ðŸ’ª Ù‚ÙˆØªÙƒÙ… Ù…Ø°Ù‡Ù„Ø© ÙˆØ¥ØµØ±Ø§Ø±ÙƒÙ… ÙŠÙ„Ù‡Ù… Ø§Ù„Ø£Ø¬ÙŠØ§Ù„! ðŸ’ª
+
+ðŸš€ Ø§Ù„ÙØ±Ø¹ Ø§Ù„Ø¬Ø¯ÙŠØ¯ Ø¹Ù„Ù‰ Ø§Ù„Ø£Ø¨ÙˆØ§Ø¨ - Ø¯Ø¹ÙˆØ© ÙˆØ§Ø­Ø¯Ø© ØªÙØµÙ„ÙƒÙ… Ø¹Ù† Ø§Ù„Ù†ØµØ±! ðŸš€
+ðŸŒŸ ÙƒÙ„ ØµØ¯ÙŠÙ‚ ØªØ¯Ø¹ÙˆÙ†Ù‡ ÙŠÙƒØªØ¨ Ø§Ù„ØªØ§Ø±ÙŠØ® Ù…Ø¹ÙƒÙ…! ðŸŒŸ
+
+ðŸ€ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± ØªÙ†ØªØ¸Ø± Ø§Ù†ØªØµØ§Ø±ÙƒÙ…! ðŸ€
+
+ðŸŽ¯ *Ø®Ø·ÙˆØ© ÙˆØ§Ø­Ø¯Ø© ÙÙ‚Ø· ØªÙØµÙ„ÙƒÙ… Ø¹Ù† Ø§Ù„ÙØ±Ø¹ Ø§Ù„Ø¬Ø¯ÙŠØ¯!*`
+  };
+
+  return messages[currentCount] || '';
+}
+
+export async function messageHandler(sock, msg) {
+  if (!msg.message) return;
+
+  const jid = msg.key.remoteJid;
+  const sender = msg.key.participant || msg.key.remoteJid;
+  const text = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+
+  // ============================================
+  // ðŸ“Š ØªØªØ¨Ø¹ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„ÙŠÙˆÙ…ÙŠØ© ÙÙŠ Ø§Ù„Ù‚Ø±ÙˆØ¨ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ
+  // ============================================
+  let kingdom;
+  let kingdomData;
+  
+  try {
+    const { getKingdomIdFromGroupJid } = await import('../config.js');
+    const { KINGDOMS } = await import('../config.js');
+    kingdom = getKingdomIdFromGroupJid(jid);
+    kingdomData = KINGDOMS[kingdom];
+
+    // ØªØªØ¨Ø¹ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ ÙÙ‚Ø· ÙÙŠ Ø§Ù„Ù‚Ø±ÙˆØ¨ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ
+    if (kingdomData && kingdomData.mainGroup === jid && !msg.key.fromMe) {
+      try {
+        let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
+
+        if (user) {
+          // ÙØ­Øµ Ù‡Ù„ Ø§Ù„ÙŠÙˆÙ… Ù…Ø®ØªÙ„Ù Ø¹Ù† Ø§Ù„ÙŠÙˆÙ… Ø§Ù„Ø£Ø®ÙŠØ±
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const lastReset = new Date(user.lastMessageResetDate || new Date());
+          lastReset.setHours(0, 0, 0, 0);
+
+          // Ø­ÙØ¸ Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ø³Ø§Ø¨Ù‚Ø©
+          const prevDailyMessages = user.dailyMessages || 0;
+          // ðŸ”„ Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ ÙÙŠ ÙŠÙˆÙ… Ø¬Ø¯ÙŠØ¯
+          if (today.getTime() !== lastReset.getTime()) {
+            user.dailyMessages = 1;
+            user.lastMessageResetDate = new Date();
+          } else {
+            // Ø¥Ø¶Ø§ÙØ© Ø±Ø³Ø§Ù„Ø© Ø¬Ø¯ÙŠØ¯Ø© Ù„Ù†ÙØ³ Ø§Ù„ÙŠÙˆÙ…
+            user.dailyMessages = prevDailyMessages + 1;
+          }
+
+          // âœ… Ø­ÙØ¸ ÙÙˆØ±ÙŠ Ù„Ù„Ø¨ÙŠØ§Ù†Ø§Øª
+          await user.save();
+          console.log(`ðŸ“Š [${user.nickname}] Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„ÙŠÙˆÙ…: ${user.dailyMessages}`);
+
+          // Ø¥Ø´Ø¹Ø§Ø± ØªÙ„Ù‚Ø§Ø¦ÙŠ Ø¹Ù†Ø¯ Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ Ø´ÙˆØ· Ø¬Ø¯ÙŠØ¯ (ÙƒÙ„ 100 ØªÙØ§Ø¹Ù„)
+          const prevMilestone = Math.floor(prevDailyMessages / 100);
+          const newMilestone = Math.floor(user.dailyMessages / 100);
+          if (user.dailyMessages >= 100 && newMilestone > prevMilestone) {
+            const mentionText = user.mention || `@${user.jid.split('@')[0]}`;
+            const congratsMsg = `ðŸŽ‰ Ø±Ø§Ø¦Ø¹ ÙŠØ§ ${mentionText}\nÙ„Ù‚Ø¯ ÙˆØµÙ„Øª Ø¥Ù„Ù‰ ${user.dailyMessages} ØªÙØ§Ø¹Ù„! ðŸ†ðŸ”¥ðŸ‘`;
+            await sock.sendMessage(jid, { text: congratsMsg, mentions: [user.jid] });
+          }
+        }
+      } catch (error) {
+        console.error('âŒ Ø®Ø·Ø£ ÙÙŠ ØªØªØ¨Ø¹ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„ÙŠÙˆÙ…ÙŠØ©:', error.message);
+      }
+    }
+  } catch (importError) {
+    console.error('âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª:', importError.message);
+  }
+
+  // Ù„Ø§ Ù†Ø­ØªØ§Ø¬ Ù„Ù€ awaitingWelcomeImage Ø¨Ø¹Ø¯ Ø§Ù„Ø¢Ù† - ØªÙ… Ø§Ù„ØªØ´Ø·ÙŠØ¨ Ù…Ù† Ø§Ù„Ù…Ù†Ø·Ù‚
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø¹Ø¯Ø¯ Ø§Ù„Ø£Ø¹Ø¶Ø§Ø¡ ÙˆØ¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ´Ø¬ÙŠØ¹ Ø¥Ø°Ø§ Ù„Ø²Ù… Ø§Ù„Ø£Ù…Ø±
+  if (!kingdom) {
+    const { getKingdomIdFromGroupJid } = await import('../config.js');
+    kingdom = getKingdomIdFromGroupJid(jid);
+  }
+  await checkAndSendMilestoneMessage(sock, jid, kingdom);
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ø®ØªÙŠØ§Ø± Ù„Ø§Ø¹Ø¨ÙŠ Ù„Ø¹Ø¨Ø© Ø§Ù„ÙƒÙ„Ù…Ø§Øª (ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ù‚Ø¨Ù„ Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„Ù†Ù…Ø·)
+  if (wordGameWaiting[jid] && wordGameWaiting[jid].mode === 'two_players') {
+    await handleWordGamePlayersSelection(sock, jid, sender, text);
+    return;
+      }
+    return;
+  }
+  
+  if (!text) return;
+
+  // Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… (Ø¨Ø¯ÙˆÙ† ØªØ³Ø¬ÙŠÙ„ ØªÙ„Ù‚Ø§Ø¦ÙŠ)
+  let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø­Ø¸Ø± Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…
+  if (user && user.isBanned) {
+    return; // ØªØ¬Ø§Ù‡Ù„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ Ù…Ù† Ø§Ù„Ù…Ø­Ø¸ÙˆØ±ÙŠÙ†
+  }
+
+  // Ù‚Ø§Ø¦Ù…Ø© Ù…ÙˆØ­Ø¯Ø© Ù„Ù„Ø£Ù„Ø¹Ø§Ø¨ (Ù…Ø¹ ÙˆØ¨Ø¯ÙˆÙ† Ù‡Ù…Ø²Ø©)
+  if (text === "/Ø£Ù„Ø¹Ø§Ø¨" || text === "/Ø§Ù„Ø¹Ø§Ø¨") {
+    // Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£ØµÙ„ÙŠØ© Ù„Ù„Ø£Ù„Ø¹Ø§Ø¨ (Ù„Ù„Ø­ÙØ¸ ÙÙ‚Ø·ØŒ Ù„Ø§ ØªØ­Ø°Ù Ù‡Ø°Ø§ Ø§Ù„ØªØ¹Ù„ÙŠÙ‚)
+    /*
+    ðŸŽ® **Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ù…ØªØ§Ø­Ø©**
+    â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+    1ï¸âƒ£ ØªØ®Ù…ÙŠÙ† Ø§Ù„Ø£Ù†Ù…ÙŠ
+    2ï¸âƒ£ Ù„Ø¹Ø¨Ø© Ø§Ù„ÙƒÙ„Ù…Ø§Øª
+    3ï¸âƒ£ ØªØ®Ù…ÙŠÙ† Ø§Ù„Ø´Ø®ØµÙŠØ§Øª
+    4ï¸âƒ£ ØªØ±ØªÙŠØ¨ Ø§Ù„Ø­Ø±ÙˆÙ
+    5ï¸âƒ£ ØªÙÙƒÙŠÙƒ Ø§Ù„ÙƒÙ„Ù…Ø§Øª
+    6ï¸âƒ£ Ù„Ø¹Ø¨Ø© Ø§Ù„Ø£Ø¹Ù„Ø§Ù…
+    ðŸ’¡ Ø£Ø±Ø³Ù„ Ø§Ù„Ø±Ù‚Ù… Ø§Ù„Ù…Ø·Ù„ÙˆØ¨ (1-6) Ù„Ø¨Ø¯Ø¡ Ø§Ù„Ù„Ø¹Ø¨Ø©
+    */
+    await sock.sendMessage(jid, { text: 'â— Ø¬Ù…ÙŠØ¹ Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ø¨ÙˆØª ØªØ­Øª Ø§Ù„ØµÙŠØ§Ù†Ø© Ù…Ø¤Ù‚ØªØ§Ù‹ ÙˆØ³ÙŠØªÙ… Ø¥Ø¹Ø§Ø¯Ø© ØªÙØ¹ÙŠÙ„Ù‡Ø§ Ù‚Ø±ÙŠØ¨Ø§Ù‹.' });
+    return;
+  }
+
+  // Ø¯Ø¹Ù… Ø¬Ù…ÙŠØ¹ ØµÙŠØº Ø£Ù…Ø± Ø§Ù„Ø£ÙˆØ§Ù…Ø±: /Ø£ÙˆØ§Ù…Ø±ØŒ /Ø§ÙˆØ§Ù…Ø±ØŒ /Ø§Ù„Ø£ÙˆØ§Ù…Ø±ØŒ /Ø§Ù„Ø§ÙˆØ§Ù…Ø±
+  const commandsTriggers = ["/Ø£ÙˆØ§Ù…Ø±", "/Ø§ÙˆØ§Ù…Ø±", "/Ø§Ù„Ø£ÙˆØ§Ù…Ø±", "/Ø§Ù„Ø§ÙˆØ§Ù…Ø±"];
+  if (commandsTriggers.includes(text)) {
+    awaitingCommandsChoice.add(sender);
+    await showCommandsList(sock, jid, sender);
+    return;
+  }
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ù„Ø¹Ø¨Ø© Ø¨Ø±Ù‚Ù…
+  if (awaitingGameChoice.has(sender)) {
+    // ØªØ¹Ø·ÙŠÙ„ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„ØµÙŠØ§Ù†Ø©
+    awaitingGameChoice.delete(sender);
+    await sock.sendMessage(jid, { text: 'â— Ø¬Ù…ÙŠØ¹ Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ø¨ÙˆØª ØªØ­Øª Ø§Ù„ØµÙŠØ§Ù†Ø© Ù…Ø¤Ù‚ØªØ§Ù‹ ÙˆØ³ÙŠØªÙ… Ø¥Ø¹Ø§Ø¯Ø© ØªÙØ¹ÙŠÙ„Ù‡Ø§ Ù‚Ø±ÙŠØ¨Ø§Ù‹.' });
+    return;
+  }
+
+  // Ø§Ù„Ø£ÙˆØ§Ù…Ø± Ø§Ù„Ù‚Ø¯ÙŠÙ…Ø© Ø§Ù„ÙØ±Ø¯ÙŠØ© (Ù„Ù„ØªÙˆØ§ÙÙ‚ÙŠØ©)
+  if (text === "/Ø§Ù†Ù…ÙŠ") {
+    const userIsModerator = await isModerator(sender, kingdom);
+    if (!userIsModerator) {
+      await sock.sendMessage(jid, { text: 'âŒ ÙÙ‚Ø· Ø§Ù„Ù…Ø´Ø±ÙÙˆÙ† ÙˆØ§Ù„Ø£Ø¯Ù…Ù† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙŠÙ…ÙƒÙ†Ù‡Ù… Ø¨Ø¯Ø¡ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+      return;
+    }
+    await startGameSession(sender, 'ØªØ®Ù…ÙŠÙ† Ø§Ù„Ø£Ù†Ù…ÙŠ');
+    await startGuessAnime(sock, jid);
+    return;
+  }
+
+  // ØªØ´ØºÙŠÙ„ Ù„Ø¹Ø¨Ø© Ø§Ù„ÙƒÙ„Ù…Ø§Øª
+  if (text === "/ÙƒÙ„Ù…Ø§Øª") {
+    const userIsModerator = await isModerator(sender, kingdom);
+    if (!userIsModerator) {
+      await sock.sendMessage(jid, { text: 'âŒ ÙÙ‚Ø· Ø§Ù„Ù…Ø´Ø±ÙÙˆÙ† ÙˆØ§Ù„Ø£Ø¯Ù…Ù† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙŠÙ…ÙƒÙ†Ù‡Ù… Ø¨Ø¯Ø¡ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+      return;
+    }
+    await startGameSession(sender, 'ÙƒØªØ§Ø¨Ø© Ø§Ù„ÙƒÙ„Ù…Ø§Øª');
+    await startWordGame(sock, jid);
+    return;
+  }
+
+  // ØªØ´ØºÙŠÙ„ Ù„Ø¹Ø¨Ø© ØªØ®Ù…ÙŠÙ† Ø§Ù„Ø´Ø®ØµÙŠØ§Øª
+  if (text === "/Ø´Ø®ØµÙŠØ§Øª") {
+    const userIsModerator = await isModerator(sender, kingdom);
+    if (!userIsModerator) {
+      await sock.sendMessage(jid, { text: 'âŒ ÙÙ‚Ø· Ø§Ù„Ù…Ø´Ø±ÙÙˆÙ† ÙˆØ§Ù„Ø£Ø¯Ù…Ù† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙŠÙ…ÙƒÙ†Ù‡Ù… Ø¨Ø¯Ø¡ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+      return;
+    }
+    await startGameSession(sender, 'ØªØ®Ù…ÙŠÙ† Ø§Ù„Ø´Ø®ØµÙŠØ§Øª');
+    await startGuessCharacter(sock, jid, sender);
+    return;
+  }
+
+  // ØªØ´ØºÙŠÙ„ Ù„Ø¹Ø¨Ø© Ø§Ù„Ø£Ø¹Ù„Ø§Ù…
+  if (text === "/Ø§Ø¹Ù„Ø§Ù…") {
+    const userIsModerator = await isModerator(sender, kingdom);
+    if (!userIsModerator) {
+      await sock.sendMessage(jid, { text: 'âŒ ÙÙ‚Ø· Ø§Ù„Ù…Ø´Ø±ÙÙˆÙ† ÙˆØ§Ù„Ø£Ø¯Ù…Ù† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙŠÙ…ÙƒÙ†Ù‡Ù… Ø¨Ø¯Ø¡ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+      return;
+    }
+    await startGameSession(sender, 'Ù„Ø¹Ø¨Ø© Ø§Ù„Ø£Ø¹Ù„Ø§Ù…');
+    await startFlagGame(sock, jid);
+    return;
+  }
+
+  // ØªØ´ØºÙŠÙ„ Ù„Ø¹Ø¨Ø© ØªØ±ØªÙŠØ¨ Ø§Ù„Ø­Ø±ÙˆÙ
+  if (text === "/ÙÙƒ" || text === "/ØªØ±ØªÙŠØ¨_Ø­Ø±ÙˆÙ") {
+    const userIsModerator = await isModerator(sender, kingdom);
+    if (!userIsModerator) {
+      await sock.sendMessage(jid, { text: 'âŒ ÙÙ‚Ø· Ø§Ù„Ù…Ø´Ø±ÙÙˆÙ† ÙˆØ§Ù„Ø£Ø¯Ù…Ù† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙŠÙ…ÙƒÙ†Ù‡Ù… Ø¨Ø¯Ø¡ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+      return;
+    }
+    await startGameSession(sender, 'ØªØ±ØªÙŠØ¨ Ø§Ù„Ø­Ø±ÙˆÙ');
+    await startUnscrambleGame(sock, jid, sender);
+    return;
+  }
+
+  // ØªØ´ØºÙŠÙ„ Ù„Ø¹Ø¨Ø© ØªÙÙƒÙŠÙƒ Ø§Ù„ÙƒÙ„Ù…Ø§Øª
+  if (text === "/ØªÙÙƒÙŠÙƒ" || text === "/ØªÙÙƒÙŠÙƒ_Ø§Ù„ÙƒÙ„Ù…Ø§Øª") {
+    const userIsModerator = await isModerator(sender, kingdom);
+    if (!userIsModerator) {
+      await sock.sendMessage(jid, { text: 'âŒ ÙÙ‚Ø· Ø§Ù„Ù…Ø´Ø±ÙÙˆÙ† ÙˆØ§Ù„Ø£Ø¯Ù…Ù† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙŠÙ…ÙƒÙ†Ù‡Ù… Ø¨Ø¯Ø¡ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+      return;
+    }
+    await startGameSession(sender, 'ØªÙÙƒÙŠÙƒ Ø§Ù„ÙƒÙ„Ù…Ø§Øª');
+    await startWordSplitterGame(sock, jid, sender);
+    return;
+  }
+
+  // Ø¹Ø±Ø¶ leaderboard Ù…ÙˆØ­Ø¯ Ù„Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨
+  if (text === "/ØªØ±ØªÙŠØ¨") {
+    await showLeaderboard(sock, jid);
+    return;
+  }
+
+  // Ø¥ÙŠÙ‚Ø§Ù Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨
+  if (text === "/ÙˆÙ‚Ù") {
+    const userIsModerator = await isModerator(sender, kingdom);
+    if (!userIsModerator) {
+      await sock.sendMessage(jid, { text: 'âŒ ÙÙ‚Ø· Ø§Ù„Ù…Ø´Ø±ÙÙˆÙ† ÙˆØ§Ù„Ø£Ø¯Ù…Ù† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ ÙŠÙ…ÙƒÙ†Ù‡Ù… Ø¥ÙŠÙ‚Ø§Ù Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+      return;
+    }
+    // Ø¥ÙŠÙ‚Ø§Ù Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ù…Ù…ÙƒÙ†Ø©
+    let stoppedAny = false;
+    if (activeGames[jid]) {
+      await stopGuessAnime(sock, jid);
+      await stopGameSession(sender);
+      stoppedAny = true;
+    }
+    if (activeWordGames[jid]) {
+      await stopWordGame(sock, jid);
+      await stopGameSession(sender);
+      stoppedAny = true;
+    }
+    if (activeCharacterGames[jid]) {
+      await stopGuessCharacter(sock, jid);
+      await stopGameSession(sender);
+      stoppedAny = true;
+    }
+    if (activeUnscrambleGames[jid]) {
+      await stopUnscrambleGame(sock, jid);
+      await stopGameSession(sender);
+      stoppedAny = true;
+    }
+    if (activeWordSplitterGames[jid]) {
+      await stopWordSplitterGame(sock, jid);
+      await stopGameSession(sender);
+      stoppedAny = true;
+    }
+    if (activeFlagGames[jid]) {
+      await sock.sendMessage(jid, { text: "ðŸ›‘ ØªÙ… Ø¥ÙŠÙ‚Ø§Ù Ù„Ø¹Ø¨Ø© Ø§Ù„Ø£Ø¹Ù„Ø§Ù…!" });
+      clearAnswerQueue('flagGame', jid);
+      await stopGameSession(sender);
+      delete activeFlagGames[jid];
+      stoppedAny = true;
+    }
+    if (!stoppedAny) {
+      await sock.sendMessage(jid, { text: "âŒ Ù„Ø§ ØªÙˆØ¬Ø¯ Ø£Ù„Ø¹Ø§Ø¨ ØªØ¹Ù…Ù„ Ø­Ø§Ù„ÙŠØ§Ù‹!" });
+    }
+    return;
+  }
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø© Ø¥Ø°Ø§ Ù‡Ù†Ø§Ùƒ Ù„Ø¹Ø¨Ø© Ø£Ù†Ù…ÙŠ ÙØ¹Ø§Ù„Ø©
+  if (activeGames[jid]) {
+    const handled = await handleGuessAnimeResponse(sock, jid, sender, text);
+    if (handled) return;
+  }
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø© Ø¥Ø°Ø§ Ù‡Ù†Ø§Ùƒ Ù„Ø¹Ø¨Ø© Ø§Ø¹Ù„Ø§Ù… ÙØ¹Ø§Ù„Ø©
+  if (activeFlagGames[jid]) {
+    const handled = await handleFlagGameResponse(sock, jid, sender, text);
+    if (handled) return;
+  }
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø© Ø¥Ø°Ø§ Ù‡Ù†Ø§Ùƒ Ù„Ø¹Ø¨Ø© ÙƒÙ„Ù…Ø§Øª ÙØ¹Ø§Ù„Ø©
+  if (activeWordGames[jid]) {
+    await checkWordGuess(sock, jid, sender, text);
+    return;
+  }
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù†ØªØ¸Ø§Ø± Ø§Ø®ØªÙŠØ§Ø± ÙˆØ¶Ø¹ Ù„Ø¹Ø¨Ø© Ø§Ù„Ø´Ø®ØµÙŠØ§Øª
+  if (characterGameWaiting[jid]) {
+    if (characterGameWaiting[jid].mode === 'two_players') {
+      await handleCharacterPlayersSelection(sock, jid, sender, text);
+    } else {
+      await handleGuessCharacterResponse(sock, jid, sender, text);
+    }
+    return;
+  }
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù†ØªØ¸Ø§Ø± Ø§Ø®ØªÙŠØ§Ø± ÙˆØ¶Ø¹ Ù„Ø¹Ø¨Ø© ØªØ±ØªÙŠØ¨ Ø§Ù„Ø­Ø±ÙˆÙ
+  if (unscrambleGameWaiting[jid]) {
+    if (unscrambleGameWaiting[jid].mode === 'two_players') {
+      await handleUnscramblePlayersSelection(sock, jid, sender, text);
+    } else {
+      await handleUnscrambleResponse(sock, jid, sender, text);
+    }
+    return;
+  }
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø© Ø¥Ø°Ø§ Ù‡Ù†Ø§Ùƒ Ù„Ø¹Ø¨Ø© Ø´Ø®ØµÙŠØ§Øª ÙØ¹Ø§Ù„Ø©
+  if (activeCharacterGames[jid]) {
+    await checkCharacterGuess(sock, jid, sender, text);
+    return;
+  }
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø© Ø¥Ø°Ø§ Ù‡Ù†Ø§Ùƒ Ù„Ø¹Ø¨Ø© ØªØ±ØªÙŠØ¨ Ø­Ø±ÙˆÙ ÙØ¹Ø§Ù„Ø©
+  if (activeUnscrambleGames[jid]) {
+    await checkUnscrambleGuess(sock, jid, sender, text);
+    return;
+  }
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù†ØªØ¸Ø§Ø± Ø§Ø®ØªÙŠØ§Ø± ÙˆØ¶Ø¹ Ù„Ø¹Ø¨Ø© ØªÙÙƒÙŠÙƒ Ø§Ù„ÙƒÙ„Ù…Ø§Øª
+  if (wordSplitterGameWaiting[jid]) {
+    if (wordSplitterGameWaiting[jid].mode === 'two_players') {
+      await handleWordSplitterPlayersSelection(sock, jid, sender, text);
+    } else {
+      await handleWordSplitterModeSelection(sock, jid, sender, text);
+    }
+    return;
+  }
+
+  // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø© Ø¥Ø°Ø§ Ù‡Ù†Ø§Ùƒ Ù„Ø¹Ø¨Ø© ØªÙÙƒÙŠÙƒ ÙƒÙ„Ù…Ø§Øª ÙØ¹Ø§Ù„Ø©
+  if (activeWordSplitterGames[jid]) {
+    await checkWordSplitterGuess(sock, jid, sender, text);
+    return;
+  }
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„Ù…Ù†Ø´Ù† Ø§Ù„Ù…Ø¹Ù„Ù‚Ø© - Ø¥Ø°Ø§ ÙƒØ§Ù† Ù‡Ù†Ø§Ùƒ Ù…Ù†Ø´Ù† ÙÙŠ Ø§Ù„Ø±Ø³Ø§Ù„Ø©
+  if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid && pendingMentions[jid]) {
+    const mentionedJids = msg.message.extendedTextMessage.contextInfo.mentionedJid;
+    const pendingData = pendingMentions[jid];
+
+    if (mentionedJids.length > 0) {
+      const mentionedJid = mentionedJids[0];
+      // Ø§Ø³ØªØ®Ø±Ø§Ø¬ Ø§Ù„Ù…Ù†Ø´Ù† Ø§Ù„Ø­Ù‚ÙŠÙ‚ÙŠ Ù…Ù† Ø§Ù„Ù†Øµ
+      const text = msg.message.extendedTextMessage.text || '';
+      const mentionRegex = /(@\w+)/g;
+      const mentions = text.match(mentionRegex);
+      const realMention = mentions && mentions.length > 0 ? mentions[0] : `@${mentionedJid.split('@')[0]}`;
+
+      // Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„ØªØ¨Ù„ÙŠØº Ø¹Ù† Ø§Ù„Ø¥Ø³Ø§Ø¡Ø©
+      if (pendingData.action === 'report_mention') {
+        // Ø­ÙØ¸ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØªØ¨Ù„ÙŠØº ÙˆØ§Ù„Ø§Ù†ØªØ¸Ø§Ø± Ù„Ø³Ø¨Ø¨ Ø§Ù„ØªØ¨Ù„ÙŠØº
+        pendingData.accusedJid = mentionedJid;
+        pendingData.accusedMention = realMention;
+        pendingData.action = 'awaiting_report_reason'; // ØªØºÙŠÙŠØ± Ø§Ù„Ø­Ø§Ù„Ø©
+
+        await sock.sendMessage(jid, {
+          text: `ðŸ“ *ØªÙ… ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø´Ø®Øµ Ø§Ù„Ù…Ø³ÙŠØ¡: ${realMention}*\n\nðŸ“‹ Ø§Ù„Ø¢Ù†ØŒ Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø±Ø³Ø§Ù„ Ø³Ø¨Ø¨ Ø§Ù„ØªØ¨Ù„ÙŠØº:\n\nðŸ’¡ (ÙˆØµÙ Ù…Ø®ØªØµØ± Ù„Ù„Ø¥Ø³Ø§Ø¡Ø© Ø£Ùˆ Ø§Ù„Ø³Ù„ÙˆÙƒ ØºÙŠØ± Ø§Ù„Ù…Ù†Ø§Ø³Ø¨)`
+        });
+
+        return;
+      }
+
+      const result = await extractAndSaveUserFromMention(sock, jid, mentionedJid, pendingData.nickname);
+
+      if (result) {
+        // Ø­ÙØ¸ Ø§Ù„Ù…Ù†Ø´Ù† Ø§Ù„Ø­Ù‚ÙŠÙ‚ÙŠ ÙÙŠ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©
+        pendingData.mentionedJid = mentionedJid;
+        pendingData.realMention = realMention;
+        // ØªÙ†ÙÙŠØ° Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡ Ø§Ù„Ù…Ø¹Ù„Ù‚
+        if (pendingData.action === 'welcoming') {
+          // Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨
+          const welcomeMessage = `*~â•ƒ ð˜¾ð™‡ð™Šð™‘ð™€ð™ð– ›ðŸ€ ð˜¾ð™‡ð™Šð™‘ð™€ð™ â•„~*
+*ã€Ž â€ Ø§Ø³Ù€Ù€ØªÙ€Ù…Ù€Ø§Ø±Ø© Ø§Ù„Ù€ØªÙ€Ø±Ø­Ù€ÙŠÙ€Ø¨ â€ ã€*
+
+*â€âœ¦â•â•â• â€¢ã€ŽðŸ€ã€â€¢ â•â•â•âœ¦â€*
+
+*âœ§ Ø¨ÙƒÙ„ ÙˆØ¯Ù‘ ÙˆØ§Ø­ØªØ±Ø§Ù…ØŒ Ù†ÙØªØ­ Ù„Ùƒ Ø£Ø¨ÙˆØ§Ø¨ Ù‚Ù„ÙˆØ¨Ù†Ø§ Ù‚Ø¨Ù„ Ø£Ø¨ÙˆØ§Ø¨ Ù…Ø¬Ù…ÙˆØ¹ØªÙ†Ø§*  
+*âœ§ ÙŠØ³Ø¹Ø¯Ù†Ø§ Ø§Ù†Ø¶Ù…Ø§Ù…Ùƒ Ø¥Ù„Ù‰ Ø¹Ø§Ø¦Ù„Ø© ðŸ€ ð˜¾ð™‡ð™Šð™‘ð™€ð™ Ø§Ù„Ø±Ø§Ù‚ÙŠØ©*
+*âœ§ ÙˆØ¬ÙˆØ¯Ùƒ Ø¨ÙŠÙ†Ù†Ø§ Ù‡Ùˆ Ø¥Ø¶Ø§ÙØ© Ø«Ù…ÙŠÙ†Ø© Ù†Ø¹ØªØ² Ø¨Ù‡Ø§ØŒ ÙÙ…Ø±Ø­Ø¨Ù‹Ø§ Ø¨Ùƒ Ø¹Ø¯Ø¯ Ù†Ø¬ÙˆÙ… Ø§Ù„Ø³Ù…Ø§Ø¡*âœ¨
+
+âž¤ *Ø§Ù„Ù€Ù€Ù„Ù€Ù€Ù‚Ù€Ù€Ù€Ù€Ø¨ âœ¦  :  ã€Ž${result.nickname}ã€*
+âž¤ *Ø§Ù„Ù€Ù…Ù€Ù†Ù€Ø´Ù€Ù†@ âœ¦ : ã€Ž@${pendingData.mentionedJid.split('@')[0]}ã€*
+*âž¤ Ø§Ù„Ù€Ù…Ù€Ø³Ù€Ø¤ÙˆÙ„ âœ¦ :  ã€Ž${pendingData.moderatorName}ã€*
+
+ðŸ“Œ *ÙŠÙØ±Ø¬Ù‰ Ø²ÙŠØ§Ø±Ø© Ø±Ø§Ø¨Ø· Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ø§Ù„Ø±Ø³Ù…ÙŠ Ù„Ù„Ø§Ø·Ù„Ø§Ø¹ Ø¹Ù„Ù‰ ÙƒÙ„ Ø¬Ø¯ÙŠØ¯:*
+ã€Ž ðŸ“°ã€ 
+${WELCOME_LINK}
+*
+*â€âœ¦â•â•â• â€¢ã€ŽðŸ€ã€â€¢ â•â•â•âœ¦â€*
+
+*~â•ƒ Câ€¢Lâ€¢O ð– ›ðŸ€ ð˜¾ð™‡ð™Šð™‘ð™€ð™ â•„~*`;
+
+          // Ø¥Ø°Ø§ ÙƒØ§Ù† Ù‡Ù†Ø§Ùƒ ØµÙˆØ±Ø©ØŒ Ø£Ø±Ø³Ù„ Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ù…Ø¹ Ø§Ù„ØµÙˆØ±Ø©
+          if (pendingData.hasImage && pendingData.imageUrl) {
+            try {
+              // âœ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØµÙˆØ±Ø© Ù…Ø¹ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨
+              await sock.sendMessage(jid, {
+                image: { url: pendingData.imageUrl },
+                caption: welcomeMessage
+              });
+              console.log(`âœ… ØªÙ… Ø¥Ø±Ø³Ø§Ù„ ØªØ±Ø­ÙŠØ¨ Ù…Ø¹ ØµÙˆØ±Ø© Ù„Ù„Ø¹Ø¶Ùˆ ${result.nickname}`);
+            } catch (imageError) {
+              console.error('âš ï¸ Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØµÙˆØ±Ø©ØŒ Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ Ø¨Ø¯ÙˆÙ†Ù‡Ø§:', imageError.message);
+              // Ø¥Ø±Ø³Ø§Ù„ Ø¨Ø¯ÙˆÙ† ØµÙˆØ±Ø© ÙƒØ¨Ø¯ÙŠÙ„
+              await sock.sendMessage(jid, {
+                text: welcomeMessage,
+                mentions: [pendingData.mentionedJid]
+              });
+            }
+          } else {
+            // Ø£Ø±Ø³Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨ (Ø¨Ø¯ÙˆÙ† ØµÙˆØ±Ø©)
+            await sock.sendMessage(jid, {
+              text: welcomeMessage,
+              mentions: [pendingData.mentionedJid]
+            });
+          }
+          
+          console.log(`âœ… ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© ØªØ±Ø­ÙŠØ¨ Ù„Ù„Ø¹Ø¶Ùˆ ${result.nickname}`);
+        } else if (pendingData.action === 'promotion') {
+          // ØªÙ†ÙÙŠØ° Ø§Ù„ØªØ±Ù‚ÙŠØ©
+          const { promoteModerator } = await import('../commands/adminSystem.js');
+          await promoteModerator(sock, jid, result.nickname, pendingData.adminJid, pendingData.mentionedJid);
+        } else if (pendingData.action === 'assign_mention') {
+          // Ù…Ø¹Ø§Ù„Ø¬Ø© ØªØ¹ÙŠÙŠÙ† Ø§Ù„Ù…Ù†Ø´Ù†
+          const { handleAssignMention } = await import('../commands/adminSystem.js');
+          await handleAssignMention(sock, jid, sender, mentionedJid, pendingData.nickname, pendingData.realMention);
+        } else if (pendingData.action === 'change_mention') {
+          // Ù…Ø¹Ø§Ù„Ø¬Ø© ØªØºÙŠÙŠØ± Ø§Ù„Ù…Ù†Ø´Ù†
+          const { handleChangeMention } = await import('../commands/adminSystem.js');
+          await handleChangeMention(sock, jid, sender, mentionedJid, pendingData.nickname, pendingData.realMention);
+        } else if (pendingData.action === 'retrieveNickname') {
+          // Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ø³ØªØ±Ø¬Ø§Ø¹/Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù„Ù‚Ø¨ Ù„Ù„Ø¹Ø¶Ùˆ Ø§Ù„Ù…Ù†Ø´Ù† Ø¹Ù„ÙŠÙ‡
+          const { retrieveOrCreateNickname } = await import('../commands/adminSystem.js');
+          await retrieveOrCreateNickname(sock, jid, mentionedJid);
+        }
+      }
+
+      // Ø­Ø°Ù Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©
+      delete pendingMentions[jid];
+      return;
+    }
+  }
+
+  // Ø§Ù„Ø£ÙˆØ§Ù…Ø±
+  if (text.startsWith("/")) {
+    // Ø¥Ø°Ø§ Ù„Ù… ÙŠÙƒÙ† Ø£Ù…Ø± Ø§Ù„Ø£ÙˆØ§Ù…Ø± (ØªÙ…Øª Ù…Ø¹Ø§Ù„Ø¬ØªÙ‡ Ø£Ø¹Ù„Ø§Ù‡)
+    if (!commandsTriggers.includes(text)) {
+      await userCommands(sock, jid, sender, text, msg);
+      await handleAdminCommands(sock, jid, text, sender, msg);
+    }
+    return;
+  }
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ø®ØªÙŠØ§Ø± ØµÙˆØ±Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨ (1ï¸âƒ£ 2ï¸âƒ£ 3ï¸âƒ£ 4ï¸âƒ£)
+  if ((text === '1' || text === '2' || text === '3' || text === '4')) {
+    // Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø­Ø§Ù„Ø© Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ØµÙˆØ±
+    let welcomeImagesKey = null;
+    let welcomeImagesData = null;
+
+    if (pendingMentions) {
+      for (const key in pendingMentions) {
+        if (key.startsWith('welcome_images_') && pendingMentions[key].action === 'welcome_images') {
+          welcomeImagesKey = key;
+          welcomeImagesData = pendingMentions[key];
+          break;
+        }
+      }
+    }
+
+    if (welcomeImagesData && welcomeImagesData.action === 'welcome_images') {
+      const selectedIndex = parseInt(text) - 1;
+      
+      if (selectedIndex < 0 || selectedIndex >= welcomeImagesData.imageUrls.length) {
+        await sock.sendMessage(jid, {
+          text: `âŒ Ø§Ø®ØªÙŠØ§Ø± ØºÙŠØ± ØµØ­ÙŠØ­! Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø§Ø®ØªÙŠØ§Ø± Ø±Ù‚Ù… Ø¨ÙŠÙ† 1ï¸âƒ£ Ùˆ ${welcomeImagesData.imageUrls.length}ï¸âƒ£`
+        });
+        return;
+      }
+
+      const selectedImageUrl = welcomeImagesData.imageUrls[selectedIndex];
+      const mainGroupJid = welcomeImagesData.mainGroupJid;
+      const receptionGroupJid = welcomeImagesData.receptionGroupJid;
+      
+      console.log(`âœ… ØªÙ… Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ØµÙˆØ±Ø© ${parseInt(text)} Ù„Ù„Ø¹Ø¶Ùˆ ${welcomeImagesData.nickname}`);
+      
+      // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ÙˆØ¬ÙˆØ¯ Ø§Ù„Ø¹Ø¶Ùˆ ÙÙŠ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+      try {
+        const mainGroupMetadata = await sock.groupMetadata(mainGroupJid);
+        const memberJids = mainGroupMetadata.participants.map(p => p.id);
+        const memberExists = memberJids.includes(welcomeImagesData.userJid);
+
+        if (!memberExists) {
+          // Ø¥Ø¹Ù„Ø§Ù… Ø§Ù„Ø£Ø¯Ù…Ù† Ø¨Ø¹Ø¯Ù… ÙˆØ¬ÙˆØ¯ Ø§Ù„Ø¹Ø¶Ùˆ ÙÙŠ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+          const errorMessage = `âŒ *Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ±Ø­ÙŠØ¨*
+
+Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„Ø¹Ø¶Ùˆ *${welcomeImagesData.nickname}* ÙÙŠ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©.
+
+ÙŠÙØ±Ø¬Ù‰ Ø§Ù„ØªØ£ÙƒØ¯ Ù…Ù† Ø§Ù†Ø¶Ù…Ø§Ù… Ø§Ù„Ø¹Ø¶Ùˆ Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ø£ÙˆÙ„Ø§Ù‹.`;
+
+          await sock.sendMessage(receptionGroupJid, {
+            text: errorMessage,
+            mentions: [welcomeImagesData.moderatorJid]
+          });
+
+          console.warn(`âš ï¸ Ø§Ù„Ø¹Ø¶Ùˆ ${welcomeImagesData.nickname} ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯ ÙÙŠ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©`);
+          delete pendingMentions[welcomeImagesKey];
+          return;
+        }
+
+        // Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠØ© Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+        const welcomeMessage = `*~â•ƒ ð˜¾ð™‡ð™Šð™‘ð™€ð™ð– ›ðŸ€ ð˜¾ð™‡ð™Šð™‘ð™€ð™ â•„~*
+*ã€Ž â€ Ø§Ø³Ù€Ù€ØªÙ€Ù…Ù€Ø§Ø±Ø© Ø§Ù„Ù€ØªÙ€Ø±Ø­Ù€ÙŠÙ€Ø¨ â€ ã€*
+
+*â€âœ¦â•â•â• â€¢ã€ŽðŸ€ã€â€¢ â•â•â•âœ¦â€*
+
+*âœ§ Ø¨ÙƒÙ„ ÙˆØ¯Ù‘ ÙˆØ§Ø­ØªØ±Ø§Ù…ØŒ Ù†ÙØªØ­ Ù„Ùƒ Ø£Ø¨ÙˆØ§Ø¨ Ù‚Ù„ÙˆØ¨Ù†Ø§ Ù‚Ø¨Ù„ Ø£Ø¨ÙˆØ§Ø¨ Ù…Ø¬Ù…ÙˆØ¹ØªÙ†Ø§*  
+*âœ§ ÙŠØ³Ø¹Ø¯Ù†Ø§ Ø§Ù†Ø¶Ù…Ø§Ù…Ùƒ Ø¥Ù„Ù‰ Ø¹Ø§Ø¦Ù„Ø© ðŸ€ ð˜¾ð™‡ð™Šð™‘ð™€ð™ Ø§Ù„Ø±Ø§Ù‚ÙŠØ©*
+*âœ§ ÙˆØ¬ÙˆØ¯Ùƒ Ø¨ÙŠÙ†Ù†Ø§ Ù‡Ùˆ Ø¥Ø¶Ø§ÙØ© Ø«Ù…ÙŠÙ†Ø© Ù†Ø¹ØªØ² Ø¨Ù‡Ø§ØŒ ÙÙ…Ø±Ø­Ø¨Ù‹Ø§ Ø¨Ùƒ Ø¹Ø¯Ø¯ Ù†Ø¬ÙˆÙ… Ø§Ù„Ø³Ù…Ø§Ø¡*âœ¨
+
+âž¤ *Ø§Ù„Ù€Ù€Ù„Ù€Ù€Ù‚Ù€Ù€Ù€Ù€Ø¨ âœ¦  :  ã€Ž${welcomeImagesData.nickname}ã€*
+âž¤ *Ø§Ù„Ù€Ù…Ù€Ù†Ù€Ø´Ù€Ù†@ âœ¦ : ã€Ž@${welcomeImagesData.mentionPhone}ã€*
+*âž¤ Ø§Ù„Ù€Ù…Ù€Ø³Ù€Ø¤ÙˆÙ„ âœ¦ :  ã€Ž${welcomeImagesData.moderatorName}ã€*
+
+ðŸ“Œ *ÙŠÙØ±Ø¬Ù‰ Ø²ÙŠØ§Ø±Ø© Ø±Ø§Ø¨Ø· Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ø§Ù„Ø±Ø³Ù…ÙŠ Ù„Ù„Ø§Ø·Ù„Ø§Ø¹ Ø¹Ù„Ù‰ ÙƒÙ„ Ø¬Ø¯ÙŠØ¯:*
+ã€Ž ðŸ“°ã€ 
+${WELCOME_LINK}
+*
+*â€âœ¦â•â•â• â€¢ã€ŽðŸ€ã€â€¢ â•â•â•âœ¦â€*
+
+*~â•ƒ Câ€¢Lâ€¢O ð– ›ðŸ€ ð˜¾ð™‡ð™Šð™‘ð™€ð™ â•„~*`;
+
+        try {
+          // Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ù…Ø¹ Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ù…Ø®ØªØ§Ø±Ø© Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+          await sock.sendMessage(mainGroupJid, {
+            image: { url: selectedImageUrl },
+            caption: welcomeMessage,
+            mentions: [welcomeImagesData.userJid]
+          });
+          console.log(`âœ… ØªÙ… Ø¥Ø±Ø³Ø§Ù„ ØªØ±Ø­ÙŠØ¨ Ù…Ø¹ Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ù…Ø®ØªØ§Ø±Ø© Ù„Ù„Ø¹Ø¶Ùˆ ${welcomeImagesData.nickname} Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©`);
+
+          // ØªØ£ÙƒÙŠØ¯ Ù„Ù„Ø£Ø¯Ù…Ù† ÙÙŠ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ Ø¨Ù†Ø¬Ø§Ø­ Ø§Ù„ØªØ±Ø­ÙŠØ¨
+          await sock.sendMessage(receptionGroupJid, {
+            text: `âœ… *ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ø¨Ù†Ø¬Ø§Ø­ Ù„Ù„Ø¹Ø¶Ùˆ ${welcomeImagesData.nickname} Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©* âœ¨`,
+            mentions: [welcomeImagesData.moderatorJid]
+          });
+        } catch (error) {
+          console.error('âŒ Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ù…Ø¹ Ø§Ù„ØµÙˆØ±Ø©:', error.message);
+          
+          try {
+            // Ù…Ø­Ø§ÙˆÙ„Ø© Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ Ø¨Ø¯ÙˆÙ† ØµÙˆØ±Ø© ÙƒØ¨Ø¯ÙŠÙ„
+            await sock.sendMessage(mainGroupJid, {
+              text: welcomeMessage,
+              mentions: [welcomeImagesData.userJid]
+            });
+            console.log(`âš ï¸ ØªÙ… Ø¥Ø±Ø³Ø§Ù„ ØªØ±Ø­ÙŠØ¨ Ø¨Ø¯ÙˆÙ† ØµÙˆØ±Ø© Ù„Ù„Ø¹Ø¶Ùˆ ${welcomeImagesData.nickname} Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©`);
+
+            await sock.sendMessage(receptionGroupJid, {
+              text: `âš ï¸ *ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ø¨Ø¯ÙˆÙ† ØµÙˆØ±Ø© Ù„Ù„Ø¹Ø¶Ùˆ ${welcomeImagesData.nickname}*\n\nðŸ“Œ Ø§Ù„Ø³Ø¨Ø¨: ${error.message}`,
+              mentions: [welcomeImagesData.moderatorJid]
+            });
+          } catch (textError) {
+            await sock.sendMessage(receptionGroupJid, {
+              text: `âŒ *Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ù„Ù„Ø¹Ø¶Ùˆ ${welcomeImagesData.nickname}*\n\nðŸ“Œ Ø§Ù„Ø®Ø·Ø£: ${textError.message}`,
+              mentions: [welcomeImagesData.moderatorJid]
+            });
+          }
+        }
+      } catch (metadataError) {
+        console.error('âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­ØµÙˆÙ„ Ø¹Ù„Ù‰ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©:', metadataError.message);
+        
+        await sock.sendMessage(receptionGroupJid, {
+          text: `âŒ *Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ±Ø­ÙŠØ¨ - Ù„Ù… ÙŠØªÙ…ÙƒÙ† Ù…Ù† Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©*\n\nðŸ“Œ Ø§Ù„Ø®Ø·Ø£: ${metadataError.message}`,
+          mentions: [welcomeImagesData.moderatorJid]
+        });
+      }
+
+      // Ø­Ø°Ù Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©
+      delete pendingMentions[welcomeImagesKey];
+      return;
+    }
+  }
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© ØªØ£ÙƒÙŠØ¯ Ø§Ù„ØªØ±Ø­ÙŠØ¨ (1 Ù„Ù„Ù…ÙˆØ§ÙÙ‚Ø©ØŒ 2 Ù„Ù„Ø¥Ù„ØºØ§Ø¡)
+  if ((text === '1' || text === '2')) {
+    // Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø­Ø§Ù„Ø© ØªØ£ÙƒÙŠØ¯ Ø§Ù„ØªØ±Ø­ÙŠØ¨
+    let welcomeConfirmKey = null;
+    let welcomeData = null;
+
+    if (pendingMentions) {
+      for (const key in pendingMentions) {
+        if (key.startsWith('welcome_confirm_') && pendingMentions[key].action === 'welcome_confirm') {
+          welcomeConfirmKey = key;
+          welcomeData = pendingMentions[key];
+          break;
+        }
+      }
+    }
+
+    if (welcomeData && welcomeData.action === 'welcome_confirm') {
+      if (text === '1') {
+        // Ø§Ù„Ù…ÙˆØ§ÙÙ‚Ø© Ø¹Ù„Ù‰ Ø§Ù„ØªØ±Ø­ÙŠØ¨
+        console.log(`âœ… ØªÙ… Ø§Ù„Ù…ÙˆØ§ÙÙ‚Ø© Ø¹Ù„Ù‰ ØªØ±Ø­ÙŠØ¨ ${welcomeData.nickname}`);
+        
+        const mainGroupJid = welcomeData.mainGroupJid;
+        const receptionGroupJid = welcomeData.receptionGroupJid;
+
+        // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ÙˆØ¬ÙˆØ¯ Ø§Ù„Ø¹Ø¶Ùˆ ÙÙŠ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+        try {
+          const mainGroupMetadata = await sock.groupMetadata(mainGroupJid);
+          const memberJids = mainGroupMetadata.participants.map(p => p.id);
+          const memberExists = memberJids.includes(welcomeData.userJid);
+
+          if (!memberExists) {
+            // Ø¥Ø¹Ù„Ø§Ù… Ø§Ù„Ø£Ø¯Ù…Ù† Ø¨Ø¹Ø¯Ù… ÙˆØ¬ÙˆØ¯ Ø§Ù„Ø¹Ø¶Ùˆ ÙÙŠ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+            const errorMessage = `âŒ *Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ±Ø­ÙŠØ¨*
+
+Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„Ø¹Ø¶Ùˆ *${welcomeData.nickname}* ÙÙŠ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©.
+
+ÙŠÙØ±Ø¬Ù‰ Ø§Ù„ØªØ£ÙƒØ¯ Ù…Ù† Ø§Ù†Ø¶Ù…Ø§Ù… Ø§Ù„Ø¹Ø¶Ùˆ Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ© Ø£ÙˆÙ„Ø§Ù‹.`;
+
+            await sock.sendMessage(receptionGroupJid, {
+              text: errorMessage,
+              mentions: [welcomeData.moderatorJid]
+            });
+
+            console.warn(`âš ï¸ Ø§Ù„Ø¹Ø¶Ùˆ ${welcomeData.nickname} ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯ ÙÙŠ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©`);
+            delete pendingMentions[welcomeConfirmKey];
+            return;
+          }
+
+          // Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠØ© Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+          const welcomeMessage = `*~â•ƒ ð˜¾ð™‡ð™Šð™‘ð™€ð™ð– ›ðŸ€ ð˜¾ð™‡ð™Šð™‘ð™€ð™ â•„~*
+*ã€Ž â€ Ø§Ø³Ù€Ù€ØªÙ€Ù…Ù€Ø§Ø±Ø© Ø§Ù„Ù€ØªÙ€Ø±Ø­Ù€ÙŠÙ€Ø¨ â€ ã€*
+
+*â€âœ¦â•â•â• â€¢ã€ŽðŸ€ã€â€¢ â•â•â•âœ¦â€*
+
+*âœ§ Ø¨ÙƒÙ„ ÙˆØ¯Ù‘ ÙˆØ§Ø­ØªØ±Ø§Ù…ØŒ Ù†ÙØªØ­ Ù„Ùƒ Ø£Ø¨ÙˆØ§Ø¨ Ù‚Ù„ÙˆØ¨Ù†Ø§ Ù‚Ø¨Ù„ Ø£Ø¨ÙˆØ§Ø¨ Ù…Ø¬Ù…ÙˆØ¹ØªÙ†Ø§*  
+*âœ§ ÙŠØ³Ø¹Ø¯Ù†Ø§ Ø§Ù†Ø¶Ù…Ø§Ù…Ùƒ Ø¥Ù„Ù‰ Ø¹Ø§Ø¦Ù„Ø© ðŸ€ ð˜¾ð™‡ð™Šð™‘ð™€ð™ Ø§Ù„Ø±Ø§Ù‚ÙŠØ©*
+*âœ§ ÙˆØ¬ÙˆØ¯Ùƒ Ø¨ÙŠÙ†Ù†Ø§ Ù‡Ùˆ Ø¥Ø¶Ø§ÙØ© Ø«Ù…ÙŠÙ†Ø© Ù†Ø¹ØªØ² Ø¨Ù‡Ø§ØŒ ÙÙ…Ø±Ø­Ø¨Ù‹Ø§ Ø¨Ùƒ Ø¹Ø¯Ø¯ Ù†Ø¬ÙˆÙ… Ø§Ù„Ø³Ù…Ø§Ø¡*âœ¨
+
+âž¤ *Ø§Ù„Ù€Ù€Ù„Ù€Ù€Ù‚Ù€Ù€Ù€Ù€Ø¨ âœ¦  :  ã€Ž${welcomeData.nickname}ã€*
+âž¤ *Ø§Ù„Ù€Ù…Ù€Ù†Ù€Ø´Ù€Ù†@ âœ¦ : ã€Ž@${welcomeData.mentionPhone}ã€*
+*âž¤ Ø§Ù„Ù€Ù…Ù€Ø³Ù€Ø¤ÙˆÙ„ âœ¦ :  ã€Ž${welcomeData.moderatorName}ã€*
+
+ðŸ“Œ *ÙŠÙØ±Ø¬Ù‰ Ø²ÙŠØ§Ø±Ø© Ø±Ø§Ø¨Ø· Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ø§Ù„Ø±Ø³Ù…ÙŠ Ù„Ù„Ø§Ø·Ù„Ø§Ø¹ Ø¹Ù„Ù‰ ÙƒÙ„ Ø¬Ø¯ÙŠØ¯:*
+ã€Ž ðŸ“°ã€ 
+${WELCOME_LINK}
+*
+*â€âœ¦â•â•â• â€¢ã€ŽðŸ€ã€â€¢ â•â•â•âœ¦â€*
+
+*~â•ƒ Câ€¢Lâ€¢O ð– ›ðŸ€ ð˜¾ð™‡ð™Šð™‘ð™€ð™ â•„~*`;
+
+          try {
+            // Ø£Ø±Ø³Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+            await sock.sendMessage(mainGroupJid, {
+              text: welcomeMessage,
+              mentions: [welcomeData.userJid]
+            });
+            console.log(`âœ… ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© ØªØ±Ø­ÙŠØ¨ Ø¨Ø¯ÙˆÙ† ØµÙˆØ±Ø© Ù„Ù„Ø¹Ø¶Ùˆ ${welcomeData.nickname} Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©`);
+
+            // ØªØ£ÙƒÙŠØ¯ Ù„Ù„Ø£Ø¯Ù…Ù† ÙÙŠ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ Ø¨Ù†Ø¬Ø§Ø­ Ø§Ù„ØªØ±Ø­ÙŠØ¨
+            await sock.sendMessage(receptionGroupJid, {
+              text: `âœ… *ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ø¨Ù†Ø¬Ø§Ø­ Ù„Ù„Ø¹Ø¶Ùˆ ${welcomeData.nickname} Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©* âœ¨`,
+              mentions: [welcomeData.moderatorJid]
+            });
+          } catch (error) {
+            console.error('âŒ Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªØ±Ø­ÙŠØ¨:', error.message);
+            await sock.sendMessage(receptionGroupJid, {
+              text: `âŒ *Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨ Ù„Ù„Ø¹Ø¶Ùˆ ${welcomeData.nickname}*\n\nðŸ“Œ Ø§Ù„Ø®Ø·Ø£: ${error.message}`,
+              mentions: [welcomeData.moderatorJid]
+            });
+          }
+        } catch (metadataError) {
+          console.error('âŒ Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø­ØµÙˆÙ„ Ø¹Ù„Ù‰ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©:', metadataError.message);
+          
+          await sock.sendMessage(receptionGroupJid, {
+            text: `âŒ *Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ±Ø­ÙŠØ¨ - Ù„Ù… ÙŠØªÙ…ÙƒÙ† Ù…Ù† Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©*\n\nðŸ“Œ Ø§Ù„Ø®Ø·Ø£: ${metadataError.message}`,
+            mentions: [welcomeData.moderatorJid]
+          });
+        }
+      } else if (text === '2') {
+        // Ø§Ù„Ø±ÙØ¶ ÙˆØ§Ù„Ø¥Ù„ØºØ§Ø¡
+        await sock.sendMessage(jid, {
+          text: `âŒ *ØªÙ… Ø¥Ù„ØºØ§Ø¡ ØªØ±Ø­ÙŠØ¨ Ø§Ù„Ø¹Ø¶Ùˆ ${welcomeData.nickname}*`
+        });
+        console.log(`âŒ ØªÙ… Ø¥Ù„ØºØ§Ø¡ ØªØ±Ø­ÙŠØ¨ ${welcomeData.nickname}`);
+      }
+
+      // Ø­Ø°Ù Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©
+      delete pendingMentions[welcomeConfirmKey];
+      return;
+    }
+  }
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ø®ØªÙŠØ§Ø±Ø§Øª Ø§Ù„Ù…Ù„Ù Ù„Ù„Ø£Ø¯Ø§Ø±ÙŠÙŠÙ† (Ø®ÙŠØ§Ø± Ø¨ÙŠÙ† Ù…Ø¹Ù„ÙˆÙ…Ø§Øª ÙˆØ§Ù„Ø£Ù„Ø¹Ø§Ø¨)
+  if ((text === '1' || text === '2')) {
+    // Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø­Ø§Ù„Ø© Ø§Ø®ØªÙŠØ§Ø± Ù…Ù„Ù Ø´Ø®Øµ Ø¢Ø®Ø± ÙÙŠ pendingMentions
+    let profileChoiceKey = null;
+    let profileData = null;
+
+    if (pendingMentions) {
+      for (const key in pendingMentions) {
+        if (key.startsWith('profile_choice_') && pendingMentions[key].action === 'profile_choice') {
+          profileChoiceKey = key;
+          profileData = pendingMentions[key];
+          break;
+        }
+      }
+    }
+
+    if (profileData && profileData.action === 'profile_choice') {
+      if (text === '1') {
+        // Ø¹Ø±Ø¶ Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+        const { showUserStats } = await import('../commands/adminSystem.js');
+        await showUserStats(sock, jid, profileData.nickname);
+      } else if (text === '2') {
+        // Ø¹Ø±Ø¶ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ù…Ø¨Ø¯ÙˆØ¡Ø© Ø§Ù„ÙŠÙˆÙ…
+        try {
+          const targetUser = await User.findOne({ jid: profileData.targetJid });
+          if (targetUser) {
+            const { gameStats, totalDuration, sessionCount } = getDailyGameStats(targetUser.jid, targetUser);
+            
+            if (sessionCount === 0) {
+              await sock.sendMessage(jid, { 
+                text: `ðŸ“Š *Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ù…Ø¨Ø¯ÙˆØ¡Ø© Ù…Ù† Ù‚Ø¨Ù„ ${profileData.nickname}*\n\nâœ… Ù„Ù… ÙŠØ¨Ø¯Ø£ Ø£ÙŠ Ù„Ø¹Ø¨Ø© Ø§Ù„ÙŠÙˆÙ…` 
+              });
+            } else {
+              let report = `ðŸŽ® *Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ù…Ø¨Ø¯ÙˆØ¡Ø© Ù…Ù† Ù‚Ø¨Ù„ ${profileData.nickname}*\n\n`;
+              report += `ðŸ“… Ø§Ù„ØªØ§Ø±ÙŠØ®: ${new Date().toLocaleDateString('ar-SA')}\n\n`;
+
+              let gameIndex = 1;
+              for (const [gameName, stats] of Object.entries(gameStats)) {
+                const hours = Math.floor(stats.totalDuration / 3600);
+                const minutes = Math.floor((stats.totalDuration % 3600) / 60);
+                const seconds = stats.totalDuration % 60;
+
+                let timeStr = '';
+                if (hours > 0) timeStr += `${hours}Ø³ `;
+                if (minutes > 0) timeStr += `${minutes}Ø¯ `;
+                if (seconds > 0 || timeStr === '') timeStr += `${seconds}Ø«`;
+
+                report += `${gameIndex}ï¸âƒ£ *${gameName}*\n`;
+                report += `   â€¢ Ø¹Ø¯Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø§Øª: ${stats.count}\n`;
+                report += `   â€¢ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ: ${timeStr}\n\n`;
+                gameIndex++;
+              }
+
+              // Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹ Ø§Ù„ÙƒÙ„ÙŠ
+              const totalHours = Math.floor(totalDuration / 3600);
+              const totalMinutes = Math.floor((totalDuration % 3600) / 60);
+              const totalSeconds = totalDuration % 60;
+
+              let totalTimeStr = '';
+              if (totalHours > 0) totalTimeStr += `${totalHours}Ø³ `;
+              if (totalMinutes > 0) totalTimeStr += `${totalMinutes}Ø¯ `;
+              if (totalSeconds > 0 || totalTimeStr === '') totalTimeStr += `${totalSeconds}Ø«`;
+
+              report += `â±ï¸ *Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ*\n`;
+              report += `   â€¢ Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¬Ù„Ø³Ø§Øª: ${sessionCount}\n`;
+              report += `   â€¢ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„ÙƒÙ„ÙŠ: ${totalTimeStr}`;
+
+              await sock.sendMessage(jid, { text: report });
+            }
+          }
+        } catch (error) {
+          console.error('Ø®Ø·Ø£ ÙÙŠ Ø¹Ø±Ø¶ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨:', error);
+          await sock.sendMessage(jid, { text: 'âŒ Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ø¹Ø±Ø¶ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+        }
+      }
+
+      // Ø­Ø°Ù Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©
+      delete pendingMentions[profileChoiceKey];
+      return;
+    }
+
+    // Ù…Ø¹Ø§Ù„Ø¬Ø© Ù…Ù„ÙÙŠ (Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ)
+    const myProfileChoiceKey = `my_profile_choice_${sender}`;
+    const myProfileData = pendingMentions[myProfileChoiceKey];
+
+    if (myProfileData && myProfileData.action === 'my_profile_choice') {
+      if (text === '1') {
+        // Ø¹Ø±Ø¶ Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©
+        const { showUserStats } = await import('../commands/adminSystem.js');
+        await showUserStats(sock, jid, myProfileData.nickname);
+      } else if (text === '2') {
+        // Ø¹Ø±Ø¶ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ
+        try {
+          const targetUser = await User.findOne({ jid: myProfileData.targetJid });
+          if (targetUser) {
+            const { gameStats, totalDuration, sessionCount } = getDailyGameStats(targetUser.jid, targetUser);
+            
+            if (sessionCount === 0) {
+              await sock.sendMessage(jid, { 
+                text: `ðŸ“Š *Ø¬Ù„Ø³Ø§Øª Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ*\n\nâœ… Ù„Ù… ØªØ¨Ø¯Ø£ Ø£ÙŠ Ù„Ø¹Ø¨Ø© Ø§Ù„ÙŠÙˆÙ…` 
+              });
+            } else {
+              let report = `ðŸŽ® *Ø¬Ù„Ø³Ø§Øª Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ*\n\n`;
+              report += `ðŸ“… Ø§Ù„ØªØ§Ø±ÙŠØ®: ${new Date().toLocaleDateString('ar-SA')}\n\n`;
+
+              let gameIndex = 1;
+              for (const [gameName, stats] of Object.entries(gameStats)) {
+                const hours = Math.floor(stats.totalDuration / 3600);
+                const minutes = Math.floor((stats.totalDuration % 3600) / 60);
+                const seconds = stats.totalDuration % 60;
+
+                let timeStr = '';
+                if (hours > 0) timeStr += `${hours}Ø³ `;
+                if (minutes > 0) timeStr += `${minutes}Ø¯ `;
+                if (seconds > 0 || timeStr === '') timeStr += `${seconds}Ø«`;
+
+                report += `${gameIndex}ï¸âƒ£ *${gameName}*\n`;
+                report += `   â€¢ Ø¹Ø¯Ø¯ Ø§Ù„Ø¬Ù„Ø³Ø§Øª: ${stats.count}\n`;
+                report += `   â€¢ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ: ${timeStr}\n\n`;
+                gameIndex++;
+              }
+
+              // Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹ Ø§Ù„ÙƒÙ„ÙŠ
+              const totalHours = Math.floor(totalDuration / 3600);
+              const totalMinutes = Math.floor((totalDuration % 3600) / 60);
+              const totalSeconds = totalDuration % 60;
+
+              let totalTimeStr = '';
+              if (totalHours > 0) totalTimeStr += `${totalHours}Ø³ `;
+              if (totalMinutes > 0) totalTimeStr += `${totalMinutes}Ø¯ `;
+              if (totalSeconds > 0 || totalTimeStr === '') totalTimeStr += `${totalSeconds}Ø«`;
+
+              report += `â±ï¸ *Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ*\n`;
+              report += `   â€¢ Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¬Ù„Ø³Ø§Øª: ${sessionCount}\n`;
+              report += `   â€¢ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„ÙƒÙ„ÙŠ: ${totalTimeStr}`;
+
+              await sock.sendMessage(jid, { text: report });
+            }
+          }
+        } catch (error) {
+          console.error('Ø®Ø·Ø£ ÙÙŠ Ø¹Ø±Ø¶ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨:', error);
+          await sock.sendMessage(jid, { text: 'âŒ Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ø¹Ø±Ø¶ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+        }
+      }
+
+      // Ø­Ø°Ù Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©
+      delete pendingMentions[myProfileChoiceKey];
+      return;
+    }
+  }
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù†ØªØ¸Ø§Ø± Ø³Ø¨Ø¨ Ø§Ù„ØªØ¨Ù„ÙŠØº
+  if (pendingMentions[jid] && pendingMentions[jid].action === 'awaiting_report_reason') {
+    const reportData = pendingMentions[jid];
+    const reportReason = text.trim();
+
+    if (!reportReason) {
+      await sock.sendMessage(jid, { 
+        text: 'âŒ Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø±Ø³Ø§Ù„ Ø³Ø¨Ø¨ Ø§Ù„ØªØ¨Ù„ÙŠØº Ø¨Ø´ÙƒÙ„ ØµØ­ÙŠØ­!' 
+      });
+      return;
+    }
+
+    // Ø§Ù„Ø­ØµÙˆÙ„ Ø¹Ù„Ù‰ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø¨Ù„ÙÙ‘Øº ÙˆØ§Ù„Ù…ØªÙ‡Ù…
+    const { KINGDOMS } = await import('../config.js');
+    const kingdomData = KINGDOMS[kingdom];
+    const adminGroupJid = kingdomData?.adminGroup;
+
+    if (!adminGroupJid) {
+      await sock.sendMessage(jid, { 
+        text: 'âŒ Ø®Ø·Ø£: Ù„Ù… ÙŠØªÙ… ØªØ­Ø¯ÙŠØ¯ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©!' 
+      });
+      delete pendingMentions[jid];
+      return;
+    }
+
+    // Ø§Ù„Ø­ØµÙˆÙ„ Ø¹Ù„Ù‰ Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…Ø¨Ù„ÙÙ‘Øº
+    const reporter = await User.findOne({ jid: sender, kingdom_id: kingdom });
+    const reporterName = reporter?.nickname || sender.split('@')[0];
+
+    // Ù…Ø­Ø§ÙˆÙ„Ø© Ø§Ù„Ø­ØµÙˆÙ„ Ø¹Ù„Ù‰ Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…ØªÙ‡Ù…
+    const accused = await User.findOne({ jid: reportData.accusedJid, kingdom_id: kingdom });
+    const accusedName = accused?.nickname || reportData.accusedMention || reportData.accusedJid.split('@')[0];
+
+    // Ø¥Ù†Ø´Ø§Ø¡ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ¨Ù„ÙŠØº
+    const reportMessage = `ðŸ“¢ *ØªØ¨Ù„ÙŠØº Ø¬Ø¯ÙŠØ¯ Ø¹Ù† Ø¥Ø³Ø§Ø¡Ø©* ðŸ“¢
+
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+ðŸ‘¤ **Ø§Ù„Ù…Ø¨Ù„ÙÙ‘Øº:**
+   â€¢ Ø§Ù„Ø§Ø³Ù…: ${reporterName}
+   â€¢ Ø§Ù„Ø±Ù‚Ù…: ${reportData.reporterJid}
+
+ðŸš¨ **Ø§Ù„Ø´Ø®Øµ Ø§Ù„Ù…Ø³ÙŠØ¡:**
+   â€¢ Ø§Ù„Ø§Ø³Ù…: ${accusedName}
+   â€¢ Ø§Ù„Ù…Ù†Ø´Ù†: ${reportData.accusedMention}
+   â€¢ Ø§Ù„Ø±Ù‚Ù…: ${reportData.accusedJid}
+
+ðŸ“ **Ø³Ø¨Ø¨ Ø§Ù„ØªØ¨Ù„ÙŠØº:**
+   ${reportReason}
+
+â° **Ø§Ù„ØªØ§Ø±ÙŠØ® ÙˆØ§Ù„ÙˆÙ‚Øª:**
+   ${new Date().toLocaleDateString('ar-SA')} - ${new Date().toLocaleTimeString('ar-SA')}
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+
+âš ï¸ Ù‡Ø°Ø§ Ø§Ù„ØªØ¨Ù„ÙŠØº ÙŠØªØ·Ù„Ø¨ Ø§Ù†ØªØ¨Ø§Ù‡ Ø§Ù„Ø£Ø¯Ø§Ø±ÙŠÙŠÙ†!`;
+
+    // Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªØ¨Ù„ÙŠØº Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©
+    try {
+      await sock.sendMessage(adminGroupJid, { 
+        text: reportMessage,
+        mentions: [reportData.accusedJid]
+      });
+
+      // ØªØ£ÙƒÙŠØ¯ Ø§Ø³ØªÙ„Ø§Ù… Ø§Ù„ØªØ¨Ù„ÙŠØº
+      await sock.sendMessage(jid, {
+        text: `âœ… *ØªÙ… Ø§Ø³ØªÙ„Ø§Ù… ØªØ¨Ù„ÙŠØºÙƒ*\n\nðŸ”” ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªØ¨Ù„ÙŠØº Ø¥Ù„Ù‰ Ø§Ù„Ø£Ø¯Ø§Ø±ÙŠÙŠÙ†\nðŸ“‹ Ø³ÙŠØªÙ… Ø§Ù„Ù†Ø¸Ø± ÙÙŠ Ø§Ù„Ø£Ù…Ø± ÙÙŠ Ø£Ù‚Ø±Ø¨ ÙˆÙ‚Øª\n\nØ´ÙƒØ±Ø§Ù‹ Ù„Ùƒ Ø¹Ù„Ù‰ Ù…Ø³Ø§Ø¹Ø¯ØªÙƒ ÙÙŠ Ø§Ù„Ø­ÙØ§Ø¸ Ø¹Ù„Ù‰ Ø¨ÙŠØ¦Ø© ØµØ­ÙŠØ©! ðŸ™`
+      });
+
+      console.log(`ðŸ“¢ ØªØ¨Ù„ÙŠØº Ø¬Ø¯ÙŠØ¯ Ù…Ù† ${reporterName} Ø¹Ù† ${accusedName} - Ø§Ù„Ø³Ø¨Ø¨: ${reportReason}`);
+    } catch (error) {
+      console.error('Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªØ¨Ù„ÙŠØº:', error);
+      await sock.sendMessage(jid, {
+        text: 'âŒ Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªØ¨Ù„ÙŠØº. Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù„Ø§Ø­Ù‚Ø§Ù‹.'
+      });
+    }
+
+    // Ø­Ø°Ù Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©
+    delete pendingMentions[jid];
+    return;
+  }
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ø®ØªÙŠØ§Ø±Ø§Øª Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£ÙˆØ§Ù…Ø±
+  if (awaitingCommandsChoice.has(sender) && /^[1-7]$/.test(text.trim())) {
+    const choice = text.trim();
+    if (choice === '2') {
+      // user asked for games list via /Ø£ÙˆØ§Ù…Ø±; provide the interactive menu
+      const userIsModerator = await isModerator(sender, kingdom);
+      if (!userIsModerator) {
+        await sock.sendMessage(jid, { text: 'âŒ ÙÙ‚Ø· Ø§Ù„Ù…Ø´Ø±ÙÙˆÙ† ÙˆØ§Ù„Ø£Ø¯Ù…Ù† ÙŠÙ…ÙƒÙ†Ù‡Ù… Ø¨Ø¯Ø¡ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨!' });
+        awaitingCommandsChoice.delete(sender);
+        return;
+      }
+      awaitingCommandsChoice.delete(sender);
+      awaitingGameChoice.add(sender);
+      const gamesMenu = `ðŸŽ® **Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨ Ø§Ù„Ù…ØªØ§Ø­Ø©**
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+1ï¸âƒ£ ØªØ®Ù…ÙŠÙ† Ø§Ù„Ø£Ù†Ù…ÙŠ
+2ï¸âƒ£ Ù„Ø¹Ø¨Ø© Ø§Ù„ÙƒÙ„Ù…Ø§Øª
+3ï¸âƒ£ ØªØ®Ù…ÙŠÙ† Ø§Ù„Ø´Ø®ØµÙŠØ§Øª
+4ï¸âƒ£ ØªØ±ØªÙŠØ¨ Ø§Ù„Ø­Ø±ÙˆÙ
+5ï¸âƒ£ ØªÙÙƒÙŠÙƒ Ø§Ù„ÙƒÙ„Ù…Ø§Øª
+
+ðŸ’¡ Ø£Ø±Ø³Ù„ Ø§Ù„Ø±Ù‚Ù… Ø§Ù„Ù…Ø·Ù„ÙˆØ¨ (1-5) Ù„Ø¨Ø¯Ø¡ Ø§Ù„Ù„Ø¹Ø¨Ø©`;
+      await sock.sendMessage(jid, { text: gamesMenu });
+      return;
+    }
+
+    await handleCommandsChoice(sock, jid, sender, text);
+    awaitingCommandsChoice.delete(sender);
+    return;
+  }
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ø³Ø± Ù„Ù…Ù†Ø­ Ø±ØªØ¨Ø© Ø§Ù„Ø¥Ù…Ø¨Ø±Ø§Ø·ÙˆØ±
+  if (awaitingEmperorPassword.has(sender)) {
+    const data = awaitingEmperorPassword.get(sender);
+    awaitingEmperorPassword.delete(sender);
+
+    // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ÙƒÙ„Ù…Ø© Ø§Ù„Ø³Ø±
+    const { ADMIN_PASSWORD } = await import('../config.js');
+    if (text.trim() === ADMIN_PASSWORD) {
+      // Ù…Ù†Ø­ Ø§Ù„Ø±ØªØ¨Ø©
+      await grantEmperorRankWithPassword(sock, data.groupJid, data.nickname, text.trim(), sender);
+    } else {
+      await sock.sendMessage(sender, { text: 'âŒ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©! ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø¹Ù…Ù„ÙŠØ©.' });
+    }
+    return;
+  }
+
+  // Ù…Ø¹Ø§Ù„Ø¬Ø© ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ù„Ù‚Ø¨ Ù„Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø§Ù„Ø¬Ø¯Ø¯ ÙÙŠ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ - Ù†Ø¸Ø§Ù… Ù…ØªØ¹Ø¯Ø¯ Ø§Ù„Ù…Ø±Ø§Ø­Ù„
+  if (awaitingNicknameRegistration.has(sender)) {
+    const { RECEPTION_GROUP_JID } = await import('../config.js');
+    
+    // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø£Ù† Ø§Ù„Ø±Ø³Ø§Ù„Ø© ÙÙŠ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø§Ø³ØªÙ‚Ø¨Ø§Ù„
+    if (jid !== RECEPTION_GROUP_JID) {
+      await sock.sendMessage(jid, { text: 'âŒ ÙŠØ±Ø¬Ù‰ Ø¥Ø±Ø³Ø§Ù„ Ø±Ø¯Ùƒ ÙÙŠ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ ÙÙ‚Ø·.' });
+      return;
+    }
+
+    const userStage = nicknameRegistrationStages[sender];
+
+    // ============================================
+    // Ø§Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø£ÙˆÙ„Ù‰: Ø§Ù†ØªØ¸Ø§Ø± ØªØ£ÙƒÙŠØ¯ Ø§Ù„ØªØ±Ø­ÙŠØ¨
+    // ============================================
+    if (userStage && userStage.stage === 'welcome') {
+      console.log(`âœ… Ù…Ø±Ø­Ù„Ø© Ø§Ù„ØªØ±Ø­ÙŠØ¨: ØªÙ… Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ Ø±Ø¯ Ù…Ù† ${sender}`);
+      
+      // Ø§Ù„Ø§Ù†ØªÙ‚Ø§Ù„ Ù„Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø«Ø§Ù†ÙŠØ©: Ø·Ù„Ø¨ Ø§Ù„Ù„Ù‚Ø¨
+      nicknameRegistrationStages[sender].stage = 'nicknameInput';
+      
+      const nicknameRequestMessage = `âœ… Ø´ÙƒØ±Ø§Ù‹ Ø¹Ù„Ù‰ ØªÙØ§Ø¹Ù„Ùƒ! ðŸ˜Š
+
+*ðŸ“ Ø§Ù„Ø¢Ù† ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ù„Ù‚Ø¨ Ù„Ùƒ Ù…Ù† Ø´Ø®ØµÙŠØ§Øª Ø§Ù„Ø£Ù†Ù…ÙŠ*
+
+*â“ Ù…Ø§ Ù‡Ùˆ Ù„Ù‚Ø¨Ùƒ Ø§Ù„Ù…ÙØ¶Ù„ØŸ*
+*ðŸ’¡ Ø£Ù…Ø«Ù„Ø©: ØºÙˆÙƒÙˆ â€¢ Ù†Ø§Ø±ÙˆØªÙˆ â€¢ Ù„ÙˆÙÙŠ â€¢ Ø³Ø§Ø³ÙˆÙƒÙŠ*
+
+âš ï¸ ØªØ£ÙƒØ¯ Ø£Ù† Ø§Ù„Ù„Ù‚Ø¨:
+â€¢ ÙØ±ÙŠØ¯ ÙˆØºÙŠØ± Ù…Ø³ØªØ®Ø¯Ù… Ù…Ù† Ù‚Ø¨Ù„
+â€¢ Ø¨Ø¯ÙˆÙ† Ø£Ø±Ù‚Ø§Ù… Ø£Ùˆ Ø±Ù…ÙˆØ²
+â€¢ Ø¨Ø¹Ø¯Ø¯ Ø£Ø­Ø±Ù Ù…Ø¹Ù‚ÙˆÙ„`;
+
+      await sock.sendMessage(jid, {
+        text: nicknameRequestMessage,
+        mentions: [sender]
+      });
+      return;
+    }
+
+    // ============================================
+    // Ø§Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø«Ø§Ù†ÙŠØ©: Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ Ø§Ù„Ù„Ù‚Ø¨
+    // ============================================
+    if (userStage && userStage.stage === 'nicknameInput') {
+      console.log(`ðŸ“ Ù…Ø±Ø­Ù„Ø© Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ù„Ù‚Ø¨: ØªÙ… Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ Ù„Ù‚Ø¨ Ù…Ù† ${sender}`);
+      
+      const nickname = text.trim();
+      
+      // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† ØµØ­Ø© Ø§Ù„Ù„Ù‚Ø¨
+      if (!nickname || nickname.length < 2) {
+        await sock.sendMessage(jid, {
+          text: 'âŒ Ø§Ù„Ù„Ù‚Ø¨ Ù‚ØµÙŠØ± Ø¬Ø¯Ø§Ù‹! ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø£Ø·ÙˆÙ„ Ù…Ù† Ø­Ø±ÙÙŠÙ†.',
+          mentions: [sender]
+        });
+        return;
+      }
+
+      if (nickname.length > 30) {
+        await sock.sendMessage(jid, {
+          text: 'âŒ Ø§Ù„Ù„Ù‚Ø¨ Ø·ÙˆÙŠÙ„ Ø¬Ø¯Ø§Ù‹! ÙŠØ¬Ø¨ Ø£Ù† Ù„Ø§ ÙŠØªØ¬Ø§ÙˆØ² 30 Ø­Ø±Ù.',
+          mentions: [sender]
+        });
+        return;
+      }
+
+      // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø£Ù† Ø§Ù„Ù„Ù‚Ø¨ ØºÙŠØ± Ù…Ø³ØªØ®Ø¯Ù…
+      const kingdom = getKingdomIdFromGroupJid(jid);
+      const existingUser = await User.findOne({ 
+        nickname: { $regex: `^${nickname}$`, $options: 'i' }, 
+        kingdom_id: kingdom 
+      });
+      
+      if (existingUser && existingUser.jid !== sender) {
+        await sock.sendMessage(jid, {
+          text: `âŒ Ù‡Ø°Ø§ Ø§Ù„Ù„Ù‚Ø¨ Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ø§Ù„ÙØ¹Ù„! ðŸ˜ž\n\nðŸ’¡ ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ù„Ù‚Ø¨ Ø¢Ø®Ø±.`,
+          mentions: [sender]
+        });
+        return;
+      }
+
+      // Ø§Ù„Ø§Ù†ØªÙ‚Ø§Ù„ Ù„Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø«Ø§Ù„Ø«Ø©: Ø·Ù„Ø¨ Ø§Ù„ØªØ£ÙƒÙŠØ¯
+      nicknameRegistrationStages[sender].stage = 'nicknameConfirmation';
+      nicknameRegistrationStages[sender].nickname = nickname;
+
+      const confirmationMessage = `âœ¨ Ù‡Ø°Ø§ Ù„Ù‚Ø¨Ùƒ Ø§Ù„Ø¬Ø¯ÙŠØ¯ØŸ âœ¨
+
+*ðŸ’« Ù„Ù‚Ø¨Ùƒ: ${nickname}*
+
+*âœï¸ Ù„ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ù„Ù‚Ø¨ØŒ ÙŠØ±Ø¬Ù‰ Ø¥Ø¹Ø§Ø¯Ø© ÙƒØªØ§Ø¨ØªÙ‡*
+
+ðŸ“ Ø§ÙƒØªØ¨ Ø§Ù„Ù„Ù‚Ø¨ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ø¨Ø¯Ù‚Ø©:`;
+
+      await sock.sendMessage(jid, {
+        text: confirmationMessage,
+        mentions: [sender]
+      });
+      return;
+    }
+
+    // ============================================
+    // Ø§Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø«Ø§Ù„Ø«Ø©: ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ù„Ù‚Ø¨ (Ø¥Ø¹Ø§Ø¯Ø© ÙƒØªØ§Ø¨Ø©)
+    // ============================================
+    if (userStage && userStage.stage === 'nicknameConfirmation') {
+      console.log(`âœ”ï¸ Ù…Ø±Ø­Ù„Ø© Ø§Ù„ØªØ£ÙƒÙŠØ¯: ØªÙ… Ø§Ø³ØªÙ‚Ø¨Ø§Ù„ ØªØ£ÙƒÙŠØ¯ Ù…Ù† ${sender}`);
+      
+      const confirmedNickname = text.trim();
+      const originalNickname = userStage.nickname;
+
+      // Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø£Ù† Ø§Ù„Ø¥Ø¬Ø§Ø¨Ø© Ù…Ø·Ø§Ø¨Ù‚Ø© Ù„Ù„Ù‚Ø¨ Ø§Ù„Ø£ØµÙ„ÙŠ
+      if (confirmedNickname.toLowerCase() === originalNickname.toLowerCase()) {
+        // âœ… Ø§Ù„ØªØ£ÙƒÙŠØ¯ ØµØ­ÙŠØ­ - ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹
+        const kingdom = getKingdomIdFromGroupJid(jid);
+        let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
+        const whatsappName = msg.pushName || 'ØµØ¯ÙŠÙ‚';
+
+        if (!user) {
+          const phoneNumber = getPhoneFromJID(sender);
+          user = new User({
+            jid: sender,
+            kingdom_id: kingdom,
+            nickname: originalNickname,
+            phoneNumber: phoneNumber,
+            whatsappName: whatsappName
+          });
+        } else {
+          user.nickname = originalNickname;
+          user.whatsappName = whatsappName;
+        }
+
+        await user.save();
+        console.log(`âœ… ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ù…Ø³ØªØ®Ø¯Ù… Ø¬Ø¯ÙŠØ¯: ${originalNickname} (${sender})`);
+
+        // Ø­Ø°Ù Ù…Ù† Ø§Ù„Ø­Ø§Ù„Ø§Øª Ø§Ù„Ù…Ø¹Ù„Ù‚Ø©
+        awaitingNicknameRegistration.delete(sender);
+        delete nicknameRegistrationStages[sender];
+
+        const successMessage = 'ðŸŽ‰ *Ù…Ø±Ø­Ø¨Ø§Ù‹ Ø¨Ùƒ ÙÙŠ Ù…Ù…Ù„ÙƒØ© ÙƒÙ„ÙˆÙØ± ÙŠØ§ ' + whatsappName + '* ðŸ€\n\nâœ¨ ØªÙ… ØªØ³Ø¬ÙŠÙ„Ùƒ Ø¨Ù†Ø¬Ø§Ø­! âœ¨\n\n*ðŸ’« Ù„Ù‚Ø¨Ùƒ Ø§Ù„Ø±Ø³Ù…ÙŠ: ' + originalNickname + '*\n\nðŸŒŸ Ø§Ù„Ø¢Ù† ÙŠÙ…ÙƒÙ†Ùƒ:\nâ€¢ Ø§Ù„Ø§Ø³ØªÙ…ØªØ§Ø¹ Ø¨Ø¬Ù…ÙŠØ¹ Ø£ÙˆØ§Ù…Ø± Ø§Ù„Ø¨ÙˆØª\nâ€¢ Ø§Ù„Ù…Ø´Ø§Ø±ÙƒØ© ÙÙŠ Ø§Ù„Ø£Ù„Ø¹Ø§Ø¨\nâ€¢ Ø¬Ù…Ø¹ Ø§Ù„Ù†Ù‚Ø§Ø· ÙˆØ§Ù„ØªØ±Ù‚ÙŠ\n\nðŸš€ Ø±Ø­Ù„ØªÙƒ ÙÙŠ Ø§Ù„Ù…Ù…Ù„ÙƒØ© Ø¨Ø¯Ø£Øª! Ø£ØªÙ…Ù†Ù‰ Ù„Ùƒ ÙˆÙ‚ØªØ§Ù‹ Ø±Ø§Ø¦Ø¹Ø§Ù‹! ðŸŽŠ';
+
+        await sock.sendMessage(jid, {
+          text: successMessage,
+          mentions: [sender]
+        });
+        return;
+      } else {
+        // âŒ Ø§Ù„ØªØ£ÙƒÙŠØ¯ Ø®Ø§Ø·Ø¦ - Ø¥Ø¹Ø§Ø¯Ø© Ù…Ø­Ø§ÙˆÙ„Ø©
+        const retryMessage = `âš ï¸ Ø§Ù„Ù„Ù‚Ø¨ Ù„Ù… ÙŠØ·Ø§Ø¨Ù‚! âŒ
+
+*Ø§Ù„Ù„Ù‚Ø¨ Ø§Ù„Ø°ÙŠ Ø£Ø±Ø³Ù„ØªÙ‡:* ${confirmedNickname}
+*Ø§Ù„Ù„Ù‚Ø¨ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨:* ${originalNickname}
+
+ðŸ”„ ÙŠØ±Ø¬Ù‰ Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©:
+
+*Ø§ÙƒØªØ¨ Ù„Ù‚Ø¨Ùƒ Ø¨Ø¯Ù‚Ø© Ù„ØªØ£ÙƒÙŠØ¯Ù‡:*
+*${originalNickname}*`;
+
+        await sock.sendMessage(jid, {
+          text: retryMessage,
+          mentions: [sender]
+        });
+        return;
+      }
+    }
+  }
+
+  // Ø§Ù„ØªØ­ÙŠØ§Øª
+  await handleGreetings(sock, jid, sender, text, msg);
+
+  // Ø¥Ø°Ø§ Ø§Ù„Ù†Øµ Ø¹Ø§Ø¯ÙŠ (Ù…Ø´ Ø£Ù…Ø± Ø£Ùˆ ØªØ­ÙŠØ©)ØŒ Ù†Ø³Ø£Ù„ AI
+  // try {
+  //   const aiReply = await askAnimeAI(text);
+
+}
+
+module.exports = { messageHandler };
