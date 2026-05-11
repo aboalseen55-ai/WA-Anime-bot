@@ -1,0 +1,9 @@
+{
+  "name": "anime-bot",
+  "runtime": "nodejs",
+  "volumes": {
+    "auth": {
+      "mountPath": "/app/auth"
+    }
+  }
+}
