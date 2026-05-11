@@ -81,4 +81,58 @@ export async function adminCommands(sock, jid, sender, text) {
     await sock.sendMessage(jid, { text: `✅ تم حذف المستخدم نهائيًا.` });
   }
 
+  // فحص حالة البوت
+  if (command === "/حالة" || command === "/health") {
+    const { healthCheck } = await import("../utils/healthCheck.js");
+    const health = await healthCheck(sock);
+
+    let statusEmoji = health.status === 'healthy' ? '🟢' : '🔴';
+    let msg = `${statusEmoji} حالة البوت: ${health.status === 'healthy' ? 'ممتازة' : 'تحتاج انتباه'}\n\n`;
+
+    msg += `👥 المستخدمون: ${health.checks.users?.count || 'غير معروف'}\n`;
+    msg += `💾 الذاكرة: ${health.checks.memory?.used || 'غير معروف'}\n`;
+    msg += `⏱️ وقت التشغيل: ${health.checks.uptime?.uptime || 'غير معروف'}\n`;
+    msg += `📱 WhatsApp: ${health.checks.whatsapp?.status === 'ok' ? 'متصل ✅' : 'غير متصل ❌'}\n`;
+
+    if (health.error) {
+      msg += `\n❌ خطأ: ${health.error}`;
+    }
+
+    await sock.sendMessage(jid, { text: msg });
+  }
+
+  // إنشاء نسخة احتياطية
+  if (command === "/backup" || command === "/نسخةاحتياطية") {
+    try {
+      const { createBackup } = await import("../utils/backup.js");
+      const backupFile = await createBackup();
+
+      await sock.sendMessage(jid, {
+        text: `✅ تم إنشاء النسخة الاحتياطية بنجاح!\n📁 الملف: ${backupFile}`
+      });
+    } catch (error) {
+      await sock.sendMessage(jid, {
+        text: `❌ فشل في إنشاء النسخة الاحتياطية: ${error.message}`
+      });
+    }
+    }
+  }
+
+  // عرض إحصائيات البوت
+  if (command === "/stats" || command === "/إحصائيات") {
+    const { metrics } = await import("../utils/metrics.js");
+    const stats = metrics.getStats();
+
+    let msg = `📊 إحصائيات البوت:\n\n`;
+    msg += `⏱️ وقت التشغيل: ${Math.floor(stats.uptime / 3600)}س ${Math.floor((stats.uptime % 3600) / 60)}د ${stats.uptime % 60}ث\n`;
+    msg += `💬 الرسائل المعالجة: ${stats.messagesProcessed}\n`;
+    msg += `⚡ الأوامر المنفذة: ${stats.commandsExecuted}\n`;
+    msg += `🎮 الألعاب المبدأة: ${stats.gamesStarted}\n`;
+    msg += `👥 المستخدمون المسجلون: ${stats.usersRegistered}\n`;
+    msg += `❌ الأخطاء: ${stats.errorsCount}\n`;
+    msg += `⚡ متوسط وقت الاستجابة: ${stats.avgResponseTime}ms\n`;
+
+    await sock.sendMessage(jid, { text: msg });
+  }
+
 }
