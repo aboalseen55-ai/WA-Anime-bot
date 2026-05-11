@@ -266,41 +266,48 @@ export async function messageHandler(sock, msg) {
     // DEBUG: تحقق من القيم
     console.log(`[DEBUG] جاء من: ${jid}`);
     console.log(`[DEBUG] المملكة: ${kingdom}, mainGroup: ${kingdomData?.mainGroup}`);
+    console.log(`[DEBUG] من المستخدم: ${sender}`);
 
-    // تتبع الرسائل فقط في القروب الأساسي
+    // تتبع الرسائل من المجموعة الرئيسية فقط
     if (kingdomData && kingdomData.mainGroup === jid && !msg.key.fromMe) {
       console.log(`[DEBUG] تطابق! بدء تتبع الرسالة...`);
       try {
         let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
 
-        if (user) {
-          const now = new Date();
+        if (!user) {
+          console.log(`[DEBUG] المستخدم غير موجود: ${sender}، جاري الإنشاء...`);
+          // إنشاء مستخدم جديد
+          user = new User({
+            jid: sender,
+            kingdom_id: kingdom,
+            nickname: sender.split('@')[0],
+            dailyMessages: 1,
+            lastMessageResetDate: new Date()
+          });
+        } else {
+          // تحديث الرسائل اليومية
+          user.dailyMessages = (user.dailyMessages || 0) + 1;
+          user.lastMessageResetDate = new Date();
+        }
 
-          // حفظ قيمة الرسائل السابقة لاستخدامها في التنبيهات
-          const prevDailyMessages = user.dailyMessages || 0;
+        // ✅ حفظ فوري للبيانات
+        await user.save();
+        console.log(`📊 [${user.nickname}] رسائل اليوم: ${user.dailyMessages}`);
 
-          // تحديث عداد التفاعل اليومي
-          user.dailyMessages = prevDailyMessages + 1;
-
-          // تحديث زمان آخر رسالة (للمراجعة أو عمليات أخرى)
-          user.lastMessageResetDate = now;
-
-          // ✅ حفظ فوري للبيانات
-          await user.save();
-          console.log(`📊 [${user.nickname}] رسائل اليوم: ${user.dailyMessages}`);
-
-          // إشعار تلقائي عند الوصول إلى شوط جديد (كل 100 تفاعل)
-          const prevMilestone = Math.floor(prevDailyMessages / 100);
-          const newMilestone = Math.floor(user.dailyMessages / 100);
-          if (user.dailyMessages >= 100 && newMilestone > prevMilestone) {
-            const mentionText = user.mention || `@${user.jid.split('@')[0]}`;
-            const congratsMsg = `🎉 رائع يا ${mentionText}\nلقد وصلت إلى ${user.dailyMessages} تفاعل! 🏆🔥👏`;
-            await sock.sendMessage(jid, { text: congratsMsg, mentions: [user.jid] });
-          }
+        // إشعار تلقائي عند الوصول إلى شوط جديد (كل 100 تفاعل)
+        const prevDailyMessages = (user.dailyMessages || 1) - 1;
+        const prevMilestone = Math.floor(prevDailyMessages / 100);
+        const newMilestone = Math.floor(user.dailyMessages / 100);
+        if (user.dailyMessages >= 100 && newMilestone > prevMilestone) {
+          const mentionText = user.mention || `@${user.jid.split('@')[0]}`;
+          const congratsMsg = `🎉 رائع يا ${mentionText}\nلقد وصلت إلى ${user.dailyMessages} تفاعل! 🏆🔥👏`;
+          await sock.sendMessage(jid, { text: congratsMsg, mentions: [user.jid] });
         }
       } catch (error) {
         console.error('❌ خطأ في تتبع الرسائل اليومية:', error.message);
       }
+    } else {
+      console.log(`[DEBUG] ❌ لم يتطابق - jid: ${jid}, mainGroup: ${kingdomData?.mainGroup}, fromMe: ${msg.key.fromMe}`);
     }
   } catch (importError) {
     console.error('❌ خطأ في استيراد البيانات:', importError.message);
