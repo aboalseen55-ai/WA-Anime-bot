@@ -267,6 +267,8 @@ export async function messageHandler(sock, msg) {
     console.log(`[DEBUG] جاء من: ${jid}`);
     console.log(`[DEBUG] المملكة: ${kingdom}, mainGroup: ${kingdomData?.mainGroup}`);
     console.log(`[DEBUG] من المستخدم: ${sender}`);
+    console.log(`[DEBUG] نوع الرسالة: ${Object.keys(msg.message || {}).join(', ')}`);
+    console.log(`[DEBUG] من مجموعة رئيسية؟ ${kingdomData && kingdomData.mainGroup === jid}`);
 
     // تتبع الرسائل من المجموعة الرئيسية فقط
     if (kingdomData && kingdomData.mainGroup === jid && !msg.key.fromMe) {
