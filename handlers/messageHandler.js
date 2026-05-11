@@ -263,8 +263,13 @@ export async function messageHandler(sock, msg) {
     kingdom = getKingdomIdFromGroupJid(jid);
     kingdomData = KINGDOMS[kingdom];
 
+    // DEBUG: تحقق من القيم
+    console.log(`[DEBUG] جاء من: ${jid}`);
+    console.log(`[DEBUG] المملكة: ${kingdom}, mainGroup: ${kingdomData?.mainGroup}`);
+
     // تتبع الرسائل فقط في القروب الأساسي
     if (kingdomData && kingdomData.mainGroup === jid && !msg.key.fromMe) {
+      console.log(`[DEBUG] تطابق! بدء تتبع الرسالة...`);
       try {
         let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
 
