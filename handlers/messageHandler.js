@@ -15,6 +15,7 @@ import { startWordSplitterGame, checkWordSplitterGuess, activeWordSplitterGames,
 import { startFlagGame, handleFlagGameResponse, activeGames as activeFlagGames, checkGuess as checkFlagGuess } from "../games/flagGame.js";
 import { clearAnswerQueue } from "../utils/answerQueue.js";
 import { getCreatorInfoMessage, isCreatorQuestion } from "../utils/creatorInfo.js";
+import { buildIdentityInfoMessage, isIdentityCommand } from "../utils/identityInfo.js";
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 
 // قائمة النكات العربية المضحكة
@@ -344,6 +345,11 @@ export async function messageHandler(sock, msg) {
 
   if (isCreatorQuestion(trimmedText)) {
     await sock.sendMessage(jid, { text: getCreatorInfoMessage() });
+    return;
+  }
+
+  if (isIdentityCommand(trimmedText)) {
+    await sock.sendMessage(jid, { text: buildIdentityInfoMessage(msg, sender, jid) });
     return;
   }
 
