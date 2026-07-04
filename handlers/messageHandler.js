@@ -14,6 +14,8 @@ import { startUnscrambleGame, checkUnscrambleGuess, activeUnscrambleGames, unscr
 import { startWordSplitterGame, checkWordSplitterGuess, activeWordSplitterGames, wordSplitterGameWaiting, handleWordSplitterModeSelection, handleWordSplitterPlayersSelection, stopWordSplitterGame } from "../games/wordSplitter.js";
 import { startFlagGame, handleFlagGameResponse, activeGames as activeFlagGames, checkGuess as checkFlagGuess } from "../games/flagGame.js";
 import { clearAnswerQueue } from "../utils/answerQueue.js";
+import { getCreatorInfoMessage, isCreatorQuestion } from "../utils/creatorInfo.js";
+import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 
 // قائمة النكات العربية المضحكة
 const jokes = [
@@ -339,6 +341,23 @@ export async function messageHandler(sock, msg) {
   if (!text) return;
 
   const trimmedText = text.trim();
+
+  if (isCreatorQuestion(trimmedText)) {
+    await sock.sendMessage(jid, { text: getCreatorInfoMessage() });
+    return;
+  }
+
+  if (await handleDeveloperKingdomCommand(sock, jid, sender, trimmedText)) {
+    return;
+  }
+
+  if (await handleStartKingdomRegistration(sock, jid, sender, trimmedText, msg)) {
+    return;
+  }
+
+  if (await handleKingdomRegistrationStep(sock, jid, sender, trimmedText)) {
+    return;
+  }
 
   // البحث عن المستخدم (بدون تسجيل تلقائي)
   let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
@@ -1288,7 +1307,12 @@ ${WELCOME_LINK}
     awaitingEmperorPassword.delete(sender);
 
     // التحقق من كلمة السر
-    const { ADMIN_PASSWORD } = await import('../config.js');
+    const { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED } = await import('../config.js');
+    if (!ADMIN_PASSWORD_CONFIGURED) {
+      await sock.sendMessage(sender, { text: '❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD. تم إلغاء العملية.' });
+      return;
+    }
+
     if (text.trim() === ADMIN_PASSWORD) {
       // منح الرتبة
       await grantEmperorRankWithPassword(sock, data.groupJid, data.nickname, text.trim(), sender);
@@ -1597,42 +1621,42 @@ ${WELCOME_LINK}
   // }
 }
 /**
- * ?????? ?????? ???? ????? ????? ??? ??? ????????.
+ * معالجة اختيار لعبة من قائمة الألعاب.
  */
 async function handleGameChoice(sock, jid, sender, choice, kingdom) {
   const userIsModerator = await isModerator(sender, kingdom);
   if (!userIsModerator) {
-    await sock.sendMessage(jid, { text: ' ??? ???????? ??????? ?????? ??? ???????!' });
+    await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
     return;
   }
 
   switch (choice.trim()) {
     case '1':
-      await startGameSession(sender, '????? ??????');
+      await startGameSession(sender, 'تخمين الأنمي');
       await startGuessAnime(sock, jid);
       break;
     case '2':
-      await startGameSession(sender, '????? ???????');
+      await startGameSession(sender, 'لعبة الكلمات');
       await startWordGame(sock, jid);
       break;
     case '3':
-      await startGameSession(sender, '????? ????????');
+      await startGameSession(sender, 'تخمين الشخصيات');
       await startGuessCharacter(sock, jid, sender);
       break;
     case '4':
-      await startGameSession(sender, '????? ??????');
+      await startGameSession(sender, 'ترتيب الحروف');
       await startUnscrambleGame(sock, jid, sender);
       break;
     case '5':
-      await startGameSession(sender, '????? ???????');
+      await startGameSession(sender, 'تفكيك الكلمات');
       await startWordSplitterGame(sock, jid, sender);
       break;
     case '6':
-      await startGameSession(sender, '???? ???????');
+      await startGameSession(sender, 'لعبة الأعلام');
       await startFlagGame(sock, jid);
       break;
     default:
-      await sock.sendMessage(jid, { text: ' ?????? ??? ????. ???? ??? ?? 1 ??? 6.' });
+      await sock.sendMessage(jid, { text: '❌ اختيار غير صحيح. أرسل رقمًا من 1 إلى 6.' });
       break;
   }
 }

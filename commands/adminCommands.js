@@ -40,7 +40,7 @@ import {
 } from "./adminSystem.js";
 import { showElite } from "./eliteFunction.js";
 import { pendingMentions } from "../handlers/messageHandler.js";
-import { ADMIN_PASSWORD, getKingdomIdFromGroupJid, KINGDOMS, getKingdomFromGroupJid } from "../config.js";
+import { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED, getKingdomIdFromGroupJid, KINGDOMS, getKingdomFromGroupJid } from "../config.js";
 import { showCommandsList, handleCommandsChoice } from "./commandsList.js";
 import { sendRulesMessage, sendReminderMessage, startReminderSystem } from "../utils/rulesSystem.js";
 import { getRecentMessages, popRecentMessages } from "../utils/messageCache.js";
@@ -691,6 +691,11 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const nickname = parts[1];
         const password = parts[2];
 
+        if (!ADMIN_PASSWORD_CONFIGURED) {
+            await sock.sendMessage(jid, { text: '❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.' });
+            return true;
+        }
+
         // التحقق من كلمة المرور
         if (password !== ADMIN_PASSWORD) {
             await sock.sendMessage(jid, { text: '❌ كلمة المرور غير صحيحة!' });
@@ -732,6 +737,11 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         }
 
         const password = parts[1];
+
+        if (!ADMIN_PASSWORD_CONFIGURED) {
+            await sock.sendMessage(jid, { text: '❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.' });
+            return true;
+        }
 
         // التحقق من كلمة المرور
         if (password !== ADMIN_PASSWORD) {
@@ -986,6 +996,11 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         }
 
         const password = parts[1];
+
+        if (!ADMIN_PASSWORD_CONFIGURED) {
+            await sock.sendMessage(jid, { text: '❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.' });
+            return true;
+        }
 
         // التحقق من كلمة المرور
         if (password !== ADMIN_PASSWORD) {

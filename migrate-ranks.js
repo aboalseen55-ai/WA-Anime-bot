@@ -16,12 +16,14 @@ async function migrateRanks() {
       if (user.rankStars && user.rankStars > 0) {
         if (!user.rankStarsByKingdom) user.rankStarsByKingdom = {};
         user.rankStarsByKingdom[user.kingdom_id] = user.rankStars;
+        user.markModified('rankStarsByKingdom');
         migrated++;
       }
 
       if (user.kingdomRank) {
         if (!user.kingdomRankByKingdom) user.kingdomRankByKingdom = {};
         user.kingdomRankByKingdom[user.kingdom_id] = user.kingdomRank;
+        user.markModified('kingdomRankByKingdom');
         migrated++;
       }
 

@@ -470,6 +470,9 @@ export function updateUserRank(user, kingdom) {
   if (oldRank !== newRank) {
     if (!user.kingdomRankByKingdom) user.kingdomRankByKingdom = {};
     user.kingdomRankByKingdom[kingdom] = newRank;
+    if (typeof user.markModified === 'function') {
+      user.markModified('kingdomRankByKingdom');
+    }
     return { changed: true, oldRank, newRank };
   }
 

@@ -34,9 +34,12 @@ const userSchema = new mongoose.Schema({
 
   // 🎖️ نجوم الرتبة لكل مملكة منفصلة
   rankStarsByKingdom: {
-    clover: { type: Number, default: 0 },
-    golden: { type: Number, default: 0 },
-    snow: { type: Number, default: 0 }
+    type: mongoose.Schema.Types.Mixed,
+    default: () => ({
+      clover: 0,
+      golden: 0,
+      snow: 0
+    })
   },
 
   // 🏦 عملات البنك
@@ -70,9 +73,12 @@ const userSchema = new mongoose.Schema({
 
   // 👑 رتبة المملكة لكل مملكة منفصلة
   kingdomRankByKingdom: {
-    clover: { type: String, default: null },
-    golden: { type: String, default: null },
-    snow: { type: String, default: null }
+    type: mongoose.Schema.Types.Mixed,
+    default: () => ({
+      clover: null,
+      golden: null,
+      snow: null
+    })
   },
 
   // 🎁 هل الرتبة ممنوحة من الامبراطور (لا تتغير بالنجوم)

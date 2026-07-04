@@ -1,11 +1,24 @@
+import "dotenv/config";
+
+export const DEVELOPER_PHONE = "962795137282";
+export const DEVELOPER_JID = `${DEVELOPER_PHONE}@s.whatsapp.net`;
+export const DEVELOPER_JIDS = [
+  DEVELOPER_JID,
+  ...((process.env.DEVELOPER_JIDS || "")
+    .split(",")
+    .map(jid => jid.trim())
+    .filter(Boolean))
+];
+
 export const ADMINS = [
   "133595041648682@lid",
   "144856999555116@lid",
   "186123062128649@lid",
-  "962795137282@s.whatsapp.net"
+  DEVELOPER_JID
 ];
 
-export const ADMIN_PASSWORD = "gojo2026"; // كلمة مرور تعيين الأدمن
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ""; // كلمة مرور تعيين الأدمن
+export const ADMIN_PASSWORD_CONFIGURED = ADMIN_PASSWORD.length > 0;
 
 // ========================================
 // ⚙️ إعدادات النظام
@@ -36,7 +49,7 @@ export const RECEPTION_GROUP_JID = "120363424110401057@g.us"; // استبدل ب
 // ========================================
 // 🏰 نظام المملكات (Kingdoms) - Multi-Kingdom Support
 // ========================================
-export const KINGDOMS = {
+export const DEFAULT_KINGDOMS = {
   clover: {
     id: 'clover',
     name: '🍀 مملكة كلوفر',
@@ -94,10 +107,20 @@ export const KINGDOMS = {
   // }
 };
 
+export const KINGDOMS = JSON.parse(JSON.stringify(DEFAULT_KINGDOMS));
+
+export function replaceKingdoms(nextKingdoms) {
+  for (const key of Object.keys(KINGDOMS)) {
+    delete KINGDOMS[key];
+  }
+
+  Object.assign(KINGDOMS, nextKingdoms);
+}
+
 // دالة للحصول على معلومات المملكة من JID المجموعة
 export function getKingdomFromGroupJid(groupJid) {
   for (const [kingdomId, kingdomData] of Object.entries(KINGDOMS)) {
-    if (kingdomData.groupIds.includes(groupJid)) {
+    if (kingdomData.groupIds.includes(groupJid) || kingdomData.mainGroup === groupJid || kingdomData.receptionGroup === groupJid || kingdomData.adminGroup === groupJid || kingdomData.workGroup === groupJid) {
       return kingdomData;
     }
   }

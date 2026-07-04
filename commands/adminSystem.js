@@ -1785,6 +1785,7 @@ export async function addRankStars(sock, jid, targetNickname, amount, adminJid, 
 
         if (!user.rankStarsByKingdom) user.rankStarsByKingdom = {};
         user.rankStarsByKingdom[kingdom] = oldRankStars + amount;
+        user.markModified('rankStarsByKingdom');
         
         // تحديث الرتبة تلقائياً بناءً على النجوم الجديدة
         const { updateUserRank } = await import('./rankSystem.js');
@@ -1846,6 +1847,7 @@ export async function removeRankStars(sock, jid, targetNickname, amount, modJid,
 
         if (!user.rankStarsByKingdom) user.rankStarsByKingdom = {};
         user.rankStarsByKingdom[kingdom] = Math.max(0, oldRankStars - amount);
+        user.markModified('rankStarsByKingdom');
         
         // تحديث الرتبة تلقائياً بناءً على النجوم الجديدة
         const { updateUserRank } = await import('./rankSystem.js');
@@ -1883,7 +1885,8 @@ export async function grantEmperorDecisionRank(sock, jid, targetNickname, rankKe
 
         // التحقق من أن المستخدم هو الإمبراطور
         const emperor = await User.findOne({ jid: emperorJid, kingdom_id: kingdom });
-        if (!emperor || emperor.kingdomRank !== 'emperor') {
+        const emperorRank = emperor?.kingdomRankByKingdom?.[kingdom];
+        if (!emperor || emperorRank !== 'emperor') {
             await sock.sendMessage(jid, {
                 text: '❌ فقط الإمبراطور يستطيع منح الرتب التي تتطلب قراره!'
             });
@@ -1891,7 +1894,7 @@ export async function grantEmperorDecisionRank(sock, jid, targetNickname, rankKe
         }
 
         // التحقق من أن الرتبة تتطلب قرار الإمبراطور
-        const rankData = kingdomRanks[rankKey];
+        const rankData = (kingdomRanks[kingdom] || kingdomRanks.clover)?.[rankKey];
         if (!rankData || !rankData.requiresEmperorDecision) {
             await sock.sendMessage(jid, {
                 text: '❌ هذه الرتبة لا تتطلب قرار الإمبراطور أو غير موجودة!'
@@ -1908,10 +1911,12 @@ export async function grantEmperorDecisionRank(sock, jid, targetNickname, rankKe
             return false;
         }
 
-        const oldRank = user.kingdomRank;
+        const oldRank = user.kingdomRankByKingdom?.[kingdom];
         
         // منح الرتبة وتعيين أنها ممنوحة (لا تتغير بالنجوم)
-        user.kingdomRank = rankKey;
+        if (!user.kingdomRankByKingdom) user.kingdomRankByKingdom = {};
+        user.kingdomRankByKingdom[kingdom] = rankKey;
+        user.markModified('kingdomRankByKingdom');
         user.isRankGranted = true;
         await user.save();
 
@@ -1940,23 +1945,26 @@ export async function grantEmperorDecisionRank(sock, jid, targetNickname, rankKe
 }
 
 // التحقق من الترقية التلقائية
-export async function checkAutoRankPromotion(user) {
+export async function checkAutoRankPromotion(user, kingdom = 'clover') {
     if (!user.autoRankPromotion) {
         return { promoted: false };
     }
 
     // إذا الرتبة الحالية تتطلب قرار الإمبراطور، لا نغيرها تلقائياً
-    const currentStored = user.kingdomRank;
-    if (currentStored && kingdomRanks[currentStored]?.requiresEmperorDecision) {
+    const currentStored = user.kingdomRankByKingdom?.[kingdom];
+    if (currentStored && (kingdomRanks[kingdom] || kingdomRanks.clover)?.[currentStored]?.requiresEmperorDecision) {
         return { promoted: false };
     }
 
-    const newRank = getHighestRank(user.rankStars || 0);
+    const rankStars = user.rankStarsByKingdom?.[kingdom] || 0;
+    const newRank = getHighestRank(kingdom, rankStars);
 
-    if (newRank && newRank !== user.kingdomRank) {
+    if (newRank && newRank !== currentStored) {
         // تم الحصول على رتبة جديدة عبر النجوم
-        const rankInfo = getRankInfo(newRank);
-        user.kingdomRank = newRank;
+        const rankInfo = getRankInfo(kingdom, newRank);
+        if (!user.kingdomRankByKingdom) user.kingdomRankByKingdom = {};
+        user.kingdomRankByKingdom[kingdom] = newRank;
+        user.markModified('kingdomRankByKingdom');
         await user.save();
 
         return {
@@ -1972,7 +1980,8 @@ export async function checkAutoRankPromotion(user) {
 // إرسال رسالة الترقية
 async function sendPromotionMessage(sock, jid, user, oldRank, newRank, admin, mentionedJid = null) {
     try {
-        const oldRankInfo = oldRank ? getRankInfo(oldRank) : null;
+        const rankKingdom = user.kingdom_id || 'clover';
+        const oldRankInfo = oldRank ? getRankInfo(rankKingdom, oldRank) : null;
         let newRankInfo = null;
 
         if (newRank === 'moderator') {
@@ -1980,7 +1989,7 @@ async function sendPromotionMessage(sock, jid, user, oldRank, newRank, admin, me
         } else if (newRank === 'admin') {
             newRankInfo = { name: 'أدمن', emoji: '👑' };
         } else {
-            newRankInfo = getRankInfo(newRank);
+            newRankInfo = getRankInfo(rankKingdom, newRank);
         }
 
         // التحقق من أن newRankInfo موجود
@@ -2051,7 +2060,7 @@ export async function initiateEmperorGrant(sock, jid, targetNickname, adminJid, 
         }
 
         // التحقق من أنه ليس لديه رتبة إمبراطور بالفعل
-        if (user.kingdomRank === 'emperor') {
+        if (user.kingdomRankByKingdom?.[kingdom] === 'emperor') {
             await sock.sendMessage(jid, {
                 text: '⚠️ هذا العضو لديه رتبة الإمبراطور بالفعل!'
             });
@@ -2086,24 +2095,34 @@ export async function initiateEmperorGrant(sock, jid, targetNickname, adminJid, 
 // منح رتبة الإمبراطور بكلمة سر (للاستدعاء الداخلي)
 export async function grantEmperorRankWithPassword(sock, jid, targetNickname, password, adminJid) {
     try {
+        const kingdom = getKingdomIdFromGroupJid(jid);
         // التحقق من كلمة المرور (لكن هنا تم التحقق بالفعل)
-        const { ADMIN_PASSWORD } = await import('../config.js');
+        const { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED } = await import('../config.js');
+        if (!ADMIN_PASSWORD_CONFIGURED) {
+            await sock.sendMessage(adminJid, { text: '❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.' });
+            return false;
+        }
+
         if (password !== ADMIN_PASSWORD) {
             await sock.sendMessage(adminJid, { text: '❌ كلمة المرور غير صحيحة!' });
             return false;
         }
 
         // الحصول على المستخدم
-        const user = await User.findOne({ nickname: { $regex: targetNickname, $options: 'i' } });
+        const user = await User.findOne({ nickname: { $regex: targetNickname, $options: 'i' }, kingdom_id: kingdom });
         if (!user) {
             await sock.sendMessage(adminJid, { text: '❌ لم يتم العثور على المستخدم!' });
             return false;
         }
 
         // منح الرتبة وتعيين أنها ممنوحة (لا تتغير بالنجوم)
-        user.kingdomRank = 'emperor';
+        if (!user.kingdomRankByKingdom) user.kingdomRankByKingdom = {};
+        if (!user.rankStarsByKingdom) user.rankStarsByKingdom = {};
+        user.kingdomRankByKingdom[kingdom] = 'emperor';
         user.isRankGranted = true;
-        user.rankStars = Math.max(user.rankStars || 0, 2000);
+        user.rankStarsByKingdom[kingdom] = Math.max(user.rankStarsByKingdom[kingdom] || 0, 2000);
+        user.markModified('kingdomRankByKingdom');
+        user.markModified('rankStarsByKingdom');
         await user.save();
 
         // إرسال رسالة تأكيد في الخاص

@@ -5,19 +5,21 @@ import makeWASocket, {
 
 import qrcode from "qrcode-terminal";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
 import User from "./database/userModel.js";
-import Bank from "./database/bankModel.js";
-import { GROUP_JID, KINGDOMS, getKingdomFromGroupJid, getKingdomIdFromGroupJid } from "./config.js";
+import { KINGDOMS, getKingdomFromGroupJid } from "./config.js";
 
 import { getHighestRank } from "./commands/rankSystem.js";
 import { scheduleDailyReports } from "./utils/dailyReports.js";
-
-dotenv.config();
+import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
+import { initializeKingdomSystem } from "./utils/kingdomService.js";
 
 // Connect to MongoDB with better error handling
 try {
   const mongoUri = process.env.MONGO_URI;
+  if (!mongoUri) {
+    throw new Error("MONGO_URI is not configured in the environment");
+  }
+
   await mongoose.connect(mongoUri, {
     serverSelectionTimeoutMS: 20000,
     socketTimeoutMS: 20000,
@@ -25,6 +27,8 @@ try {
     maxPoolSize: 10,
   });
   console.log("✅ MongoDB connected successfully");
+  await initializeKingdomSystem();
+  console.log("✅ Kingdom system initialized from database");
 } catch (error) {
   console.error("❌ MongoDB Connection Error:");
   console.error(`📋 Error Code: ${error.code}`);
@@ -61,13 +65,14 @@ async function updateKingdomRanks() {
   let updated = 0;
 
   for (const user of allUsers) {
-    for (const kingdom of ['clover', 'golden', 'snow']) {
+    for (const kingdom of Object.keys(KINGDOMS)) {
       const rankStars = user.rankStarsByKingdom?.[kingdom] || 0;
       const newRank = getHighestRank(kingdom, rankStars);
       const currentRank = user.kingdomRankByKingdom?.[kingdom];
       if (newRank !== currentRank) {
         if (!user.kingdomRankByKingdom) user.kingdomRankByKingdom = {};
         user.kingdomRankByKingdom[kingdom] = newRank;
+        user.markModified('kingdomRankByKingdom');
         updated++;
       }
     }
@@ -106,6 +111,11 @@ async function startBot() {
     version,
     auth: state
   });
+
+  const originalSendMessage = sock.sendMessage.bind(sock);
+  sock.sendMessage = (jid, content, options) => {
+    return originalSendMessage(jid, normalizeOutgoingMessageContent(content), options);
+  };
 
   sock.ev.on("connection.update", async ({ qr, connection, lastDisconnect }) => {
 
