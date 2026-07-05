@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import mongoose from "mongoose";
 import SamBotUsage from "../database/samBotUsageModel.js";
 import { isDeveloper } from "./kingdomService.js";
 
@@ -83,6 +84,8 @@ function getModelName() {
 }
 
 export async function recordSamBotAIUsage({ modelName, usageMetadata, success, errorMessage }) {
+  if (mongoose.connection.readyState !== 1) return;
+
   const promptTokens = readTokenCount(usageMetadata, [
     "promptTokenCount",
     "totalInputTokens",
