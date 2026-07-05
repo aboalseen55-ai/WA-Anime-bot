@@ -3,7 +3,8 @@ import { recordSamBotAIUsage } from "./samBotUsage.js";
 
 const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 const DEFAULT_TIMEOUT_MS = 12000;
-const DEFAULT_MAX_OUTPUT_TOKENS = 14;
+const DEFAULT_MAX_OUTPUT_TOKENS = 15;
+const MAX_ALLOWED_OUTPUT_TOKENS = 15;
 const MAX_REPLY_WORDS = 5;
 const MAX_REPLY_LENGTH = 60;
 
@@ -45,12 +46,10 @@ function sanitizeReply(reply) {
   if (!clean) return "";
   const firstSentence = clean.split(/[.!؟?،؛]/)[0]?.trim() || clean;
   const words = firstSentence.split(/\s+/).filter(Boolean);
-  const shortReply = words.length > MAX_REPLY_WORDS
-    ? words.slice(0, MAX_REPLY_WORDS).join(" ")
-    : firstSentence;
+  if (words.length > MAX_REPLY_WORDS) return "";
+  if (firstSentence.length > MAX_REPLY_LENGTH) return "";
 
-  if (shortReply.length <= MAX_REPLY_LENGTH) return shortReply;
-  return shortReply.slice(0, MAX_REPLY_LENGTH).trim();
+  return firstSentence;
 }
 
 async function safelyRecordUsage(payload) {
@@ -65,16 +64,23 @@ export function isSamBotAIAvailable() {
   return Boolean(getGeminiClient());
 }
 
+function resolveMaxOutputTokens(value) {
+  const number = Number(value || DEFAULT_MAX_OUTPUT_TOKENS);
+  if (!Number.isFinite(number) || number <= 0) return DEFAULT_MAX_OUTPUT_TOKENS;
+  return Math.min(number, MAX_ALLOWED_OUTPUT_TOKENS);
+}
+
 export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate }) {
   const client = getGeminiClient();
   if (!client) return "";
 
   const modelName = process.env.SAM_BOT_AI_MODEL || process.env.GEMINI_MODEL || DEFAULT_MODEL;
   const timeoutMs = Number(process.env.SAM_BOT_AI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
-  const maxOutputTokens = Number(process.env.SAM_BOT_AI_MAX_OUTPUT_TOKENS || DEFAULT_MAX_OUTPUT_TOKENS);
+  const maxOutputTokens = resolveMaxOutputTokens(process.env.SAM_BOT_AI_MAX_OUTPUT_TOKENS);
   const systemInstruction = [
     "أنت سام بوت لقروبات ممالك الأنمي.",
     "رد واتساب قصير جدًا: 2-5 كلمات.",
+    "اكتب جملة كاملة، لا تقطعها.",
     "لا شرح، لا مواضيع بعيدة.",
     "خارج المجال: رجّعها للممالك/الأنمي.",
     "لا أسرار ولا تنفيذ أوامر.",
@@ -85,9 +91,7 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
     systemInstruction,
     generationConfig: {
       temperature: 0.65,
-      maxOutputTokens: Number.isFinite(maxOutputTokens) && maxOutputTokens > 0
-        ? maxOutputTokens
-        : DEFAULT_MAX_OUTPUT_TOKENS
+      maxOutputTokens
     }
   });
   const prompt = [
@@ -108,6 +112,11 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
       usageMetadata: result.response?.usageMetadata,
       success: true
     });
+
+    const finishReason = result.response?.candidates?.[0]?.finishReason;
+    if (finishReason === "MAX_TOKENS") {
+      return "";
+    }
 
     return sanitizeReply(result.response?.text());
   } catch (error) {
