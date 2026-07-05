@@ -1,8 +1,8 @@
 import User from "../database/userModel.js";
-import { showBankBalance, depositToBank, withdrawFromBank, getPhoneFromJID, extractAndSaveUserFromMention, isSuperAdminInKingdom, isAdmin, isModerator, findUserByNickname } from "./adminSystem.js";
+import { showBankBalance, depositToBank, withdrawFromBank, getPhoneFromJID, extractAndSaveUserFromMention, isSuperAdminInKingdom, isAdmin, isModerator, findUserByNickname, findUserByNicknameOrPhone } from "./adminSystem.js";
 import { getHighestRank, displayRank } from "./rankSystem.js";
 import { pendingMentions } from "../handlers/messageHandler.js";
-import { ADMINS, getKingdomIdFromGroupJid } from "../config.js";
+import { ADMINS, getKingdomIdFromGroupJid, DEVELOPER_JIDS } from "../config.js";
 
 // دالة موحدة لإرسال رسالة بمنشن
 async function sendMentionMessage(sock, jid, targetUser, customMessage = null) {
@@ -90,6 +90,77 @@ export async function userCommands(sock, jid, sender, text, msg) {
         text: '❌ حدث خطأ في الوصول لبيانات المجموعة!\n\nتأكد من أن البوت أدمن في المجموعة.' 
       });
     }
+    return true;
+  }
+
+  // أمر خاص بالمطور: عرض كل بيانات المستخدم بناءً على اللقب
+  if (command === "/devinfo" || command === "/مطور" || command === "/مطور_معلومات") {
+    // تحقق من أن المرسل من قائمة المطورين
+    if (!DEVELOPER_JIDS.includes(sender)) {
+      await sock.sendMessage(jid, { text: "❌ هذا الأمر مخصّص للمطورين فقط." });
+      return true;
+    }
+
+    const nick = args.slice(1).join(" ").trim();
+    if (!nick) {
+      await sock.sendMessage(jid, { text: "❌ استخدم: /devinfo <لقب_المستخدم>" });
+      return true;
+    }
+
+    // حاول العثور على المستخدم عبر اللقب أولاً (عالمي)
+    let targetUser = await User.findOne({ nickname: { $regex: nick, $options: 'i' } });
+    if (!targetUser) {
+      // كنقطة احتياط، استخدم الدالة المساعدة التي تقبل رقم أو لقب
+      targetUser = await findUserByNicknameOrPhone(nick);
+    }
+
+    if (!targetUser) {
+      await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم باسم "${nick}"` });
+      return true;
+    }
+
+    // تجميع كل المعلومات المتاحة
+    const t = targetUser;
+    let info = `📋 *معلومات كاملة عن المستخدم*\n━━━━━━━━━━━━━━━━━━━━━\n`;
+    info += `🔖 *اللقب:* ${t.nickname || 'غير متوفر'}\n`;
+    info += `🆔 *JID:* ${t.jid || 'غير مسجل'}\n`;
+    info += `🔗 *منشن:* ${t.mention || 'غير مسجل'}\n`;
+    info += `📞 *رقم الهاتف:* ${t.phoneNumber || 'غير مسجل'}\n`;
+    info += `🪪 *lid:* ${t.lid || 'غير مسجل'}\n`;
+    info += `🧾 *اسم واتساب:* ${t.whatsappName || 'غير متوفر'}\n`;
+    info += `👤 *الدور:* ${t.role || 'غير محدد'}\n`;
+    info += `💰 *نقاط:* ${t.points ?? 0}    💸 *عملات:* ${t.coins ?? 0}    🏦 *بنك:* ${t.bankCoins ?? 0}\n`;
+    info += `📊 *الرسائل اليومية:* ${t.dailyMessages ?? 0}    ⏱️ *تاريخ الإنشاء:* ${t.createdAt ? new Date(t.createdAt).toLocaleString() : 'N/A'}\n`;
+    info += `🚫 *محظور؟* ${t.isBanned ? 'نعم' : 'لا'}    ${t.isBanned ? ` (بسبب: ${t.banReason || 'غير معروف'})` : ''}\n`;
+
+    // رتب وممالك
+    info += `\n🏰 *الرتب والنجوم حسب المملكة:*\n`;
+    const kingdoms = Object.keys(t.rankStarsByKingdom || {});
+    if (kingdoms.length === 0) {
+      info += `- لا توجد بيانات رتوب للمستخدم\n`;
+    } else {
+      for (const k of kingdoms) {
+        const stars = t.rankStarsByKingdom?.[k] ?? 0;
+        const kr = t.kingdomRankByKingdom?.[k] || 'غير محدد';
+        info += `- ${k}: ${kr} - ${stars} ⭐\n`;
+      }
+    }
+
+    // مجموع المجموعات والانضمامات
+    info += `\n👥 *مجموعات:* ${Array.isArray(t.groups) ? t.groups.join(', ') || 'لا يوجد' : 'لا يوجد'}\n`;
+
+    // عرض كامل للكائن كنسخة بديلة (للاطلاع السريع)
+    try {
+      const jsonSnippet = JSON.stringify(t.toObject ? t.toObject() : t, null, 2).slice(0, 1500);
+      info += "\n📄 *نسخة مصغرة من السجل:*\n" + "```json\n" + jsonSnippet + "\n```\n";
+    } catch (e) {
+      // لا تفشل إن لم نتمكن من عمل JSON
+    }
+
+    // إرسال الرسالة مع منشن إن وُجد JID
+    const sendOpts = { text: info };
+    if (t.jid) sendOpts.mentions = [t.jid];
+    await sock.sendMessage(jid, sendOpts);
     return true;
   }
 
