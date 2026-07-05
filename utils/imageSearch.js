@@ -9,6 +9,7 @@ import RapidImageSearchUsage from '../database/rapidImageSearchUsageModel.js';
 const ACCEPTED_IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 const DEFAULT_MONTHLY_LIMIT = 50;
 const DEFAULT_CACHE_DAYS = 30;
+const DEFAULT_RAPID_IMAGE_COUNT = 10;
 const MAX_IMAGE_URLS = 8;
 const MAX_IMAGES_TO_SEND = 4;
 
@@ -46,6 +47,8 @@ function getRapidConfig() {
     const url = process.env.RAPIDAPI_GOOGLE_IMAGES_URL || process.env.RAPIDAPI_IMAGE_SEARCH_URL;
     const host = process.env.RAPIDAPI_GOOGLE_IMAGES_HOST || process.env.RAPIDAPI_HOST || deriveHostFromUrl(url);
     const queryParam = process.env.RAPIDAPI_GOOGLE_IMAGES_QUERY_PARAM || process.env.RAPIDAPI_IMAGE_SEARCH_QUERY_PARAM || 'q';
+    const count = Number(process.env.RAPIDAPI_GOOGLE_IMAGES_COUNT || DEFAULT_RAPID_IMAGE_COUNT);
+    const imageInfo = String(process.env.RAPIDAPI_GOOGLE_IMAGES_IMAGE_INFO || 'true').trim();
     const enabled = !isExplicitlyDisabled(process.env.RAPIDAPI_IMAGE_SEARCH_ENABLED);
 
     return {
@@ -53,7 +56,9 @@ function getRapidConfig() {
         key: String(key || '').trim(),
         url: String(url || '').trim(),
         host: String(host || '').trim(),
-        queryParam: String(queryParam || 'q').trim()
+        queryParam: String(queryParam || 'q').trim(),
+        count: Number.isFinite(count) && count > 0 ? count : DEFAULT_RAPID_IMAGE_COUNT,
+        imageInfo: imageInfo || 'true'
     };
 }
 
@@ -203,9 +208,12 @@ async function searchRapidGoogleImages(nickname) {
         console.log(`🔍 RapidAPI Google Images search: ${query}`);
         const response = await axios.get(config.url, {
             params: {
-                [config.queryParam]: query
+                [config.queryParam]: query,
+                count: config.count,
+                imageInfo: config.imageInfo
             },
             headers: {
+                'Content-Type': 'application/json',
                 'X-RapidAPI-Key': config.key,
                 'X-RapidAPI-Host': config.host
             },
