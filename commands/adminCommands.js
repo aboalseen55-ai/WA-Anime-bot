@@ -856,10 +856,10 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         }
 
         const targetNickname = parts.slice(1).join(' ');
-        const user = await User.findOne({ nickname: { $regex: targetNickname, $options: 'i' } });
+        const user = await findUserByNickname(targetNickname, kingdom);
 
         if (!user) {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على عضو باسم "${targetNickname}"!` });
+            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على عضو باسم "${targetNickname}" في هذه المملكة!` });
             return true;
         }
 

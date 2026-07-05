@@ -25,6 +25,14 @@ SAM_BOT_AI_MAX_OUTPUT_TOKENS=15
 SAM_BOT_AI_DAILY_REQUEST_LIMIT=
 SAM_BOT_AI_DAILY_TOKEN_LIMIT=
 SAM_BOT_USAGE_TIMEZONE=Asia/Amman
+RAPIDAPI_KEY=
+RAPIDAPI_GOOGLE_IMAGES_URL=
+RAPIDAPI_GOOGLE_IMAGES_HOST=
+RAPIDAPI_GOOGLE_IMAGES_QUERY_PARAM=q
+RAPIDAPI_IMAGE_SEARCH_QUERY_TEMPLATE={nickname} anime character
+RAPIDAPI_IMAGE_SEARCH_ENABLED=true
+RAPIDAPI_MONTHLY_LIMIT=50
+RAPIDAPI_IMAGE_CACHE_DAYS=30
 LOG_LEVEL=info
 ```
 
@@ -35,6 +43,8 @@ LOG_LEVEL=info
 أمر المطور `/رصيد_الذكاء` يعرض استهلاك Gemini المسجل في MongoDB. لضبط النسبة المتبقية، عرّف `SAM_BOT_AI_DAILY_REQUEST_LIMIT` أو `SAM_BOT_AI_DAILY_TOKEN_LIMIT` حسب حدود مشروعك في Google.
 
 أمر المطور `/عد_التوكن <نص>` يحسب توكنات المدخلات قبل إرسالها إلى Gemini. أما توكنات output/thinking/cached/tool-use فتسجل من رد Gemini نفسه وتظهر في `/رصيد_الذكاء`.
+
+أمر `/ترحيب` يبحث عن العضو داخل نفس المملكة فقط. صور الترحيب تستخدم RapidAPI Google Images أولًا إذا كانت المتغيرات مضبوطة وتحت الحد الشهري، ثم ترجع إلى Bing تلقائيًا. يتم حفظ روابط الصور في MongoDB لمدة `RAPIDAPI_IMAGE_CACHE_DAYS` لتقليل استهلاك طلبات RapidAPI.
 
 ## التشغيل
 
