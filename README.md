@@ -16,16 +16,17 @@
 MONGO_URI=
 ADMIN_PASSWORD=
 GOOGLE_API_KEY=
+GEMINI_API_KEY=
 OPENAI_API_KEY=
 SAM_BOT_AI_ENABLED=true
-SAM_BOT_AI_MODEL=gpt-4o-mini
+SAM_BOT_AI_MODEL=gemini-3.1-flash-lite
 SAM_BOT_AI_TIMEOUT_MS=12000
 LOG_LEVEL=info
 ```
 
 `ADMIN_PASSWORD` مطلوبة للأوامر الحساسة مثل تعيين الأدمن ومنح رتب الإمبراطور.
 
-`OPENAI_API_KEY` يفعّل ردود سام بوت الذكية عند توجيه الكلام له. إذا لم يكن موجودًا أو تم ضبط `SAM_BOT_AI_ENABLED=false` سيستخدم البوت الردود المحلية الاحتياطية.
+`GEMINI_API_KEY` أو `GOOGLE_API_KEY` يفعّل ردود سام بوت الذكية عند توجيه الكلام له. إذا لم يكن أي مفتاح موجودًا أو تم ضبط `SAM_BOT_AI_ENABLED=false` سيستخدم البوت الردود المحلية الاحتياطية.
 
 ## التشغيل
 
