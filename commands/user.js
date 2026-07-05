@@ -149,14 +149,6 @@ export async function userCommands(sock, jid, sender, text, msg) {
     // مجموع المجموعات والانضمامات
     info += `\n👥 *مجموعات:* ${Array.isArray(t.groups) ? t.groups.join(', ') || 'لا يوجد' : 'لا يوجد'}\n`;
 
-    // عرض كامل للكائن كنسخة بديلة (للاطلاع السريع)
-    try {
-      const jsonSnippet = JSON.stringify(t.toObject ? t.toObject() : t, null, 2).slice(0, 1500);
-      info += "\n📄 *نسخة مصغرة من السجل:*\n" + "```json\n" + jsonSnippet + "\n```\n";
-    } catch (e) {
-      // لا تفشل إن لم نتمكن من عمل JSON
-    }
-
     // إرسال الرسالة مع منشن إن وُجد JID
     const sendOpts = { text: info };
     if (t.jid) sendOpts.mentions = [t.jid];
