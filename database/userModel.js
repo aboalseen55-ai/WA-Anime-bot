@@ -104,6 +104,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // رقم الـ @lib (إذا كان المستخدم مسجل بحساب lib بدلاً من رقم واتساب)
+  libId: {
+    type: String,
+    default: null
+  },
   // 👤 اسم الواتساب
   whatsappName: {
     type: String,

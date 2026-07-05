@@ -72,6 +72,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
       
       // تحديث بيانات المستخدم بالمنشن الجديد
       targetUser.mention = mentionText;
+      targetUser.libId = null;
       await targetUser.save();
       
       // رسالة نجاح مع عرض المنشن الجديد
@@ -116,7 +117,8 @@ export async function userCommands(sock, jid, sender, text, msg) {
         kingdom_id: kingdom,
         nickname: nick, 
         phoneNumber: phoneNumber, 
-        whatsappName: whatsappName 
+        whatsappName: whatsappName,
+        libId: null
       });
       await user.save();
       await sock.sendMessage(jid, { text: `✅ تم تسجيل لقبك: ${nick}` });
@@ -307,38 +309,67 @@ export async function userCommands(sock, jid, sender, text, msg) {
 
   // أمر للبحث عن لقب مستخدم من خلال المنشن
   if (command === "/من") {
-    const query = args.slice(1).join(" ");
+    const query = args.slice(1).join(" ").trim();
     if (!query || !query.startsWith('@')) {
-      await sock.sendMessage(jid, { text: "❌ استخدم: /من @<رقم>\n💡 مثال: /من @1234567890" });
+      await sock.sendMessage(jid, { text: "❌ استخدم: /من @<رقم> أو @<libId>@lib\n💡 أمثلة: /من @962791234567 أو /من @123@lib" });
       return true;
     }
 
     try {
-      // استخراج رقم الهاتف من المنشن
-      const phoneNumber = query.substring(1).replace(/\D/g, ''); // إزالة أي رموز غير رقمية
-      if (!phoneNumber) {
-        await sock.sendMessage(jid, { text: "❌ رقم الهاتف غير صحيح في المنشن" });
-        return true;
-      }
+      // إزالة الـ @ البداية
+      const token = query.substring(1).trim();
 
-      const userJid = phoneNumber + '@s.whatsapp.net';
-      const targetUser = await User.findOne({ jid: userJid, kingdom_id: kingdom });
-
-      if (!targetUser) {
-        await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم برقم "${phoneNumber}"` });
-        return true;
+      // 1) حالة lib: @123@lib أو 123@lib
+      const libMatch = token.match(/^(\d+)@lib$/i);
+      if (libMatch) {
+        const libId = libMatch[1];
+        const targetUser = await User.findOne({ libId: libId, kingdom_id: kingdom });
+        if (!targetUser) {
+          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم بالـ libId "${libId}"` });
+          return true;
+        }
+        // عرض المعلومات
+        var targetUserResolved = targetUser;
+      } else if (/^\d+$/.test(token)) {
+        // 2) رقم فقط: حاول البحث عبر JID ثم عبر حقل phoneNumber
+        const phoneNumber = token;
+        const userJid = phoneNumber + '@s.whatsapp.net';
+        let targetUser = await User.findOne({ jid: userJid, kingdom_id: kingdom });
+        if (!targetUser) {
+          targetUser = await User.findOne({ phoneNumber: { $regex: phoneNumber, $options: 'i' }, kingdom_id: kingdom });
+        }
+        if (!targetUser) {
+          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم برقم "${phoneNumber}"` });
+          return true;
+        }
+        var targetUserResolved = targetUser;
+      } else {
+        // 3) غير رقمي: قد يكون منشن مسجل في الحقل `mention` أو قد يكون لقب
+        // حاول البحث أولاً في حقل mention كما ورد (مع @)
+        const mentionLookup = query.startsWith('@') ? query : `@${query}`;
+        let targetUser = await User.findOne({ mention: mentionLookup, kingdom_id: kingdom });
+        if (!targetUser) {
+          // كطيفة ثانية، استخدم البحث العام باللقب أو رقم عبر الدالة المساعدة
+          const { findUserByNicknameOrPhone } = await import('./adminSystem.js');
+          targetUser = await findUserByNicknameOrPhone(query, kingdom);
+        }
+        if (!targetUser) {
+          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم بالمنشن أو اللقب "${query}"` });
+          return true;
+        }
+        var targetUserResolved = targetUser;
       }
 
       // جمع معلومات المستخدم
-      let userInfo = `👤 *معلومات المستخدم*
-━━━━━━━━━━━━━━━━━━━━━
+      const t = targetUserResolved;
+      let userInfo = `👤 *معلومات المستخدم*\n━━━━━━━━━━━━━━━━━━━━━\n\n📝 *اللقب:* ${t.nickname}\n📞 *رقم الواتس:* +${t.phoneNumber || 'غير مسجل'}`;
 
-📝 *اللقب:* ${targetUser.nickname}
-📞 *رقم الواتس:* +${targetUser.phoneNumber || 'غير مسجل'}`;
+      // إن وجد libId، أضفه
+      if (t.libId) userInfo += `\n🔗 *libId:* ${t.libId}`;
 
       // إضافة معلومات الترتيب إذا كانت موجودة
-      const targetRankStars = targetUser.rankStarsByKingdom?.[kingdom] || 0;
-      const targetKingdomRank = targetUser.kingdomRankByKingdom?.[kingdom];
+      const targetRankStars = t.rankStarsByKingdom?.[kingdom] || 0;
+      const targetKingdomRank = t.kingdomRankByKingdom?.[kingdom];
       if (targetRankStars > 0 || targetKingdomRank) {
         userInfo += `\n🎖️ *الترتيب:* `;
         if (targetKingdomRank) {
@@ -350,19 +381,19 @@ export async function userCommands(sock, jid, sender, text, msg) {
       }
 
       // إضافة النقاط
-      if (targetUser.points !== undefined) {
-        userInfo += `\n💰 *النقاط:* ${targetUser.points}`;
+      if (t.points !== undefined) {
+        userInfo += `\n💰 *النقاط:* ${t.points}`;
       }
 
       // إضافة البنك
-      if (targetUser.bankBalance !== undefined) {
-        userInfo += `\n🏦 *البنك:* ${targetUser.bankBalance}`;
+      if (t.bankBalance !== undefined) {
+        userInfo += `\n🏦 *البنك:* ${t.bankBalance}`;
       }
 
       // إضافة الدور إذا كان أدمن أو مشرف
-      if (targetUser.role) {
-        const roleEmoji = targetUser.role === 'admin' ? '👑' : targetUser.role === 'moderator' ? '🛡️' : '👤';
-        const roleName = targetUser.role === 'admin' ? 'أدمن' : targetUser.role === 'moderator' ? 'مشرف' : 'عضو';
+      if (t.role) {
+        const roleEmoji = t.role === 'admin' ? '👑' : t.role === 'moderator' ? '🛡️' : '👤';
+        const roleName = t.role === 'admin' ? 'أدمن' : t.role === 'moderator' ? 'مشرف' : 'عضو';
         userInfo += `\n${roleEmoji} *الدور:* ${roleName}`;
       }
 
