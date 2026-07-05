@@ -1,5 +1,6 @@
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
+import { classifyIdentifier } from "../commands/adminSystem.js";
 
 export async function handleGreetings(sock, jid, sender, text, msg) {
   if (!msg) return;
@@ -20,10 +21,18 @@ export async function handleGreetings(sock, jid, sender, text, msg) {
       counter++;
     }
 
+    const identifier = classifyIdentifier(sender);
     user = new User({
-      jid: sender,
+      jid: identifier.jid || sender,
       kingdom_id: kingdom,
-      nickname: nickname
+      nickname: nickname,
+      phoneNumber: identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null,
+      lid: identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null,
+      rawLid: identifier.identifierType === 'raw_lid' ? identifier.rawLid : null,
+      identifierType: identifier.identifierType,
+      countryCode: identifier.countryCode,
+      countryName: identifier.countryName,
+      mention: identifier.mention
     });
 
     await user.save();

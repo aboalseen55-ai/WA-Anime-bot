@@ -41,7 +41,8 @@
     "sharp": "^0.34.5",
     "string-similarity": "^4.0.4",
     "winston": "^3.19.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "libphonenumber-js": "^1.10.39"
   },
   "devDependencies": {
     "pm2": "^6.0.14"

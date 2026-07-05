@@ -34,6 +34,7 @@ import {
     initiateEmperorGrant,
     retrieveOrCreateNickname,
     getPhoneFromJID,
+    getMentionFromJID,
     findUserByNickname,
     sendAdminsDailyReports,
     resetDailyGameStats

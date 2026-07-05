@@ -1,5 +1,5 @@
 import User from "../database/userModel.js";
-import { showBankBalance, depositToBank, withdrawFromBank, getPhoneFromJID, extractAndSaveUserFromMention, isSuperAdminInKingdom, isAdmin, isModerator, findUserByNickname, findUserByNicknameOrPhone } from "./adminSystem.js";
+import { showBankBalance, depositToBank, withdrawFromBank, classifyIdentifier, isSuperAdminInKingdom, isAdmin, isModerator, findUserByNickname, findUserByNicknameOrPhone } from "./adminSystem.js";
 import { getHighestRank, displayRank } from "./rankSystem.js";
 import { pendingMentions } from "../handlers/messageHandler.js";
 import { ADMINS, getKingdomIdFromGroupJid, DEVELOPER_JIDS } from "../config.js";
@@ -180,16 +180,19 @@ export async function userCommands(sock, jid, sender, text, msg) {
     }
 
     if (!user) {
-      // تسجيل المستخدم لأول مرة (مجاني)
-      const phoneNumber = getPhoneFromJID(sender);
+      const identifier = classifyIdentifier(sender);
       const whatsappName = msg?.pushName || 'صديق';
       user = new User({ 
-        jid: sender, 
+        jid: identifier.jid || sender, 
         kingdom_id: kingdom,
         nickname: nick, 
-        phoneNumber: phoneNumber, 
-        whatsappName: whatsappName,
-        lid: null
+        phoneNumber: identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null,
+        lid: identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null,
+        rawLid: identifier.identifierType === 'raw_lid' ? identifier.rawLid : null,
+        identifierType: identifier.identifierType,
+        countryCode: identifier.countryCode,
+        countryName: identifier.countryName,
+        whatsappName: whatsappName
       });
       await user.save();
       await sock.sendMessage(jid, { text: `✅ تم تسجيل لقبك: ${nick}` });
@@ -387,40 +390,29 @@ export async function userCommands(sock, jid, sender, text, msg) {
     }
 
     try {
-      // إزالة الـ @ البداية
-      const token = query.substring(1).trim();
+      const lookup = classifyIdentifier(query);
 
-      // 1) حالة lid: @123@lid أو 123@lid
-      const lidMatch = token.match(/^(\d+)@lid$/i);
-      if (lidMatch) {
-        const lidVal = lidMatch[1];
-        const targetUser = await User.findOne({ lid: lidVal, kingdom_id: kingdom });
+      if (lookup.identifierType === 'lid_jid' || lookup.identifierType === 'raw_lid') {
+        const targetUser = await User.findOne({ lid: lookup.lid, kingdom_id: kingdom });
         if (!targetUser) {
-          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم بالـ lid "${lidVal}"` });
+          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم بالـ lid "${lookup.lid}"` });
           return true;
         }
-        // عرض المعلومات
         var targetUserResolved = targetUser;
-      } else if (/^\d+$/.test(token)) {
-        // 2) رقم فقط: حاول البحث عبر JID ثم عبر حقل phoneNumber
-        const phoneNumber = token;
-        const userJid = phoneNumber + '@s.whatsapp.net';
-        let targetUser = await User.findOne({ jid: userJid, kingdom_id: kingdom });
+      } else if (lookup.identifierType === 'phone_jid') {
+        let targetUser = await User.findOne({ jid: lookup.jid, kingdom_id: kingdom });
         if (!targetUser) {
-          targetUser = await User.findOne({ phoneNumber: { $regex: phoneNumber, $options: 'i' }, kingdom_id: kingdom });
+          targetUser = await User.findOne({ phoneNumber: lookup.phoneNumber, kingdom_id: kingdom });
         }
         if (!targetUser) {
-          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم برقم "${phoneNumber}"` });
+          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم برقم "${lookup.phoneNumber}"` });
           return true;
         }
         var targetUserResolved = targetUser;
       } else {
-        // 3) غير رقمي: قد يكون منشن مسجل في الحقل `mention` أو قد يكون لقب
-        // حاول البحث أولاً في حقل mention كما ورد (مع @)
         const mentionLookup = query.startsWith('@') ? query : `@${query}`;
         let targetUser = await User.findOne({ mention: mentionLookup, kingdom_id: kingdom });
         if (!targetUser) {
-          // كطيفة ثانية، استخدم البحث العام باللقب أو رقم عبر الدالة المساعدة
           const { findUserByNicknameOrPhone } = await import('./adminSystem.js');
           targetUser = await findUserByNicknameOrPhone(query, kingdom);
         }

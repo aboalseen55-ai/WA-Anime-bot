@@ -1,7 +1,141 @@
 import User from "../database/userModel.js";
 import Bank from "../database/bankModel.js";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { getHighestRank, getRankInfo, displayRank, getAllRanksDisplay, kingdomRanks } from "./rankSystem.js";
 import { ADMINS, getKingdomFromGroupJid, getKingdomIdFromGroupJid, KINGDOMS } from "../config.js";
+
+const REGION_DISPLAY_NAMES = typeof Intl === 'object' && typeof Intl.DisplayNames === 'function'
+  ? new Intl.DisplayNames(['en'], { type: 'region' })
+  : null;
+
+function defaultIdentifierMetadata() {
+  return {
+    identifierType: 'unknown',
+    jid: null,
+    phoneNumber: null,
+    lid: null,
+    rawLid: null,
+    countryCode: null,
+    countryName: null,
+    mention: null
+  };
+}
+
+function parsePhoneMeta(value) {
+  if (!value) return { valid: false };
+  const digits = String(value).replace(/\D/g, '');
+  if (!digits) return { valid: false };
+
+  try {
+    const parsed = parsePhoneNumberFromString(`+${digits}`);
+    if (!parsed || !parsed.isValid()) {
+      return { valid: false };
+    }
+
+    const phoneNumber = String(parsed.nationalNumber || '').replace(/\D/g, '');
+    const countryCode = parsed.countryCallingCode ? `+${parsed.countryCallingCode}` : null;
+    const countryName = parsed.country ? REGION_DISPLAY_NAMES?.of(parsed.country) ?? parsed.country : null;
+
+    return {
+      valid: true,
+      phoneNumber,
+      countryCode,
+      countryName
+    };
+  } catch (error) {
+    return { valid: false };
+  }
+}
+
+export function classifyIdentifier(value) {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) return defaultIdentifierMetadata();
+
+  const strippedLeadingAt = rawValue.startsWith('@') ? rawValue.slice(1).trim() : rawValue;
+  const normalized = strippedLeadingAt.toLowerCase();
+
+  const lidJidMatch = normalized.match(/^(\d+)@lid$/);
+  if (lidJidMatch) {
+    const lid = lidJidMatch[1];
+    return {
+      identifierType: 'lid_jid',
+      jid: `${lid}@lid`,
+      phoneNumber: null,
+      lid,
+      rawLid: lid,
+      countryCode: null,
+      countryName: null,
+      mention: `@${lid}@lid`
+    };
+  }
+
+  const whatsappMatch = normalized.match(/^(\d+)@s\.whatsapp\.net$/);
+  if (whatsappMatch) {
+    const digits = whatsappMatch[1];
+    const phoneMeta = parsePhoneMeta(digits);
+    if (phoneMeta.valid) {
+      return {
+        identifierType: 'phone_jid',
+        jid: normalized,
+        phoneNumber: phoneMeta.phoneNumber,
+        lid: null,
+        rawLid: null,
+        countryCode: phoneMeta.countryCode,
+        countryName: phoneMeta.countryName,
+        mention: `@${phoneMeta.phoneNumber}`
+      };
+    }
+
+    return {
+      ...defaultIdentifierMetadata(),
+      jid: normalized
+    };
+  }
+
+  const rawLidMatch = normalized.match(/^(\d+)@lid$/i);
+  if (rawLidMatch) {
+    const lid = rawLidMatch[1];
+    return {
+      identifierType: 'raw_lid',
+      jid: null,
+      phoneNumber: null,
+      lid,
+      rawLid: lid,
+      countryCode: null,
+      countryName: null,
+      mention: `@${lid}@lid`
+    };
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    const phoneMeta = parsePhoneMeta(normalized);
+    if (phoneMeta.valid) {
+      return {
+        identifierType: 'phone_jid',
+        jid: `${phoneMeta.phoneNumber}@s.whatsapp.net`,
+        phoneNumber: phoneMeta.phoneNumber,
+        lid: null,
+        rawLid: null,
+        countryCode: phoneMeta.countryCode,
+        countryName: phoneMeta.countryName,
+        mention: `@${phoneMeta.phoneNumber}`
+      };
+    }
+
+    return {
+      identifierType: 'unknown',
+      jid: null,
+      phoneNumber: normalized,
+      lid: null,
+      rawLid: null,
+      countryCode: null,
+      countryName: null,
+      mention: `@${normalized}`
+    };
+  }
+
+  return defaultIdentifierMetadata();
+}
 
 // ========================================
 // 🏰 Helper Functions for Multi-Kingdom System
@@ -218,50 +352,82 @@ export async function getUserInfo(jid, kingdom = null) {
 export async function findUserByNicknameOrPhone(searchTerm, kingdom = 'clover') {
     if (!searchTerm) return null;
 
-    // تطبيع المدخل: إزالة @ بداية، ودعم صيغ مثل 123@lid (نستخرج الرقم قبل @lid)
-    let term = (searchTerm || '').trim();
-    if (term.startsWith('@')) term = term.slice(1);
-    // إذا كانت الصيغة تحتوي على رقم قبل @lid مثل "123@lid"، نستخرج الرقم
-    const lidMatch = term.match(/^(\d+)@lid$/i);
-    if (lidMatch) {
-        term = lidMatch[1];
+    const raw = String(searchTerm || '').trim();
+    if (!raw) return null;
+
+    const identifier = classifyIdentifier(raw);
+
+    if (identifier.identifierType === 'phone_jid') {
+        const user = await User.findOne({ phoneNumber: identifier.phoneNumber, kingdom_id: kingdom });
+        if (user) return user;
+        return await User.findOne({ jid: identifier.jid, kingdom_id: kingdom });
     }
 
-    // محاولة البحث بالنيك نيم
-    let user = await User.findOne({ 
-        nickname: { $regex: term, $options: 'i' },
+    if (identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid') {
+        const user = await User.findOne({ lid: identifier.lid, kingdom_id: kingdom });
+        if (user) return user;
+    }
+
+    // محاولة البحث بالنيك نيم أولاً
+    let user = await User.findOne({
+        nickname: { $regex: `^${escapeRegex(raw)}$`, $options: 'i' },
         kingdom_id: kingdom
     });
     if (user) return user;
 
-    // أولاً: إذا كان searchTerm عبارة عن منشن مسجل مثل '@lid' أو '@123@lid', حاول البحث في حقل mention
-    if (typeof searchTerm === 'string' && searchTerm.trim().length > 0) {
-        const raw = searchTerm.trim();
-        const mentionLookup = raw.startsWith('@') ? raw : `@${raw}`;
+    user = await User.findOne({
+        nickname: { $regex: `^${escapeRegex(raw)}`, $options: 'i' },
+        kingdom_id: kingdom
+    });
+    if (user) return user;
+
+    user = await User.findOne({
+        nickname: { $regex: `(?:^|\\s)${escapeRegex(raw)}(?:\\s|$)`, $options: 'i' },
+        kingdom_id: kingdom
+    });
+    if (user) return user;
+
+    // حاول البحث في الحقول mention و lid
+    if (raw.startsWith('@')) {
+        const mentionLookup = raw;
         user = await User.findOne({ mention: mentionLookup, kingdom_id: kingdom });
         if (user) return user;
     }
 
-    // إذا كان المدخل يمثل lid رقمي (مثلاً 123 من 123@lid)، حاول البحث في حقل lid
-    if (/^\d+$/.test(term)) {
-        user = await User.findOne({ lid: term, kingdom_id: kingdom });
+    if (identifier.identifierType === 'unknown' && /^\d+$/.test(raw)) {
+        user = await User.findOne({ lid: raw, kingdom_id: kingdom });
         if (user) return user;
     }
 
-    // محاولة البحث بالرقم
-    user = await User.findOne({ 
-        phoneNumber: { $regex: term, $options: 'i' },
+    user = await User.findOne({
+        phoneNumber: { $regex: escapeRegex(raw), $options: 'i' },
         kingdom_id: kingdom
     });
-    return user;
+    if (user) return user;
+
+    return null;
 }
 
-// الحصول على رقم المنشن من JID
+// الحصول على بيانات الهوية من JID أو منشن
 export function getPhoneFromJID(jid) {
-    // صيغة JID: 962795137282@s.whatsapp.net
-    // نستخرج الرقم: 962795137282
-    const match = jid.match(/^(\d+)@/);
-    return match ? match[1] : null;
+    const result = classifyIdentifier(jid);
+    return result.identifierType === 'phone_jid' ? result.phoneNumber : null;
+}
+
+export function getLidFromJID(jid) {
+    const result = classifyIdentifier(jid);
+    return result.identifierType === 'lid_jid' ? result.lid : null;
+}
+
+export function getMentionFromJID(jid) {
+    const result = classifyIdentifier(jid);
+    if (result.identifierType === 'phone_jid') {
+        return result.mention;
+    }
+    if (result.identifierType === 'lid_jid' || result.identifierType === 'raw_lid') {
+        return result.mention;
+    }
+    return null;
 }
 
 // الحصول على اللقب من المنشن أو تعيين افتراضي
@@ -272,17 +438,14 @@ export async function getNicknameFromMention(sock, jid, mentionedJid, kingdom = 
             return null;
         }
 
-        const phoneNumber = getPhoneFromJID(mentionedJid);
-        if (!phoneNumber) {
-            await sock.sendMessage(jid, { text: '❌ خطأ في استخراج رقم الهاتف من المنشن!' });
+        const identifier = classifyIdentifier(mentionedJid);
+        if (identifier.identifierType !== 'phone_jid') {
+            await sock.sendMessage(jid, { text: '❌ هذا المنشن لا يُمثل JID واتساب صالحاً!' });
             return null;
         }
 
-        // البحث عن مستخدم بنفس JID
-        const user = await User.findOne({ jid: mentionedJid, kingdom_id: kingdom });
-        
+        const user = await User.findOne({ jid: identifier.jid, kingdom_id: kingdom });
         if (user && user.nickname) {
-            // المستخدم موجود ولديه لقب
             return {
                 nickname: user.nickname,
                 isNewUser: false,
@@ -290,33 +453,38 @@ export async function getNicknameFromMention(sock, jid, mentionedJid, kingdom = 
             };
         }
 
-        // المستخدم إما غير موجود أو بدون لقب
-        // تعيين لقب افتراضي: User_XXXX (آخر 4 أرقام من الهاتف)
-        const defaultNickname = `User_${phoneNumber.slice(-4)}`;
-        
+        const defaultNickname = `User_${identifier.phoneNumber.slice(-4)}`;
         if (user) {
-            // المستخدم موجود لكن بدون لقب، سيتم تحديثه
             user.nickname = defaultNickname;
-            user.phoneNumber = phoneNumber;
-            user.jid = mentionedJid;
+            user.phoneNumber = identifier.phoneNumber;
+            user.jid = identifier.jid;
+            user.identifierType = identifier.identifierType;
+            user.countryCode = identifier.countryCode;
+            user.countryName = identifier.countryName;
+            user.lid = null;
+            user.rawLid = null;
+            user.mention = identifier.mention;
             await user.save();
-            
+
             return {
                 nickname: defaultNickname,
                 isNewUser: false,
                 user: user,
                 isDefaultNickname: true
             };
-        } else {
-            // مستخدم جديد، سيتم إنشاؤه عند الطلب
-            return {
-                nickname: defaultNickname,
-                isNewUser: true,
-                jid: mentionedJid,
-                phoneNumber: phoneNumber,
-                isDefaultNickname: true
-            };
         }
+
+        return {
+            nickname: defaultNickname,
+            isNewUser: true,
+            jid: identifier.jid,
+            phoneNumber: identifier.phoneNumber,
+            identifierType: identifier.identifierType,
+            countryCode: identifier.countryCode,
+            countryName: identifier.countryName,
+            mention: identifier.mention,
+            isDefaultNickname: true
+        };
     } catch (error) {
         console.error('خطأ في الحصول على اللقب من المنشن:', error);
         await sock.sendMessage(jid, { text: '❌ حدث خطأ في معالجة المنشن!' });
@@ -327,7 +495,6 @@ export async function getNicknameFromMention(sock, jid, mentionedJid, kingdom = 
 // استخراج JID من منشن و تسجيل رقم المستخدم
 export async function extractAndSaveUserFromMention(sock, jid, mentionedJid, nickname, kingdom = null) {
     try {
-        // تحديد المملكة اعتماداً على جروب الرسالة (إذا لم تُمرر صراحة)
         if (!kingdom) {
             kingdom = getKingdomIdFromGroupJid(jid);
         }
@@ -337,19 +504,21 @@ export async function extractAndSaveUserFromMention(sock, jid, mentionedJid, nic
             return false;
         }
 
-        // البحث عن المستخدم ضمن المملكة المحددة
         const user = await User.findOne({ nickname: { $regex: nickname, $options: 'i' }, kingdom_id: kingdom });
         if (!user) {
             await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم باسم "${nickname}"!` });
             return false;
         }
 
-        // تحديث JID و phoneNumber والمنشن من المنشن
-        user.jid = mentionedJid;
-        const phoneNumber = getPhoneFromJID(mentionedJid);
-        user.phoneNumber = phoneNumber;
-        user.mention = phoneNumber ? `@${phoneNumber}` : null;  // حفظ المنشن أيضاً
-        user.lid = null; // عند وجود JID حقيقي نترك lid فارغاً
+        const identifier = classifyIdentifier(mentionedJid);
+        user.jid = identifier.jid || mentionedJid;
+        user.phoneNumber = identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null;
+        user.lid = identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null;
+        user.rawLid = identifier.identifierType === 'raw_lid' ? identifier.rawLid : null;
+        user.identifierType = identifier.identifierType;
+        user.countryCode = identifier.countryCode;
+        user.countryName = identifier.countryName;
+        user.mention = identifier.mention;
         await user.save();
 
         return user;
@@ -1467,10 +1636,16 @@ export async function retrieveOrCreateNickname(sock, jid, mentionedJid) {
             return null;
         }
 
-        // حفظ اللقب الجديد والمنشن
+        const identifier = classifyIdentifier(mentionedJid);
         user.nickname = newNickname;
-        user.mention = `@${getPhoneFromJID(mentionedJid)}`;
-        user.lid = null;
+        user.jid = identifier.jid || mentionedJid;
+        user.phoneNumber = identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null;
+        user.lid = identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null;
+        user.rawLid = identifier.identifierType === 'raw_lid' ? identifier.rawLid : null;
+        user.identifierType = identifier.identifierType;
+        user.countryCode = identifier.countryCode;
+        user.countryName = identifier.countryName;
+        user.mention = identifier.mention;
         
         try {
             await user.save();
@@ -2215,23 +2390,18 @@ export async function handleAssignMention(sock, jid, sender, mentionedJid, nickn
             return false;
         }
 
-        // تحديث JID و phoneNumber من المنشن
-        user.jid = mentionedJid;
-        // حاول استخراج الرقم أولاً من mentionedJid، وإن لم يوجد فحاول من realMention (مثل '@123@lid')
-        let phone = getPhoneFromJID(mentionedJid) || null;
-        let lid = null;
-        if (!phone && realMention && typeof realMention === 'string') {
-            const m = realMention.match(/^@?(\d+)(?:@lid)?$/i);
-            if (m) phone = m[1];
+        const identifier = classifyIdentifier(mentionedJid);
+        user.jid = identifier.jid || mentionedJid;
+        user.phoneNumber = identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null;
+        user.lid = identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null;
+        user.rawLid = identifier.identifierType === 'raw_lid' ? identifier.rawLid : null;
+        user.identifierType = identifier.identifierType;
+        user.countryCode = identifier.countryCode;
+        user.countryName = identifier.countryName;
+        user.mention = realMention || identifier.mention;
+        if (user.mention && user.mention.startsWith('@') && user.identifierType === 'unknown' && /^\d+$/.test(user.mention.slice(1))) {
+            user.mention = `@${user.mention.slice(1)}`;
         }
-        // إذا كان realMention بصيغة رقم@lid، خزّن lid
-        if (realMention && typeof realMention === 'string') {
-            const lm = realMention.match(/^@?(\d+)@lid$/i);
-            if (lm) lid = lm[1];
-        }
-        user.phoneNumber = phone;
-        user.lid = lid;
-        user.mention = realMention;
         await user.save();
 
         await sock.sendMessage(jid, {
@@ -2292,22 +2462,15 @@ export async function handleChangeMention(sock, jid, sender, mentionedJid, oldNi
         const oldJid = oldUser.jid;
         const oldPhone = oldUser.phoneNumber;
 
-        // تحديث بيانات المستخدم بالمنشن الجديد
-        oldUser.jid = mentionedJid;
-        // نفس منطق الاستخراج: من mentionedJid ثم من realMention إذا لم يوجد
-        let newPhone = getPhoneFromJID(mentionedJid) || null;
-        let newLid = null;
-        if (!newPhone && realMention && typeof realMention === 'string') {
-            const m2 = realMention.match(/^@?(\d+)(?:@lid)?$/i);
-            if (m2) newPhone = m2[1];
-        }
-        if (realMention && typeof realMention === 'string') {
-            const lm2 = realMention.match(/^@?(\d+)@lid$/i);
-            if (lm2) newLid = lm2[1];
-        }
-        oldUser.phoneNumber = newPhone;
-        oldUser.lid = newLid;
-        oldUser.mention = realMention;
+        const identifier = classifyIdentifier(mentionedJid);
+        oldUser.jid = identifier.jid || mentionedJid;
+        oldUser.phoneNumber = identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null;
+        oldUser.lid = identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null;
+        oldUser.rawLid = identifier.identifierType === 'raw_lid' ? identifier.rawLid : null;
+        oldUser.identifierType = identifier.identifierType;
+        oldUser.countryCode = identifier.countryCode;
+        oldUser.countryName = identifier.countryName;
+        oldUser.mention = realMention || identifier.mention;
         await oldUser.save();
 
         // إرسال رسالة تأكيد بالبيانات المستبدلة

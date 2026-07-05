@@ -203,13 +203,12 @@ async function startBot() {
         // جلب المستخدم من قاعدة البيانات (قد يكون له mention مخصص)
         const existingUser = await User.findOne({ jid: participantJid, kingdom_id: kingdomId });
         console.log(`Checking user ${participantJid} (kingdom=${kingdomId}): existing=${!!existingUser}, nickname=${existingUser?.nickname}`);
-        // تحديد المنشن: إذا كان له mention مخصص استخدمه، وإلا استخدم @رقم_العضو
+        // تحديد المنشن: إذا كان له mention مخصص استخدمه، وإلا ابني من JID
         let mentionText;
         if (existingUser && existingUser.mention) {
           mentionText = existingUser.mention;
         } else {
-          const phoneNumber = participantJid.split('@')[0];
-          mentionText = `@${phoneNumber}`;
+          mentionText = getMentionFromJID(participantJid) || `@${participantJid.split('@')[0]}`;
         }
         if (!existingUser || !existingUser.nickname) {
           // إضافة المستخدم إلى قائمة الانتظار مع المرحلة الأولى (ترحيب)

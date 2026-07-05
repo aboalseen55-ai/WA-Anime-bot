@@ -109,6 +109,27 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // نوع المعرف المستخدم (phone_jid، lid_jid، raw_lid، unknown)
+  identifierType: {
+    type: String,
+    enum: ['phone_jid', 'lid_jid', 'raw_lid', 'unknown'],
+    default: 'unknown'
+  },
+  // رمز الدولة إن توفر من تحليل رقم الهاتف
+  countryCode: {
+    type: String,
+    default: null
+  },
+  // اسم الدولة إن توفر من تحليل رقم الهاتف
+  countryName: {
+    type: String,
+    default: null
+  },
+  // حفظ القيمة الخام للـ lid إذا جاءت كمنشن نصي مثل @123@lid
+  rawLid: {
+    type: String,
+    default: null
+  },
   // 👤 اسم الواتساب
   whatsappName: {
     type: String,
@@ -191,6 +212,8 @@ const userSchema = new mongoose.Schema({
 // إنشاء indexes للأداء
 userSchema.index({ kingdom_id: 1, nickname: 1 }, { unique: true });
 userSchema.index({ kingdom_id: 1, jid: 1 });
+userSchema.index({ kingdom_id: 1, phoneNumber: 1 });
+userSchema.index({ kingdom_id: 1, lid: 1 });
 userSchema.index({ kingdom_id: 1, role: 1 });
 
 export default mongoose.models.User || mongoose.model("User", userSchema);
