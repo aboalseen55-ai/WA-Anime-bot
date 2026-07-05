@@ -1,5 +1,6 @@
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
+import { generateSamBotAIReply } from "./samBotAI.js";
 
 const BOT_NAMES = [
   "سام بوت",
@@ -202,6 +203,10 @@ function buildReply(intent, nickname, text) {
   return pick(replies[intent] || replies.conversation, `${intent}:${text}:${nickname}`);
 }
 
+function shouldUseOnlineAI(intent) {
+  return !["identity", "capabilities"].includes(intent);
+}
+
 async function getNickname(jid, sender, msg) {
   const kingdom = getKingdomIdFromGroupJid(jid);
   const user = await User.findOne({ jid: sender, kingdom_id: kingdom });
@@ -230,7 +235,15 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
 
   const nickname = await getNickname(jid, sender, msg);
   const intent = classifySamBotIntent(text);
-  const reply = buildReply(intent, nickname, text);
+  const aiReply = shouldUseOnlineAI(intent)
+    ? await generateSamBotAIReply({
+        userMessage: text,
+        nickname,
+        intent,
+        isPrivate: isPrivateChat(jid)
+      })
+    : "";
+  const reply = aiReply || buildReply(intent, nickname, text);
 
   await sock.sendMessage(jid, {
     text: reply,
