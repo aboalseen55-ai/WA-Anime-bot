@@ -22,7 +22,7 @@ const COUNT_TOKEN_COMMANDS = new Set([
   "/token_count"
 ]);
 
-let geminiClient;
+const geminiClients = new Map();
 
 function getDateKey(date = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -66,17 +66,30 @@ function isExplicitlyDisabled(value) {
   return String(value || "").trim().toLowerCase() === "false";
 }
 
-function getGeminiClient() {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!apiKey || isExplicitlyDisabled(process.env.SAM_BOT_AI_ENABLED)) {
-    return null;
+function getConfiguredApiKeys() {
+  if (isExplicitlyDisabled(process.env.SAM_BOT_AI_ENABLED)) return [];
+
+  const keys = [
+    ["GEMINI_API_KEY", process.env.GEMINI_API_KEY],
+    ["GOOGLE_API_KEY", process.env.GOOGLE_API_KEY]
+  ]
+    .map(([name, value]) => ({ name, value: String(value || "").trim() }))
+    .filter(({ value }) => Boolean(value));
+
+  const seen = new Set();
+  return keys.filter(({ value }) => {
+    if (seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  });
+}
+
+function getGeminiClient(apiKey) {
+  if (!geminiClients.has(apiKey)) {
+    geminiClients.set(apiKey, new GoogleGenerativeAI(apiKey));
   }
 
-  if (!geminiClient) {
-    geminiClient = new GoogleGenerativeAI(apiKey);
-  }
-
-  return geminiClient;
+  return geminiClients.get(apiKey);
 }
 
 function getModelName() {
@@ -170,8 +183,8 @@ async function getTodayUsage() {
     summary.models.add(row.model || "unknown");
     if (row.lastUsedAt && (!summary.lastUsedAt || row.lastUsedAt > summary.lastUsedAt)) {
       summary.lastUsedAt = row.lastUsedAt;
+      summary.lastError = row.lastError || "";
     }
-    if (row.lastError) summary.lastError = row.lastError;
     return summary;
   }, {
     dateKey,
@@ -234,20 +247,38 @@ export async function buildSamBotUsageReport() {
 }
 
 async function countGeminiTokens(text) {
-  const client = getGeminiClient();
-  if (!client) {
+  const apiKeys = getConfiguredApiKeys();
+  if (!apiKeys.length) {
     return { ok: false, message: "❌ Gemini غير مفعل. أضف GEMINI_API_KEY أو GOOGLE_API_KEY." };
   }
 
   const modelName = getModelName();
-  const model = client.getGenerativeModel({ model: modelName });
-  const result = await model.countTokens(text);
-  return {
-    ok: true,
-    modelName,
-    totalTokens: result.totalTokens || 0,
-    totalBillableCharacters: result.totalBillableCharacters || 0
-  };
+  let lastError;
+
+  for (const [index, apiKey] of apiKeys.entries()) {
+    try {
+      const client = getGeminiClient(apiKey.value);
+      const model = client.getGenerativeModel({ model: modelName });
+      const result = await model.countTokens(text);
+      return {
+        ok: true,
+        modelName,
+        totalTokens: result.totalTokens || 0,
+        totalBillableCharacters: result.totalBillableCharacters || 0
+      };
+    } catch (error) {
+      lastError = error;
+      const message = String(error?.message || "");
+      const invalidKey = message.includes("API_KEY_INVALID") || message.includes("API key not valid");
+      if (invalidKey && index < apiKeys.length - 1) {
+        console.warn(`⚠️ ${apiKey.name} is invalid; trying next Gemini key.`);
+        continue;
+      }
+      break;
+    }
+  }
+
+  throw lastError || new Error("Gemini token count failed");
 }
 
 export async function handleSamBotTokenCountCommand(sock, jid, sender, trimmedText) {
