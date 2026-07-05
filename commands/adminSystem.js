@@ -430,6 +430,56 @@ export function getMentionFromJID(jid) {
     return null;
 }
 
+function formatCleanMentionText(jid, identifier = classifyIdentifier(jid)) {
+    const savedMention = identifier.mention || '';
+    if (identifier.identifierType === 'phone_jid' && identifier.phoneNumber) {
+        return `@${identifier.phoneNumber}`;
+    }
+    if ((identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid') && identifier.lid) {
+        return `@${identifier.lid}`;
+    }
+    if (savedMention) {
+        return savedMention.replace(/@lid$/i, '');
+    }
+
+    const raw = String(jid || '').split('@')[0].replace(/^@/, '');
+    return raw ? `@${raw}` : '@unknown';
+}
+
+function getPromotionMentionText(user) {
+    const identifier = classifyIdentifier(user.jid || user.rawLid || user.lid || user.phoneNumber || user.mention);
+    const storedMention = String(user.mention || '').trim();
+
+    if (storedMention && !/@lid$/i.test(storedMention)) {
+        return storedMention;
+    }
+
+    if (user.phoneNumber) return `@${user.phoneNumber}`;
+    if (user.lid) return `@${user.lid}`;
+    if (user.rawLid) return `@${user.rawLid}`;
+
+    return formatCleanMentionText(user.jid, identifier);
+}
+
+async function getPromotionSignature(adminJid, kingdom) {
+    const identifier = classifyIdentifier(adminJid);
+    const identityClauses = [
+        { jid: identifier.jid || adminJid }
+    ];
+    if (identifier.phoneNumber) identityClauses.push({ phoneNumber: identifier.phoneNumber });
+    if (identifier.lid) identityClauses.push({ lid: identifier.lid });
+    if (identifier.rawLid) identityClauses.push({ rawLid: identifier.rawLid });
+
+    const adminUser = await User.findOne({
+        kingdom_id: kingdom,
+        $or: identityClauses
+    }).lean();
+    if (adminUser?.nickname) return adminUser.nickname;
+
+    const kingdomName = KINGDOMS[kingdom]?.name || 'المملكة';
+    return `إدارة ${kingdomName}`;
+}
+
 // الحصول على اللقب من المنشن أو تعيين افتراضي
 export async function getNicknameFromMention(sock, jid, mentionedJid, kingdom = 'clover') {
     try {
@@ -571,11 +621,15 @@ export async function promoteModerator(sock, jid, targetNickname, adminJid, ment
 
         // إذا تم توفير mentionedJid، احفظ المنشن في قاعدة البيانات
         if (mentionedJid) {
-            const phoneNumber = mentionedJid.split('@')[0];
-            user.mention = `@${phoneNumber}`;
-            user.jid = mentionedJid;
-            user.phoneNumber = phoneNumber;
-            user.lid = null;
+            const identifier = classifyIdentifier(mentionedJid);
+            user.mention = formatCleanMentionText(mentionedJid, identifier);
+            user.jid = identifier.jid || mentionedJid;
+            user.phoneNumber = identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null;
+            user.lid = identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null;
+            user.rawLid = identifier.identifierType === 'raw_lid' ? identifier.rawLid : null;
+            user.identifierType = identifier.identifierType;
+            user.countryCode = identifier.countryCode;
+            user.countryName = identifier.countryName;
         }
 
         // ترقيته
@@ -2202,11 +2256,12 @@ async function sendPromotionMessage(sock, jid, user, oldRank, newRank, admin, me
             return;
         }
 
-        // استخدام المنشن المحفوظ في قاعدة البيانات
-        const mention = user.mention || `@${user.phoneNumber || 'unknown'}`;
+        const kingdomName = KINGDOMS[rankKingdom]?.name || rankKingdom;
+        const signature = await getPromotionSignature(admin, rankKingdom);
+        const mention = getPromotionMentionText(user);
 
         const promotionMessage = `*⎔⋅• ┗╼╃✦⊰⟦﷽⟧⊱✦╄╾┛ •⋅⎔*
-*˼‏🍀˹╎تـعـلـن إدارة كـلـوفــر عـن ⇟*
+*˼‏🍀˹╎تـعـلـن إدارة ${kingdomName} عـن ⇟*
 *━╍∘╾╃✧⊰ ⌝🍀⌞ ⊱✧╄ ╼∘╍━*
          *⌝ ترقية╎🎖️
 *╼─━╍╃✧⊰🍀」⊱✧╄╍━─╾*  
@@ -2221,7 +2276,7 @@ async function sendPromotionMessage(sock, jid, user, oldRank, newRank, admin, me
 *شـاكـريـن لـه/ا عـلـى كـل جـهـد بـذلـه/بـذلـتـه* *ومـتـمـنـيـن لـه/ا دوام الـتـوفـيـق والسـداد والنـجـاح في جـمـيـع الأمـور🌕⚔️ ⸙*
 *╼─━╍╃✧⊰「🍀」⊱✧╄╍━─╾*
 *❀《تـــوقــيـع》↡*
-*⸂✦┋﹝يـوليـوس آل كـلـوفــر﹞┋✦⸃*
+*⸂✦┋﹝${signature}﹞┋✦⸃*
 
 *━╍∘╾╃✧⊰ 🍀 ⊱✧╄ ╼∘╍━*`;
 
