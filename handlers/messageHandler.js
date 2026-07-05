@@ -1,8 +1,6 @@
 import { userCommands } from "../commands/user.js";
 import { handleAdminCommands } from "../commands/adminCommands.js";
 import { showCommandsList, handleCommandsChoice } from "../commands/commandsList.js";
-import { handleGreetings } from "../utils/greetings.js";
-import { handleQuotedMessageReply, handleAdvancedGreetings } from "../utils/advancedReplies.js";
 import { addRecentMessage } from "../utils/messageCache.js";
 import { isSuperAdminInKingdom, isModerator, extractAndSaveUserFromMention, grantEmperorRankWithPassword, getPhoneFromJID, startGameSession, stopGameSession, generateAdminDailyReport, getDailyGameStats, deleteUser } from "../commands/adminSystem.js";
 import User from "../database/userModel.js";
@@ -18,25 +16,7 @@ import { getCreatorInfoMessage, isCreatorQuestion } from "../utils/creatorInfo.j
 import { handleDeveloperCommandGuide } from "../utils/developerCommandGuide.js";
 import { buildIdentityInfoMessage, isIdentityCommand } from "../utils/identityInfo.js";
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
-
-// قائمة النكات العربية المضحكة
-const jokes = [
-  "لماذا الدجاجة ذهبت للطبيب؟ لأنها كانت مريضة! 🐔",
-  "ما هو الشيء الذي يمشي ولا يتحرك؟ الطريق! 🛣️",
-  "لماذا السمكة ذكية؟ لأنها تعيش في الماء! 🐟",
-  "ما هو الشيء الذي يأكل ولا يشبع؟ النار! 🔥",
-  "لماذا الطائرة لا تطير في الشتاء؟ لأنها باردة! ✈️",
-  "ما هو الشيء الذي له أذنان ولا يسمع؟ الإبريق! ☕",
-  "لماذا القطة تشرب الماء؟ لأنها عطشى! 🐱",
-  "ما هو الشيء الذي يدور ولا يتحرك؟ الساعة! 🕐",
-  "لماذا الشمس لا تذهب للمدرسة؟ لأنها نجم! ☀️",
-  "ما هو الشيء الذي يبكي ولا يضحك؟ السحاب! ☁️",
-  "لماذا القلم يذهب للمدرسة؟ ليصبح ذكياً! ✏️",
-  "ما هو الشيء الذي يطير بدون أجنحة؟ الوقت! ⏰",
-  "لماذا الفراولة ذهبت للطبيب؟ لأنها كانت مريضة! 🍓",
-  "ما هو الشيء الذي يمشي على رأسه؟ الدبوس! 📌",
-  "لماذا البطيخة لا تذهب للمدرسة؟ لأنها تدرس في المنزل! 🍉"
-];
+import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
 
 // نظام الحالات - لتتبع الأوامر المعلقة التي تحتاج تأكيد منشن
 export const pendingMentions = {};
@@ -228,32 +208,6 @@ export async function messageHandler(sock, msg) {
 
   // حفظ رسالة في الـ cache لاستخدامها في حذف مجموعة رسائل لاحقاً
   addRecentMessage(jid, msg.key);
-
-  // ============================================
-  // � الرد على النكات والترحيب
-  // ============================================
-  const lowerText = text.toLowerCase().trim();
-  
-  // الرد على طلبات النكات
-  if (lowerText === 'نكت' || lowerText === 'نكتة' || lowerText === 'ضحكني') {
-    const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
-    await sock.sendMessage(jid, { text: `😂 ${randomJoke}` });
-    return;
-  }
-  
-  // الرد على "كيفك"
-  if (lowerText === 'كيفك' || lowerText === 'كيف حالك' || lowerText === 'كيفك؟') {
-    const responses = [
-      "الحمد لله تمام! 😊 وأنت كيفك؟",
-      "الحمد لله بخير! 🌟 وأنت؟",
-      "تمام الحمد لله! 💫 كيف حالك؟",
-      "الحمد لله ماشي الحال! 😄 وأنت؟",
-      "الحمد لله كويس! ✨ وأنت كيفك؟"
-    ];
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    await sock.sendMessage(jid, { text: randomResponse });
-    return;
-  }
 
   // ============================================
   // �📊 تتبع الرسائل اليومية في القروب الأساسي
@@ -1606,20 +1560,11 @@ ${WELCOME_LINK}
     }
   }
 
-  // معالجة الردود على الرسائل المقتبسة (Reply)
-  const replyHandled = await handleQuotedMessageReply(sock, jid, sender, text, msg);
-  if (replyHandled) {
+  // تفاعل سام بوت الذكي: يرد فقط إذا الكلام موجه له أو في الخاص أو بالرد على رسالته.
+  const smartInteractionHandled = await handleSamBotInteraction(sock, jid, sender, text, msg);
+  if (smartInteractionHandled) {
     return;
   }
-
-  // التحيات والردود المحسنة (مع timeout)
-  const greetingHandled = await handleAdvancedGreetings(sock, jid, sender, text, msg);
-  if (greetingHandled) {
-    return;
-  }
-
-  // التحيات القديمة (fallback)
-  await handleGreetings(sock, jid, sender, text, msg);
 
   // إذا النص عادي (مش أمر أو تحية)، نسأل AI
   // try {
