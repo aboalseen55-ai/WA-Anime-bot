@@ -65,7 +65,7 @@ export function classifyIdentifier(value) {
       rawLid: lid,
       countryCode: null,
       countryName: null,
-      mention: `@${lid}@lid`
+      mention: `@${lid}`
     };
   }
 
@@ -103,7 +103,7 @@ export function classifyIdentifier(value) {
       rawLid: lid,
       countryCode: null,
       countryName: null,
-      mention: `@${lid}@lid`
+      mention: `@${lid}`
     };
   }
 
@@ -424,30 +424,66 @@ export function getMentionFromJID(jid) {
     return formatCleanMentionText(jid, result);
 }
 
+function getMentionNumber(jid, identifier = {}) {
+    const raw = String(jid || '').trim().replace(/^@/, '');
+    const jidNumberMatch = raw.match(/^(\d+)(?:@s\.whatsapp\.net)?$/i);
+    if (jidNumberMatch) return jidNumberMatch[1];
+
+    if (identifier.countryCode && identifier.phoneNumber) {
+        return `${String(identifier.countryCode).replace(/\D/g, '')}${identifier.phoneNumber}`;
+    }
+
+    return identifier.phoneNumber || null;
+}
+
 function formatCleanMentionText(jid, identifier = classifyIdentifier(jid)) {
     const savedMention = identifier.mention || '';
-    if (identifier.identifierType === 'phone_jid' && identifier.phoneNumber) {
-        return `@${identifier.phoneNumber}`;
+    if (identifier.identifierType === 'phone_jid') {
+        const mentionNumber = getMentionNumber(jid, identifier);
+        if (mentionNumber) return `@${mentionNumber}`;
     }
     if ((identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid') && identifier.lid) {
         return `@${identifier.lid}`;
     }
     if (savedMention) {
-        return savedMention.replace(/@lid$/i, '');
+        return sanitizeMentionText(savedMention);
     }
 
     const raw = String(jid || '').split('@')[0].replace(/^@/, '');
     return raw ? `@${raw}` : '@unknown';
 }
 
+function sanitizeMentionText(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    const withoutLidSuffix = text
+        .replace(/\s*@lid\b/gi, '')
+        .replace(/@lid\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const withoutTrailingNumericId = withoutLidSuffix
+        .replace(/(?:\s|^)@\d{5,}\b(?=\s*$)/g, '')
+        .replace(/@\d{5,}\b(?=\s*$)/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return withoutTrailingNumericId || withoutLidSuffix;
+}
+
 function getPromotionMentionText(user) {
     const identifier = classifyIdentifier(user.jid || user.rawLid || user.lid || user.phoneNumber || user.mention);
     const storedMention = String(user.mention || '').trim();
 
-    if (storedMention && !/@lid$/i.test(storedMention)) {
-        return storedMention;
+    if (storedMention) {
+        const cleanStoredMention = sanitizeMentionText(storedMention);
+        if (cleanStoredMention) return cleanStoredMention;
     }
 
+    if (identifier.identifierType === 'phone_jid' && user.jid) {
+        return formatCleanMentionText(user.jid, identifier);
+    }
+    if (user.countryCode && user.phoneNumber) return `@${String(user.countryCode).replace(/\D/g, '')}${user.phoneNumber}`;
     if (user.phoneNumber) return `@${user.phoneNumber}`;
     if (user.lid) return `@${user.lid}`;
     if (user.rawLid) return `@${user.rawLid}`;
@@ -1391,9 +1427,9 @@ export async function transferCoinsBetweenUsers(sock, jid, sender, recipientNick
         });
 
         // إشعار المستلم
-        const recipientMention = recipientUser.mention || `@${recipientUser.jid.split('@')[0]}`;
+        const recipientMention = getCleanMentionTextForUser(recipientUser);
         await sock.sendMessage(jid, {
-            text: `💰 تم استلام ${amount} عملة من ${senderUser.nickname}!\n💰 رصيدك الآن: ${recipientUser.coins}`,
+            text: `💰 ${recipientMention} استلم ${amount} عملة من ${senderUser.nickname}!\n💰 رصيده الآن: ${recipientUser.coins}`,
             mentions: [recipientUser.jid]
         });
 
@@ -2237,7 +2273,7 @@ export async function grantEmperorDecisionRank(sock, jid, targetNickname, rankKe
 
         // إرسال رسالة للاعب بالترقية
         try {
-            const mention = user.mention || `@${user.phoneNumber || 'unknown'}`;
+            const mention = getCleanMentionTextForUser(user);
             await sock.sendMessage(jid, {
                 text: `🎖️ مبروك ${mention}! تم ترقيتك إلى رتبة ${rankData.emoji} ${rankData.name} بقرار من الإمبراطور!\n✨ شرف عظيم!`,
                 mentions: [user.jid]

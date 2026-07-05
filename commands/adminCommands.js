@@ -84,7 +84,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                     report += '_________________\n';
                 }
                 if (user.dailyMessages === 100) {
-                    const mentionText = user.mention || `@${user.jid.split('@')[0]}`;
+                    const mentionText = getCleanMentionTextForUser(user);
                     congratsMessages += `\n🎉 رائع يا ${mentionText}\nلقد وصلت إلى 100 تفاعل! 🏆🔥👏\n`;
                     if (user.jid) mentions.push(user.jid);
                 }
@@ -162,7 +162,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             }
             if (user.dailyMessages === 100) {
                 // تهنئة مع منشن مخصص إذا وجد
-                const mentionText = user.mention || `@${user.jid.split('@')[0]}`;
+                const mentionText = getCleanMentionTextForUser(user);
                 congratsMessages += `\n🎉 رائع يا ${mentionText}\nلقد وصلت إلى 100 تفاعل! 🏆🔥👏\n`;
                 if (user.jid) mentions.push(user.jid);
             }

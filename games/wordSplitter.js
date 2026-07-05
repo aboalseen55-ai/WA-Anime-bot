@@ -1,5 +1,6 @@
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
+import { getCleanMentionTextForUser } from "../commands/adminSystem.js";
 
 export const activeWordSplitterGames = {};
 const MAX_TIME = 30000; // 30 ثانية
@@ -253,7 +254,7 @@ async function startActualWordSplitterGame(sock, jid, players) {
     delete wordSplitterGameWaiting[jid];
 
     const playerText = players 
-        ? `\n👥 المشاركون: ${players.map(p => p.split('@')[0]).join(' و ')}`
+        ? `\n👥 المشاركون: ${players.map(p => getCleanMentionTextForUser(p)).join(' و ')}`
         : '\n👥 جميع الأعضاء مدعوون للمشاركة';
 
     let message;

@@ -2,6 +2,7 @@ import User from "../database/userModel.js";
 import stringSimilarity from "string-similarity";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { enqueueAnswer, processAnswerQueue, clearAnswerQueue } from "../utils/answerQueue.js";
+import { getCleanMentionTextForUser } from "../commands/adminSystem.js";
 
 export const activeCharacterGames = {};
 const MAX_TIME = 20000; // 20 ثانية
@@ -472,7 +473,7 @@ async function startActualCharacterGame(sock, jid, players) {
 
     // إرسال الرسالة الأولية مع الوصف
     // استخدام نفس منطق /منشن - الحصول على المنشن المحفوظ أو استخدام الرقم
-    const playerText = players ? `\n👥 المشاركون: ${players.map(p => (p.mention || `@${p.jid.split('@')[0]}`)).join(' و ')}` : '\n👥 جميع الأعضاء مدعوون للمشاركة';
+    const playerText = players ? `\n👥 المشاركون: ${players.map(p => getCleanMentionTextForUser(p)).join(' و ')}` : '\n👥 جميع الأعضاء مدعوون للمشاركة';
     const messageOptions = {
         text: `🎭 لعبة تخمين الشخصيات${playerText}\n⏱ لديك 20 ثانية\n💡 سيظهر تلميح بعد 10 ثواني\n\n📝 الوصف: ${character.description}\n📌 أرسل /وقف لإيقاف اللعبة`
     };

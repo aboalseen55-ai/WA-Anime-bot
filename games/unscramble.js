@@ -1,6 +1,7 @@
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { enqueueAnswer, processAnswerQueue, clearAnswerQueue } from "../utils/answerQueue.js";
+import { getCleanMentionTextForUser } from "../commands/adminSystem.js";
 
 export const activeUnscrambleGames = {};
 const MAX_TIME = 30000; // 30 ثانية
@@ -282,7 +283,7 @@ async function startActualUnscrambleGame(sock, jid, players) {
 
     // إرسال الرسالة الأولية مع الوصف
     // استخدام نفس منطق /منشن - الحصول على المنشن المحفوظ أو استخدام الرقم
-    const playerText = players ? `\n👥 المشاركون: ${players.map(p => (p.mention || `@${p.jid.split('@')[0]}`)).join(' و ')}` : '\n👥 جميع الأعضاء مدعوون للمشاركة';
+    const playerText = players ? `\n👥 المشاركون: ${players.map(p => getCleanMentionTextForUser(p)).join(' و ')}` : '\n👥 جميع الأعضاء مدعوون للمشاركة';
     const messageOptions = {
         text: `🎮 لعبة ترتيب الحروف${playerText}\n\n🔤 الكلمة:\n${scrambled}\n\n⏱ لديك 30 ثانية لترتيب الحروف بالشكل الصحيح\n💡 سيظهر تلميح بعد 15 ثانية\n📌 أرسل /وقف لإيقاف اللعبة`
     };

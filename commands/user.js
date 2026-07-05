@@ -1,12 +1,12 @@
 import User from "../database/userModel.js";
-import { showBankBalance, depositToBank, withdrawFromBank, classifyIdentifier, isSuperAdminInKingdom, isAdmin, isModerator, findUserByNickname, findUserByNicknameOrPhone } from "./adminSystem.js";
+import { showBankBalance, depositToBank, withdrawFromBank, classifyIdentifier, isSuperAdminInKingdom, isAdmin, isModerator, findUserByNickname, findUserByNicknameOrPhone, getCleanMentionTextForUser } from "./adminSystem.js";
 import { getHighestRank, displayRank } from "./rankSystem.js";
 import { pendingMentions } from "../handlers/messageHandler.js";
 import { ADMINS, getKingdomIdFromGroupJid, DEVELOPER_JIDS } from "../config.js";
 
 // دالة موحدة لإرسال رسالة بمنشن
 async function sendMentionMessage(sock, jid, targetUser, customMessage = null) {
-  const mention = targetUser.mention || `@${targetUser.jid.split('@')[0]}`;
+  const mention = getCleanMentionTextForUser(targetUser);
   const messageText = customMessage || `📣 منشن ${targetUser.nickname}: ${mention}`;
   
   await sock.sendMessage(jid, {
@@ -67,12 +67,18 @@ export async function userCommands(sock, jid, sender, text, msg) {
       
       // استخراج JID والمنشن من بيانات المشارك
       const participantJid = foundParticipant.id;
-      const phoneNumber = participantJid.split('@')[0];
-      const mentionText = `@${phoneNumber}`;
+      const identifier = classifyIdentifier(participantJid);
+      const mentionText = getCleanMentionTextForUser(participantJid);
       
       // تحديث بيانات المستخدم بالمنشن الجديد
       targetUser.mention = mentionText;
-      targetUser.lid = null;
+      targetUser.jid = identifier.jid || participantJid;
+      targetUser.phoneNumber = identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null;
+      targetUser.lid = identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null;
+      targetUser.rawLid = identifier.identifierType === 'raw_lid' ? identifier.rawLid : null;
+      targetUser.identifierType = identifier.identifierType;
+      targetUser.countryCode = identifier.countryCode;
+      targetUser.countryName = identifier.countryName;
       await targetUser.save();
       
       // رسالة نجاح مع عرض المنشن الجديد
@@ -124,7 +130,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
     let info = `📋 *معلومات كاملة عن المستخدم*\n━━━━━━━━━━━━━━━━━━━━━\n`;
     info += `🔖 *اللقب:* ${t.nickname || 'غير متوفر'}\n`;
     info += `🆔 *JID:* ${t.jid || 'غير مسجل'}\n`;
-    info += `🔗 *منشن:* ${t.mention || 'غير مسجل'}\n`;
+    info += `🔗 *منشن:* ${getCleanMentionTextForUser(t) || 'غير مسجل'}\n`;
     info += `📞 *رقم الهاتف:* ${t.phoneNumber || 'غير مسجل'}\n`;
     info += `🪪 *lid:* ${t.lid || 'غير مسجل'}\n`;
     info += `🧾 *اسم واتساب:* ${t.whatsappName || 'غير متوفر'}\n`;
@@ -482,7 +488,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
     const birthDay = targetUser.birthDate.getDate();
     const birthMonth = targetUser.birthDate.getMonth();
     if (today.getDate() === birthDay && today.getMonth() === birthMonth) {
-      const birthdayMessage = `🎉 **عيد ميلاد سعيد!** 🎂\n\n${targetUser.mention || `@${targetUser.jid.split('@')[0]}`}، نتمنى لك عاماً مليئاً بالسعادة والنجاح! 🎈✨\n\nمن جميع أعضاء المجموعة 💕`;
+      const birthdayMessage = `🎉 **عيد ميلاد سعيد!** 🎂\n\n${getCleanMentionTextForUser(targetUser)}، نتمنى لك عاماً مليئاً بالسعادة والنجاح! 🎈✨\n\nمن جميع أعضاء المجموعة 💕`;
       await sendMentionMessage(sock, jid, targetUser, birthdayMessage);
     } else {
       await sock.sendMessage(jid, { text: `❌ اليوم ليس عيد ميلاد ${targetUser.nickname}.` });

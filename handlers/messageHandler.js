@@ -2,7 +2,7 @@ import { userCommands } from "../commands/user.js";
 import { handleAdminCommands } from "../commands/adminCommands.js";
 import { showCommandsList, handleCommandsChoice } from "../commands/commandsList.js";
 import { addRecentMessage } from "../utils/messageCache.js";
-import { isSuperAdminInKingdom, isModerator, extractAndSaveUserFromMention, grantEmperorRankWithPassword, getMentionFromJID, classifyIdentifier, startGameSession, stopGameSession, generateAdminDailyReport, getDailyGameStats, deleteUser, buildWelcomeFormMessage, buildWorkWelcomeFormMessage } from "../commands/adminSystem.js";
+import { isSuperAdminInKingdom, isModerator, extractAndSaveUserFromMention, grantEmperorRankWithPassword, getMentionFromJID, getCleanMentionTextForUser, classifyIdentifier, startGameSession, stopGameSession, generateAdminDailyReport, getDailyGameStats, deleteUser, buildWelcomeFormMessage, buildWorkWelcomeFormMessage } from "../commands/adminSystem.js";
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { startGuessAnime, handleGuessAnimeResponse, activeGames, showLeaderboard, stopGuessAnime } from "../games/guessAnime.js";
@@ -269,7 +269,7 @@ export async function messageHandler(sock, msg) {
         const prevMilestone = Math.floor(prevDailyMessages / 100);
         const newMilestone = Math.floor(user.dailyMessages / 100);
         if (user.dailyMessages >= 100 && newMilestone > prevMilestone) {
-          const mentionText = user.mention || getMentionFromJID(user.jid) || `@${user.jid.split('@')[0]}`;
+          const mentionText = getCleanMentionTextForUser(user);
           const congratsMsg = `🎉 رائع يا ${mentionText}\nلقد وصلت إلى ${user.dailyMessages} تفاعل! 🏆🔥👏`;
           await sock.sendMessage(jid, { text: congratsMsg, mentions: [user.jid] });
         }
@@ -611,7 +611,7 @@ export async function messageHandler(sock, msg) {
       const text = msg.message.extendedTextMessage.text || '';
       const mentionRegex = /(@\w+)/g;
       const mentions = text.match(mentionRegex);
-      const realMention = mentions && mentions.length > 0 ? mentions[0] : `@${mentionedJid.split('@')[0]}`;
+      const realMention = mentions && mentions.length > 0 ? getCleanMentionTextForUser(mentions[0]) : getCleanMentionTextForUser(mentionedJid);
 
       // معالجة التبليغ عن الإساءة
       if (pendingData.action === 'report_mention') {

@@ -1,6 +1,7 @@
 import { getWords } from "../utils/wordList.js";
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
+import { getCleanMentionTextForUser } from "../commands/adminSystem.js";
 
 export const activeWordGames = {};
 export const wordGameWaiting = {};
@@ -230,7 +231,7 @@ async function startActualWordGame(sock, jid, players) {
   };
 
   const playerText = players 
-    ? `\n👥 المشاركون: ${players.map(p => p.split('@')[0]).join(' و ')}`
+    ? `\n👥 المشاركون: ${players.map(p => getCleanMentionTextForUser(p)).join(' و ')}`
     : '\n👥 جميع الأعضاء مدعوون للمشاركة';
   
   await sock.sendMessage(jid, {
