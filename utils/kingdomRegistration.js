@@ -221,17 +221,7 @@ async function validateGroupAccess(sock, groupJid) {
   if (!groupJid) return { ok: true };
 
   try {
-    const metadata = await sock.groupMetadata(groupJid);
-    const botId = sock.user?.id?.split(":")[0];
-    const botParticipant = metadata.participants.find((participant) => {
-      const participantId = participant.id?.split(":")[0];
-      return participantId === botId || participant.id === sock.user?.id;
-    });
-
-    if (!botParticipant) {
-      return { ok: false, message: `البوت ليس عضوًا في ${groupJid}` };
-    }
-
+    await sock.groupMetadata(groupJid);
     return { ok: true };
   } catch (error) {
     return { ok: false, message: `تعذر قراءة بيانات القروب ${groupJid}: ${error.message}` };
