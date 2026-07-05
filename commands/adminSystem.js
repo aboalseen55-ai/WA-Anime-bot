@@ -2,7 +2,7 @@ import User from "../database/userModel.js";
 import Bank from "../database/bankModel.js";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { getHighestRank, getRankInfo, displayRank, getAllRanksDisplay, kingdomRanks } from "./rankSystem.js";
-import { ADMINS, getKingdomFromGroupJid, getKingdomIdFromGroupJid, KINGDOMS } from "../config.js";
+import { ADMINS, getKingdomFromGroupJid, getKingdomIdFromGroupJid, KINGDOMS, WELCOME_LINK } from "../config.js";
 
 const REGION_DISPLAY_NAMES = typeof Intl === 'object' && typeof Intl.DisplayNames === 'function'
   ? new Intl.DisplayNames(['en'], { type: 'region' })
@@ -421,13 +421,7 @@ export function getLidFromJID(jid) {
 
 export function getMentionFromJID(jid) {
     const result = classifyIdentifier(jid);
-    if (result.identifierType === 'phone_jid') {
-        return result.mention;
-    }
-    if (result.identifierType === 'lid_jid' || result.identifierType === 'raw_lid') {
-        return result.mention;
-    }
-    return null;
+    return formatCleanMentionText(jid, result);
 }
 
 function formatCleanMentionText(jid, identifier = classifyIdentifier(jid)) {
@@ -459,6 +453,64 @@ function getPromotionMentionText(user) {
     if (user.rawLid) return `@${user.rawLid}`;
 
     return formatCleanMentionText(user.jid, identifier);
+}
+
+export function getCleanMentionTextForUser(userOrJid) {
+    if (typeof userOrJid === 'string') {
+        return formatCleanMentionText(userOrJid);
+    }
+
+    return getPromotionMentionText(userOrJid || {});
+}
+
+function getKingdomDisplayName(kingdom) {
+    return KINGDOMS[kingdom]?.name || kingdom || 'المملكة';
+}
+
+function getKingdomShortName(kingdom) {
+    const name = getKingdomDisplayName(kingdom);
+    return name.replace(/[^\p{L}\p{N}\s_-]/gu, '').trim() || name;
+}
+
+export function buildWelcomeFormMessage({ nickname, user, userJid, moderatorName, kingdom }) {
+    const kingdomName = getKingdomDisplayName(kingdom);
+    const kingdomShortName = getKingdomShortName(kingdom);
+    const mention = getCleanMentionTextForUser(user || userJid);
+
+    return `*~╃ ${kingdomName} ╄~*
+*『 ❀ اســتـمـارة الـتـرحـيـب ❀ 』*
+
+*❀✦═══ •『🍀』• ═══✦❀*
+
+*✧ بكل ودّ واحترام، نفتح لك أبواب قلوبنا قبل أبواب مجموعتنا*
+*✧ يسعدنا انضمامك إلى عائلة ${kingdomName} الراقية*
+*✧ وجودك بيننا هو إضافة ثمينة نعتز بها، فمرحبًا بك عدد نجوم السماء*✨
+
+➤ *الــلــقــــب ✦  :  『${nickname}』*
+➤ *الـمـنـشـن@ ✦ : 『${mention}』*
+*➤ الـمـسـؤول ✦ :  『${moderatorName || 'غير محدد'}』*
+
+📌 *يُرجى زيارة رابط الإعلانات الرسمي للاطلاع على كل جديد:*
+『 📰』
+${WELCOME_LINK}
+*
+*❀✦═══ •『🍀』• ═══✦❀*
+
+*~╃ ${kingdomShortName} ╄~*`;
+}
+
+export function buildWorkWelcomeFormMessage({ nickname, status, enteringSource, moderatorName, kingdom }) {
+    const kingdomName = getKingdomDisplayName(kingdom);
+
+    return `*☜ اللقب 🎭 ⟦ ${nickname} ⟧ ➪*
+
+*☜ الحالة ⚡ ⟦ ${status} ⟧ ➪*
+
+*☜ من طرف 🔗 ⟦ ${enteringSource} ⟧ ➪*
+
+*☜ المسؤول 🤝 ⟦ ${moderatorName || 'غير محدد'} ⟧ ➪*
+
+*𓆩 ${kingdomName} 𓆪*`;
 }
 
 async function getPromotionSignature(adminJid, kingdom) {
@@ -513,7 +565,7 @@ export async function getNicknameFromMention(sock, jid, mentionedJid, kingdom = 
             user.countryName = identifier.countryName;
             user.lid = null;
             user.rawLid = null;
-            user.mention = identifier.mention;
+            user.mention = formatCleanMentionText(mentionedJid, identifier);
             await user.save();
 
             return {
@@ -532,7 +584,7 @@ export async function getNicknameFromMention(sock, jid, mentionedJid, kingdom = 
             identifierType: identifier.identifierType,
             countryCode: identifier.countryCode,
             countryName: identifier.countryName,
-            mention: identifier.mention,
+            mention: formatCleanMentionText(mentionedJid, identifier),
             isDefaultNickname: true
         };
     } catch (error) {
@@ -568,7 +620,7 @@ export async function extractAndSaveUserFromMention(sock, jid, mentionedJid, nic
         user.identifierType = identifier.identifierType;
         user.countryCode = identifier.countryCode;
         user.countryName = identifier.countryName;
-        user.mention = identifier.mention;
+        user.mention = formatCleanMentionText(mentionedJid, identifier);
         await user.save();
 
         return user;
@@ -1641,7 +1693,7 @@ export async function retrieveOrCreateNickname(sock, jid, mentionedJid) {
             } else {
                 // لديه لقب لكن بدون منشن، تحديث المنشن
                 try {
-                    user.mention = `@${getPhoneFromJID(mentionedJid)}`;
+                    user.mention = formatCleanMentionText(mentionedJid);
                     user.lid = null;
                     await user.save();
 
@@ -1699,7 +1751,7 @@ export async function retrieveOrCreateNickname(sock, jid, mentionedJid) {
         user.identifierType = identifier.identifierType;
         user.countryCode = identifier.countryCode;
         user.countryName = identifier.countryName;
-        user.mention = identifier.mention;
+        user.mention = formatCleanMentionText(mentionedJid, identifier);
         
         try {
             await user.save();
@@ -2453,7 +2505,7 @@ export async function handleAssignMention(sock, jid, sender, mentionedJid, nickn
         user.identifierType = identifier.identifierType;
         user.countryCode = identifier.countryCode;
         user.countryName = identifier.countryName;
-        user.mention = realMention || identifier.mention;
+        user.mention = formatCleanMentionText(mentionedJid, identifier);
         if (user.mention && user.mention.startsWith('@') && user.identifierType === 'unknown' && /^\d+$/.test(user.mention.slice(1))) {
             user.mention = `@${user.mention.slice(1)}`;
         }
@@ -2525,7 +2577,7 @@ export async function handleChangeMention(sock, jid, sender, mentionedJid, oldNi
         oldUser.identifierType = identifier.identifierType;
         oldUser.countryCode = identifier.countryCode;
         oldUser.countryName = identifier.countryName;
-        oldUser.mention = realMention || identifier.mention;
+        oldUser.mention = formatCleanMentionText(mentionedJid, identifier);
         await oldUser.save();
 
         // إرسال رسالة تأكيد بالبيانات المستبدلة

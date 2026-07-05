@@ -33,8 +33,7 @@ import {
     grantEmperorDecisionRank,
     initiateEmperorGrant,
     retrieveOrCreateNickname,
-    getPhoneFromJID,
-    getMentionFromJID,
+    getCleanMentionTextForUser,
     findUserByNickname,
     sendAdminsDailyReports,
     resetDailyGameStats
@@ -882,8 +881,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         
         const imageBuffers = await getCharacterImages(user.nickname);
         
-        // استخراج المنشن من JID تلقائياً
-        const mentionPhone = getPhoneFromJID(user.jid);
+        const mentionText = getCleanMentionTextForUser(user);
 
         if (imageBuffers.length > 0) {
             // عرض الصور واحدة تلو الأخرى
@@ -919,7 +917,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                 action: 'welcome_images',
                 nickname: user.nickname,
                 userJid: user.jid,
-                mentionPhone: mentionPhone,
+                mentionText: mentionText,
                 moderatorName: senderInfo.nickname,
                 moderatorJid: sender,
                 imageBuffers: imageBuffers,
@@ -939,7 +937,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                 action: 'welcome_confirm',
                 nickname: user.nickname,
                 userJid: user.jid,
-                mentionPhone: mentionPhone,
+                mentionText: mentionText,
                 moderatorName: senderInfo.nickname,
                 moderatorJid: sender,
                 imageUrl: null,

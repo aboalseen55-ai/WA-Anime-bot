@@ -2,9 +2,9 @@ import { userCommands } from "../commands/user.js";
 import { handleAdminCommands } from "../commands/adminCommands.js";
 import { showCommandsList, handleCommandsChoice } from "../commands/commandsList.js";
 import { addRecentMessage } from "../utils/messageCache.js";
-import { isSuperAdminInKingdom, isModerator, extractAndSaveUserFromMention, grantEmperorRankWithPassword, getMentionFromJID, classifyIdentifier, startGameSession, stopGameSession, generateAdminDailyReport, getDailyGameStats, deleteUser } from "../commands/adminSystem.js";
+import { isSuperAdminInKingdom, isModerator, extractAndSaveUserFromMention, grantEmperorRankWithPassword, getMentionFromJID, classifyIdentifier, startGameSession, stopGameSession, generateAdminDailyReport, getDailyGameStats, deleteUser, buildWelcomeFormMessage, buildWorkWelcomeFormMessage } from "../commands/adminSystem.js";
 import User from "../database/userModel.js";
-import { WELCOME_LINK, getKingdomIdFromGroupJid } from "../config.js";
+import { getKingdomIdFromGroupJid } from "../config.js";
 import { startGuessAnime, handleGuessAnimeResponse, activeGames, showLeaderboard, stopGuessAnime } from "../games/guessAnime.js";
 import { startWordGame, checkWordGuess, activeWordGames, stopWordGame, wordGameWaiting, handleWordGameModeSelection, handleWordGamePlayersSelection } from "../games/wordtype.js";
 import { startGuessCharacter, checkCharacterGuess, activeCharacterGames, characterGameWaiting, handleGuessCharacterResponse, handleCharacterPlayersSelection, stopGuessCharacter } from "../games/guessCharacter.js";
@@ -250,7 +250,7 @@ export async function messageHandler(sock, msg) {
             identifierType: identifier.identifierType,
             countryCode: identifier.countryCode,
             countryName: identifier.countryName,
-            mention: identifier.mention,
+            mention: getMentionFromJID(identifier.jid || sender),
             dailyMessages: 1,
             lastMessageResetDate: new Date()
           });
@@ -636,27 +636,13 @@ export async function messageHandler(sock, msg) {
         pendingData.realMention = realMention;
         // تنفيذ الإجراء المعلق
         if (pendingData.action === 'welcoming') {
-          // إرسال رسالة الترحيب
-          const welcomeMessage = `*~╃ 𝘾𝙇𝙊𝙑𝙀𝙍𖠛🍀 𝘾𝙇𝙊𝙑𝙀𝙍 ╄~*
-*『 ❀ اســتـمـارة الـتـرحـيـب ❀ 』*
-
-*❀✦═══ •『🍀』• ═══✦❀*
-
-*✧ بكل ودّ واحترام، نفتح لك أبواب قلوبنا قبل أبواب مجموعتنا*  
-*✧ يسعدنا انضمامك إلى عائلة 🍀 𝘾𝙇𝙊𝙑𝙀𝙍 الراقية*
-*✧ وجودك بيننا هو إضافة ثمينة نعتز بها، فمرحبًا بك عدد نجوم السماء*✨
-
-➤ *الــلــقــــب ✦  :  『${result.nickname}』*
-➤ *الـمـنـشـن@ ✦ : 『@${pendingData.mentionedJid.split('@')[0]}』*
-*➤ الـمـسـؤول ✦ :  『${pendingData.moderatorName}』*
-
-📌 *يُرجى زيارة رابط الإعلانات الرسمي للاطلاع على كل جديد:*
-『 📰』 
-${WELCOME_LINK}
-*
-*❀✦═══ •『🍀』• ═══✦❀*
-
-*~╃ C•L•O 𖠛🍀 𝘾𝙇𝙊𝙑𝙀𝙍 ╄~*`;
+          const welcomeMessage = buildWelcomeFormMessage({
+            nickname: result.nickname,
+            user: result,
+            userJid: pendingData.mentionedJid,
+            moderatorName: pendingData.moderatorName,
+            kingdom
+          });
 
           // إذا كان هناك صورة، أرسل الترحيب مع الصورة
           if (pendingData.hasImage && pendingData.imageUrl) {
@@ -808,27 +794,16 @@ ${WELCOME_LINK}
           return;
         }
 
-        // إرسال رسالة الترحيب النهائية إلى المجموعة الأساسية
-        const welcomeMessage = `*~╃ 𝘾𝙇𝙊𝙑𝙀𝙍𖠛🍀 𝘾𝙇𝙊𝙑𝙀𝙍 ╄~*
-*『 ❀ اســتـمـارة الـتـرحـيـب ❀ 』*
-
-*❀✦═══ •『🍀』• ═══✦❀*
-
-*✧ بكل ودّ واحترام، نفتح لك أبواب قلوبنا قبل أبواب مجموعتنا*  
-*✧ يسعدنا انضمامك إلى عائلة 🍀 𝘾𝙇𝙊𝙑𝙀𝙍 الراقية*
-*✧ وجودك بيننا هو إضافة ثمينة نعتز بها، فمرحبًا بك عدد نجوم السماء*✨
-
-➤ *الــلــقــــب ✦  :  『${welcomeImagesData.nickname}』*
-➤ *الـمـنـشـن@ ✦ : 『@${welcomeImagesData.mentionPhone}』*
-*➤ الـمـسـؤول ✦ :  『${welcomeImagesData.moderatorName}』*
-
-📌 *يُرجى زيارة رابط الإعلانات الرسمي للاطلاع على كل جديد:*
-『 📰』 
-${WELCOME_LINK}
-*
-*❀✦═══ •『🍀』• ═══✦❀*
-
-*~╃ C•L•O 𖠛🍀 𝘾𝙇𝙊𝙑𝙀𝙍 ╄~*`;
+        const welcomeMessage = buildWelcomeFormMessage({
+          nickname: welcomeImagesData.nickname,
+          user: {
+            jid: welcomeImagesData.userJid,
+            mention: welcomeImagesData.mentionText
+          },
+          userJid: welcomeImagesData.userJid,
+          moderatorName: welcomeImagesData.moderatorName,
+          kingdom: welcomeImagesData.kingdom
+        });
 
         try {
           // إرسال الترحيب مع الصورة المختارة إلى المجموعة الأساسية
@@ -929,27 +904,16 @@ ${WELCOME_LINK}
             return;
           }
 
-          // إرسال رسالة الترحيب النهائية إلى المجموعة الأساسية
-          const welcomeMessage = `*~╃ 𝘾𝙇𝙊𝙑𝙀𝙍𖠛🍀 𝘾𝙇𝙊𝙑𝙀𝙍 ╄~*
-*『 ❀ اســتـمـارة الـتـرحـيـب ❀ 』*
-
-*❀✦═══ •『🍀』• ═══✦❀*
-
-*✧ بكل ودّ واحترام، نفتح لك أبواب قلوبنا قبل أبواب مجموعتنا*  
-*✧ يسعدنا انضمامك إلى عائلة 🍀 𝘾𝙇𝙊𝙑𝙀𝙍 الراقية*
-*✧ وجودك بيننا هو إضافة ثمينة نعتز بها، فمرحبًا بك عدد نجوم السماء*✨
-
-➤ *الــلــقــــب ✦  :  『${welcomeData.nickname}』*
-➤ *الـمـنـشـن@ ✦ : 『@${welcomeData.mentionPhone}』*
-*➤ الـمـسـؤول ✦ :  『${welcomeData.moderatorName}』*
-
-📌 *يُرجى زيارة رابط الإعلانات الرسمي للاطلاع على كل جديد:*
-『 📰』 
-${WELCOME_LINK}
-*
-*❀✦═══ •『🍀』• ═══✦❀*
-
-*~╃ C•L•O 𖠛🍀 𝘾𝙇𝙊𝙑𝙀𝙍 ╄~*`;
+          const welcomeMessage = buildWelcomeFormMessage({
+            nickname: welcomeData.nickname,
+            user: {
+              jid: welcomeData.userJid,
+              mention: welcomeData.mentionText
+            },
+            userJid: welcomeData.userJid,
+            moderatorName: welcomeData.moderatorName,
+            kingdom: welcomeData.kingdom
+          });
 
           try {
             // أرسل رسالة الترحيب إلى المجموعة الأساسية
@@ -1531,7 +1495,7 @@ ${WELCOME_LINK}
           identifierType: identifier.identifierType,
           countryCode: identifier.countryCode,
           countryName: identifier.countryName,
-          mention: identifier.mention,
+          mention: getMentionFromJID(identifier.jid || sender),
           whatsappName: whatsappName,
           enteringSource: enteringSource // حفظ مصدر الدخول
         });
@@ -1548,7 +1512,11 @@ ${WELCOME_LINK}
       awaitingNicknameRegistration.delete(sender);
       delete nicknameRegistrationStages[sender];
 
-      const successMessage = `🎉 *مرحباً بك في مملكة كلوفر يا ${whatsappName}!* 🍀
+      const { KINGDOMS } = await import('../config.js');
+      const kingdomData = KINGDOMS[kingdom];
+      const kingdomName = kingdomData?.name || 'المملكة';
+
+      const successMessage = `🎉 *مرحباً بك في ${kingdomName} يا ${whatsappName}!* 🍀
 
 ✨ تم تسجيلك بنجاح! ✨
 
@@ -1569,8 +1537,6 @@ ${WELCOME_LINK}
 
       // إرسال نموذج الترحيب إلى مجموعة الوورك (إذا كانت موجودة)
       try {
-        const { KINGDOMS } = await import('../config.js');
-        const kingdomData = KINGDOMS[kingdom];
         const workGroupJid = kingdomData?.workGroup;
 
         if (workGroupJid) {
@@ -1581,15 +1547,13 @@ ${WELCOME_LINK}
           // في هذاالحالة قد لا يكون معروفاً، لذا سنتركه فارغاً أو نضع "غير محدد"
           const moderatorName = 'غير محدد';
 
-          const formMessage = `*☜ اللقب 🎭 ⟦ ${originalNickname} ⟧ ➪*
-
-*☜ الحالة ⚡ ⟦ ${status} ⟧ ➪*
-
-*☜ من طرف 🔗 ⟦ ${enteringSource} ⟧ ➪*
-
-*☜ المسؤول 🤝 ⟦ ${moderatorName} ⟧ ➪*
-
-*𓆩 𝐇٠𝐔٠𝐍⊰🩸⊱𝘾𝙇𝙊𝙑𝙀𝙍 ♦️*`;
+          const formMessage = buildWorkWelcomeFormMessage({
+            nickname: originalNickname,
+            status,
+            enteringSource,
+            moderatorName,
+            kingdom
+          });
 
           await sock.sendMessage(workGroupJid, { text: formMessage });
           console.log(`✅ تم إرسال نموذج الترحيب إلى مجموعة الوورك: ${originalNickname}`);
