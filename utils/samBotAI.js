@@ -4,11 +4,13 @@ import { recordSamBotAIUsage } from "./samBotUsage.js";
 const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 const DEFAULT_TIMEOUT_MS = 12000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 15;
+const DEFAULT_BILLING_COOLDOWN_MS = 30 * 60 * 1000;
 const MAX_ALLOWED_OUTPUT_TOKENS = 15;
 const MAX_REPLY_WORDS = 5;
 const MAX_REPLY_LENGTH = 60;
 
 const geminiClients = new Map();
+let geminiBlockedUntil = 0;
 
 function isExplicitlyDisabled(value) {
   return String(value || "").trim().toLowerCase() === "false";
@@ -45,6 +47,19 @@ function isInvalidApiKeyError(error) {
   return message.includes("API_KEY_INVALID") || message.includes("API key not valid");
 }
 
+function isBillingDepletedError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("prepayment credits are depleted")
+    || message.includes("no credits")
+    || message.includes("credit balance")
+    || message.includes("billing");
+}
+
+function getBillingCooldownMs() {
+  const value = Number(process.env.SAM_BOT_AI_BILLING_COOLDOWN_MS || DEFAULT_BILLING_COOLDOWN_MS);
+  return Number.isFinite(value) && value > 0 ? value : DEFAULT_BILLING_COOLDOWN_MS;
+}
+
 function withTimeout(promise, timeoutMs) {
   return Promise.race([
     promise,
@@ -79,7 +94,7 @@ async function safelyRecordUsage(payload) {
 }
 
 export function isSamBotAIAvailable() {
-  return getConfiguredApiKeys().length > 0;
+  return Date.now() >= geminiBlockedUntil && getConfiguredApiKeys().length > 0;
 }
 
 function resolveMaxOutputTokens(value) {
@@ -89,6 +104,8 @@ function resolveMaxOutputTokens(value) {
 }
 
 export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate }) {
+  if (Date.now() < geminiBlockedUntil) return "";
+
   const apiKeys = getConfiguredApiKeys();
   if (!apiKeys.length) return "";
 
@@ -147,6 +164,10 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
       if (isInvalidApiKeyError(error) && index < apiKeys.length - 1) {
         console.warn(`⚠️ ${apiKey.name} is invalid; trying next Gemini key.`);
         continue;
+      }
+      if (isBillingDepletedError(error)) {
+        geminiBlockedUntil = Date.now() + getBillingCooldownMs();
+        console.warn("⚠️ Gemini billing/credits unavailable; using local fallback temporarily.");
       }
       break;
     }
