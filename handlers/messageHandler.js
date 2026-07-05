@@ -17,6 +17,7 @@ import { handleDeveloperCommandGuide } from "../utils/developerCommandGuide.js";
 import { buildIdentityInfoMessage, isIdentityCommand } from "../utils/identityInfo.js";
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
+import { handleSamBotUsageCommand } from "../utils/samBotUsage.js";
 
 // نظام الحالات - لتتبع الأوامر المعلقة التي تحتاج تأكيد منشن
 export const pendingMentions = {};
@@ -309,6 +310,10 @@ export async function messageHandler(sock, msg) {
   }
 
   if (await handleDeveloperCommandGuide(sock, jid, sender, trimmedText)) {
+    return;
+  }
+
+  if (await handleSamBotUsageCommand(sock, jid, sender, trimmedText)) {
     return;
   }
 

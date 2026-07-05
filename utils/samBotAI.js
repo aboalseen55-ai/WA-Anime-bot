@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { recordSamBotAIUsage } from "./samBotUsage.js";
 
 const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 const DEFAULT_TIMEOUT_MS = 12000;
@@ -43,6 +44,14 @@ function sanitizeReply(reply) {
   return `${clean.slice(0, MAX_REPLY_LENGTH - 1).trim()}…`;
 }
 
+async function safelyRecordUsage(payload) {
+  try {
+    await recordSamBotAIUsage(payload);
+  } catch (error) {
+    console.error("❌ Sam Bot Usage Record Error:", error.message);
+  }
+}
+
 export function isSamBotAIAvailable() {
   return Boolean(getGeminiClient());
 }
@@ -85,9 +94,20 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
       Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : DEFAULT_TIMEOUT_MS
     );
 
+    await safelyRecordUsage({
+      modelName,
+      usageMetadata: result.response?.usageMetadata,
+      success: true
+    });
+
     return sanitizeReply(result.response?.text());
   } catch (error) {
     console.error("❌ Sam Bot Gemini Error:", error.message);
+    await safelyRecordUsage({
+      modelName,
+      success: false,
+      errorMessage: error.message
+    });
     return "";
   }
 }

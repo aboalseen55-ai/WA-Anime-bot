@@ -21,12 +21,17 @@ OPENAI_API_KEY=
 SAM_BOT_AI_ENABLED=true
 SAM_BOT_AI_MODEL=gemini-3.1-flash-lite
 SAM_BOT_AI_TIMEOUT_MS=12000
+SAM_BOT_AI_DAILY_REQUEST_LIMIT=
+SAM_BOT_AI_DAILY_TOKEN_LIMIT=
+SAM_BOT_USAGE_TIMEZONE=Asia/Amman
 LOG_LEVEL=info
 ```
 
 `ADMIN_PASSWORD` مطلوبة للأوامر الحساسة مثل تعيين الأدمن ومنح رتب الإمبراطور.
 
 `GEMINI_API_KEY` أو `GOOGLE_API_KEY` يفعّل ردود سام بوت الذكية عند توجيه الكلام له. إذا لم يكن أي مفتاح موجودًا أو تم ضبط `SAM_BOT_AI_ENABLED=false` سيستخدم البوت الردود المحلية الاحتياطية.
+
+أمر المطور `/رصيد_الذكاء` يعرض استهلاك Gemini المسجل في MongoDB. لضبط النسبة المتبقية، عرّف `SAM_BOT_AI_DAILY_REQUEST_LIMIT` أو `SAM_BOT_AI_DAILY_TOKEN_LIMIT` حسب حدود مشروعك في Google.
 
 ## التشغيل
 
