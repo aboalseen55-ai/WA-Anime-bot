@@ -15,6 +15,7 @@ import { startWordSplitterGame, checkWordSplitterGuess, activeWordSplitterGames,
 import { startFlagGame, handleFlagGameResponse, activeGames as activeFlagGames, checkGuess as checkFlagGuess } from "../games/flagGame.js";
 import { clearAnswerQueue } from "../utils/answerQueue.js";
 import { getCreatorInfoMessage, isCreatorQuestion } from "../utils/creatorInfo.js";
+import { handleDeveloperCommandGuide } from "../utils/developerCommandGuide.js";
 import { buildIdentityInfoMessage, isIdentityCommand } from "../utils/identityInfo.js";
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 
@@ -350,6 +351,10 @@ export async function messageHandler(sock, msg) {
 
   if (isIdentityCommand(trimmedText)) {
     await sock.sendMessage(jid, { text: buildIdentityInfoMessage(msg, sender, jid) });
+    return;
+  }
+
+  if (await handleDeveloperCommandGuide(sock, jid, sender, trimmedText)) {
     return;
   }
 
