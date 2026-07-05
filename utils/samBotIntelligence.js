@@ -15,7 +15,9 @@ const BOT_NAMES = [
 
 const DIRECT_REPLY_COOLDOWN = 20 * 1000;
 const DIRECT_MESSAGE_COOLDOWN = 8 * 1000;
+const AMBIENT_SOCIAL_COOLDOWN = 45 * 1000;
 const lastSmartReplyAt = new Map();
+const AMBIENT_SOCIAL_INTENTS = new Set(["greeting", "wellbeing"]);
 
 function normalizeText(text) {
   return String(text || "")
@@ -74,6 +76,23 @@ function isPrivateChat(jid) {
 
 function isDirectedAtBot(sock, jid, msg, text) {
   return isPrivateChat(jid) || isReplyToBot(sock, msg) || mentionsBot(sock, msg) || hasBotName(text);
+}
+
+function isAmbientSocialMessage(text, intent) {
+  if (!AMBIENT_SOCIAL_INTENTS.has(intent)) return false;
+
+  const normalized = normalizeText(text);
+  if (!normalized || normalized.split(/\s+/).length > 6) return false;
+
+  if (intent === "greeting") {
+    return /^(السلام عليكم|سلام عليكم|سلام|مرحبا|اهلا|اهلين|هلا|هلا والله|هاي|hi|hello|صباح الخير|مساء الخير)( ورحمة الله وبركاته)?$/.test(normalized);
+  }
+
+  if (intent === "wellbeing") {
+    return /^(كيفك|كيف حالك|كيف الحال|شلونك|شو اخبارك|اخبارك|كيفكم|كيفكو|how are you)( اليوم)?$/.test(normalized);
+  }
+
+  return false;
 }
 
 export function classifySamBotIntent(text) {
@@ -148,6 +167,7 @@ function removeBotAddressing(text) {
 
 function buildReply(intent, nickname, text) {
   const cleaned = removeBotAddressing(text);
+  const normalized = normalizeText(text);
 
   const replies = {
     identity: [
@@ -189,7 +209,8 @@ function buildReply(intent, nickname, text) {
     ],
     wellbeing: [
       `الحمد لله تمام.`,
-      `تمام، وانت؟`
+      `تمام، وانت؟`,
+      `الحمد لله، وأنت يا ${nickname}؟`
     ],
     smalltalk: [
       `موجود معكم هون.`,
@@ -199,10 +220,17 @@ function buildReply(intent, nickname, text) {
       `تمام يا ${nickname}. واضح ومفهوم.`,
       `ماشي، تمام.`
     ],
-    greeting: [
-      `أهلًا يا ${nickname}.`,
-      `هلا يا ${nickname}.`
-    ],
+    greeting: normalized.includes("السلام") || normalized.startsWith("سلام")
+      ? [
+          `وعليكم السلام.`,
+          `وعليكم السلام ورحمة الله.`,
+          `وعليكم السلام يا ${nickname}.`
+        ]
+      : [
+          `أهلًا يا ${nickname}.`,
+          `هلا يا ${nickname}.`,
+          `يا هلا.`
+        ],
     conversation: [
       cleaned
         ? `وضحها أكثر يا ${nickname}.`
@@ -216,7 +244,7 @@ function buildReply(intent, nickname, text) {
 }
 
 function shouldUseOnlineAI(intent) {
-  return !["identity", "capabilities"].includes(intent);
+  return !["identity", "capabilities", "greeting", "wellbeing", "thanks", "apology", "ack", "affection"].includes(intent);
 }
 
 async function getNickname(jid, sender, msg) {
@@ -236,18 +264,19 @@ function shouldThrottle(key, cooldown) {
 export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
   if (!text || text.startsWith("/")) return false;
 
+  const intent = classifySamBotIntent(text);
   const directed = isDirectedAtBot(sock, jid, msg, text);
-  if (!directed) return false;
+  const ambientSocial = !directed && !isPrivateChat(jid) && isAmbientSocialMessage(text, intent);
+  if (!directed && !ambientSocial) return false;
 
-  const throttleKey = `${jid}:${sender}:smart`;
-  const cooldown = isReplyToBot(sock, msg) ? DIRECT_REPLY_COOLDOWN : DIRECT_MESSAGE_COOLDOWN;
+  const throttleKey = ambientSocial ? `${jid}:${sender}:ambient:${intent}` : `${jid}:${sender}:smart`;
+  const cooldown = ambientSocial ? AMBIENT_SOCIAL_COOLDOWN : (isReplyToBot(sock, msg) ? DIRECT_REPLY_COOLDOWN : DIRECT_MESSAGE_COOLDOWN);
   if (shouldThrottle(throttleKey, cooldown)) {
     return true;
   }
 
   const nickname = await getNickname(jid, sender, msg);
-  const intent = classifySamBotIntent(text);
-  const aiReply = shouldUseOnlineAI(intent)
+  const aiReply = !ambientSocial && shouldUseOnlineAI(intent)
     ? await generateSamBotAIReply({
         userMessage: text,
         nickname,
