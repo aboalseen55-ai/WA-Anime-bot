@@ -218,13 +218,13 @@ export async function getUserInfo(jid, kingdom = null) {
 export async function findUserByNicknameOrPhone(searchTerm, kingdom = 'clover') {
     if (!searchTerm) return null;
 
-    // تطبيع المدخل: إزالة @ بداية، ودعم صيغ مثل 123@lib (نستخرج الرقم قبل @lib)
+    // تطبيع المدخل: إزالة @ بداية، ودعم صيغ مثل 123@lid (نستخرج الرقم قبل @lid)
     let term = (searchTerm || '').trim();
     if (term.startsWith('@')) term = term.slice(1);
-    // إذا كانت الصيغة تحتوي على رقم قبل @lib مثل "123@lib"، نستخرج الرقم
-    const libMatch = term.match(/^(\d+)@lib$/i);
-    if (libMatch) {
-        term = libMatch[1];
+    // إذا كانت الصيغة تحتوي على رقم قبل @lid مثل "123@lid"، نستخرج الرقم
+    const lidMatch = term.match(/^(\d+)@lid$/i);
+    if (lidMatch) {
+        term = lidMatch[1];
     }
 
     // محاولة البحث بالنيك نيم
@@ -234,7 +234,7 @@ export async function findUserByNicknameOrPhone(searchTerm, kingdom = 'clover') 
     });
     if (user) return user;
 
-    // أولاً: إذا كان searchTerm عبارة عن منشن مسجل مثل '@lib' أو '@123@lib'، حاول البحث في حقل mention
+    // أولاً: إذا كان searchTerm عبارة عن منشن مسجل مثل '@lid' أو '@123@lid', حاول البحث في حقل mention
     if (typeof searchTerm === 'string' && searchTerm.trim().length > 0) {
         const raw = searchTerm.trim();
         const mentionLookup = raw.startsWith('@') ? raw : `@${raw}`;
@@ -242,9 +242,9 @@ export async function findUserByNicknameOrPhone(searchTerm, kingdom = 'clover') 
         if (user) return user;
     }
 
-    // إذا كان المدخل يمثل libId رقمي (مثلاً 123 من 123@lib)، حاول البحث في حقل libId
+    // إذا كان المدخل يمثل lid رقمي (مثلاً 123 من 123@lid)، حاول البحث في حقل lid
     if (/^\d+$/.test(term)) {
-        user = await User.findOne({ libId: term, kingdom_id: kingdom });
+        user = await User.findOne({ lid: term, kingdom_id: kingdom });
         if (user) return user;
     }
 
@@ -349,7 +349,7 @@ export async function extractAndSaveUserFromMention(sock, jid, mentionedJid, nic
         const phoneNumber = getPhoneFromJID(mentionedJid);
         user.phoneNumber = phoneNumber;
         user.mention = phoneNumber ? `@${phoneNumber}` : null;  // حفظ المنشن أيضاً
-        user.libId = null; // عند وجود JID حقيقي نترك libId فارغاً
+        user.lid = null; // عند وجود JID حقيقي نترك lid فارغاً
         await user.save();
 
         return user;
@@ -406,7 +406,7 @@ export async function promoteModerator(sock, jid, targetNickname, adminJid, ment
             user.mention = `@${phoneNumber}`;
             user.jid = mentionedJid;
             user.phoneNumber = phoneNumber;
-            user.libId = null;
+            user.lid = null;
         }
 
         // ترقيته
@@ -1419,7 +1419,7 @@ export async function retrieveOrCreateNickname(sock, jid, mentionedJid) {
                 // لديه لقب لكن بدون منشن، تحديث المنشن
                 try {
                     user.mention = `@${getPhoneFromJID(mentionedJid)}`;
-                    user.libId = null;
+                    user.lid = null;
                     await user.save();
 
                     await sock.sendMessage(jid, { 
@@ -1470,7 +1470,7 @@ export async function retrieveOrCreateNickname(sock, jid, mentionedJid) {
         // حفظ اللقب الجديد والمنشن
         user.nickname = newNickname;
         user.mention = `@${getPhoneFromJID(mentionedJid)}`;
-        user.libId = null;
+        user.lid = null;
         
         try {
             await user.save();
@@ -2217,20 +2217,20 @@ export async function handleAssignMention(sock, jid, sender, mentionedJid, nickn
 
         // تحديث JID و phoneNumber من المنشن
         user.jid = mentionedJid;
-        // حاول استخراج الرقم أولاً من mentionedJid، وإن لم يوجد فحاول من realMention (مثل '@123@lib')
+        // حاول استخراج الرقم أولاً من mentionedJid، وإن لم يوجد فحاول من realMention (مثل '@123@lid')
         let phone = getPhoneFromJID(mentionedJid) || null;
-        let libId = null;
+        let lid = null;
         if (!phone && realMention && typeof realMention === 'string') {
-            const m = realMention.match(/^@?(\d+)(?:@lib)?$/i);
+            const m = realMention.match(/^@?(\d+)(?:@lid)?$/i);
             if (m) phone = m[1];
         }
-        // إذا كان realMention بصيغة رقم@lib، خزّن libId
+        // إذا كان realMention بصيغة رقم@lid، خزّن lid
         if (realMention && typeof realMention === 'string') {
-            const lm = realMention.match(/^@?(\d+)@lib$/i);
-            if (lm) libId = lm[1];
+            const lm = realMention.match(/^@?(\d+)@lid$/i);
+            if (lm) lid = lm[1];
         }
         user.phoneNumber = phone;
-        user.libId = libId;
+        user.lid = lid;
         user.mention = realMention;
         await user.save();
 
@@ -2296,17 +2296,17 @@ export async function handleChangeMention(sock, jid, sender, mentionedJid, oldNi
         oldUser.jid = mentionedJid;
         // نفس منطق الاستخراج: من mentionedJid ثم من realMention إذا لم يوجد
         let newPhone = getPhoneFromJID(mentionedJid) || null;
-        let newLibId = null;
+        let newLid = null;
         if (!newPhone && realMention && typeof realMention === 'string') {
-            const m2 = realMention.match(/^@?(\d+)(?:@lib)?$/i);
+            const m2 = realMention.match(/^@?(\d+)(?:@lid)?$/i);
             if (m2) newPhone = m2[1];
         }
         if (realMention && typeof realMention === 'string') {
-            const lm2 = realMention.match(/^@?(\d+)@lib$/i);
-            if (lm2) newLibId = lm2[1];
+            const lm2 = realMention.match(/^@?(\d+)@lid$/i);
+            if (lm2) newLid = lm2[1];
         }
         oldUser.phoneNumber = newPhone;
-        oldUser.libId = newLibId;
+        oldUser.lid = newLid;
         oldUser.mention = realMention;
         await oldUser.save();
 

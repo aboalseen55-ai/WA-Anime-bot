@@ -72,7 +72,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
       
       // تحديث بيانات المستخدم بالمنشن الجديد
       targetUser.mention = mentionText;
-      targetUser.libId = null;
+      targetUser.lid = null;
       await targetUser.save();
       
       // رسالة نجاح مع عرض المنشن الجديد
@@ -118,7 +118,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
         nickname: nick, 
         phoneNumber: phoneNumber, 
         whatsappName: whatsappName,
-        libId: null
+        lid: null
       });
       await user.save();
       await sock.sendMessage(jid, { text: `✅ تم تسجيل لقبك: ${nick}` });
@@ -311,7 +311,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/من") {
     const query = args.slice(1).join(" ").trim();
     if (!query || !query.startsWith('@')) {
-      await sock.sendMessage(jid, { text: "❌ استخدم: /من @<رقم> أو @<libId>@lib\n💡 أمثلة: /من @962791234567 أو /من @123@lib" });
+      await sock.sendMessage(jid, { text: "❌ استخدم: /من @<رقم> أو @<lid>@lid\n💡 أمثلة: /من @962791234567 أو /من @123@lid" });
       return true;
     }
 
@@ -319,13 +319,13 @@ export async function userCommands(sock, jid, sender, text, msg) {
       // إزالة الـ @ البداية
       const token = query.substring(1).trim();
 
-      // 1) حالة lib: @123@lib أو 123@lib
-      const libMatch = token.match(/^(\d+)@lib$/i);
-      if (libMatch) {
-        const libId = libMatch[1];
-        const targetUser = await User.findOne({ libId: libId, kingdom_id: kingdom });
+      // 1) حالة lid: @123@lid أو 123@lid
+      const lidMatch = token.match(/^(\d+)@lid$/i);
+      if (lidMatch) {
+        const lidVal = lidMatch[1];
+        const targetUser = await User.findOne({ lid: lidVal, kingdom_id: kingdom });
         if (!targetUser) {
-          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم بالـ libId "${libId}"` });
+          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم بالـ lid "${lidVal}"` });
           return true;
         }
         // عرض المعلومات
@@ -364,8 +364,8 @@ export async function userCommands(sock, jid, sender, text, msg) {
       const t = targetUserResolved;
       let userInfo = `👤 *معلومات المستخدم*\n━━━━━━━━━━━━━━━━━━━━━\n\n📝 *اللقب:* ${t.nickname}\n📞 *رقم الواتس:* +${t.phoneNumber || 'غير مسجل'}`;
 
-      // إن وجد libId، أضفه
-      if (t.libId) userInfo += `\n🔗 *libId:* ${t.libId}`;
+      // إن وجد lid، أضفه
+      if (t.lid) userInfo += `\n🔗 *lid:* ${t.lid}`;
 
       // إضافة معلومات الترتيب إذا كانت موجودة
       const targetRankStars = t.rankStarsByKingdom?.[kingdom] || 0;

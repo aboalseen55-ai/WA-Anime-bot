@@ -104,8 +104,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  // رقم الـ @lib (إذا كان المستخدم مسجل بحساب lib بدلاً من رقم واتساب)
-  libId: {
+  // رقم الـ @lid (إذا كان المستخدم مسجل بحقل lid بدلاً من رقم واتساب)
+  lid: {
     type: String,
     default: null
   },
