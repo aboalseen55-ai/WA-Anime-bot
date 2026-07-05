@@ -27,8 +27,8 @@ const mafiaSessionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["collecting_config", "roles_distributed", "game_over", "closed"],
-    default: "collecting_config",
+    enum: ["collecting_players", "collecting_config", "roles_distributed", "game_over", "closed"],
+    default: "collecting_players",
     index: true
   },
   hostJid: {

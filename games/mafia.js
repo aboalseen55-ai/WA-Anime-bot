@@ -19,9 +19,11 @@ const ROLE_ICONS = {
   [ROLE_LABELS.boy]: "⚡"
 };
 
-const ACTIVE_STATUSES = ["collecting_config", "roles_distributed", "game_over"];
+const ACTIVE_STATUSES = ["collecting_players", "collecting_config", "roles_distributed", "game_over"];
 const PRIVATE_NICKNAME_MESSAGE = `أهلًا 👋
 اكتب اسمك أو لقبك الذي تريد استخدامه في لعبة المافيا.`;
+const JOIN_COMMAND_PATTERN = /^(\/انضم_مافيا|انضم|مشارك|بلعب)$/i;
+const START_SETUP_PATTERN = /^(\/ابدأ_مافيا|\/ابدا_مافيا)$/i;
 
 function isGroupJid(jid) {
   return String(jid || "").endsWith("@g.us");
@@ -85,6 +87,35 @@ function hostMention(hostJid) {
   return `@${id.split("@")[0]}`;
 }
 
+function sameIdentity(stored, identifier, fallbackJid) {
+  const normalizedJid = identifier.jid || normalizeJid(fallbackJid);
+  return (
+    (normalizedJid && stored.jid && normalizeJid(stored.jid) === normalizedJid) ||
+    (identifier.lid && stored.lid === identifier.lid) ||
+    (identifier.rawLid && stored.rawLid === identifier.rawLid) ||
+    (identifier.phoneNumber && stored.phoneNumber === identifier.phoneNumber)
+  );
+}
+
+function buildSessionPlayer(jid, nickname = null) {
+  const identity = buildIdentity(jid);
+  return {
+    jid: identity.jid || normalizeJid(jid),
+    lid: identity.lid || null,
+    rawLid: identity.rawLid || null,
+    phoneNumber: identity.phoneNumber || null,
+    identifierType: identity.identifierType,
+    nickname,
+    role: null,
+    alive: true
+  };
+}
+
+function findSessionPlayerIndex(session, jid) {
+  const identity = buildIdentity(jid);
+  return (session.players || []).findIndex((player) => sameIdentity(player, identity, jid));
+}
+
 async function findMafiaPlayerByJid(jid) {
   const identity = buildIdentity(jid);
   return MafiaPlayer.findOne(buildIdentityQuery(identity, jid));
@@ -113,7 +144,7 @@ async function upsertMafiaPlayerIdentity(jid, groupId, extra = {}) {
   return MafiaPlayer.findOneAndUpdate(query, update, { new: true, upsert: true });
 }
 
-export async function promptMafiaNicknameRegistration(sock, participantJid, groupId) {
+async function promptMafiaNicknameRegistration(sock, participantJid, groupId) {
   const existingPlayer = await findMafiaPlayerByJid(participantJid);
   if (existingPlayer?.nickname) {
     if (groupId && !existingPlayer.groupIds?.includes(groupId)) {
@@ -135,22 +166,6 @@ export async function promptMafiaNicknameRegistration(sock, participantJid, grou
     console.warn(`⚠️ تعذر إرسال طلب لقب المافيا إلى ${participantJid}: ${error.message}`);
     return false;
   }
-}
-
-export async function promptGroupMembersForMafiaNicknames(sock, groupId) {
-  const metadata = await sock.groupMetadata(groupId);
-  let prompted = 0;
-  const botJid = normalizeJid(sock.user?.id);
-
-  for (const participant of metadata.participants || []) {
-    const participantJid = normalizeJid(participant.id);
-    if (participantJid === botJid) continue;
-
-    const sent = await promptMafiaNicknameRegistration(sock, participantJid, groupId);
-    if (sent) prompted++;
-  }
-
-  return prompted;
 }
 
 export async function handleMafiaNicknameRegistration(sock, jid, sender, text) {
@@ -185,8 +200,40 @@ async function saveMafiaNickname(sender, nickname, groupId) {
     nickname: cleanNickname,
     awaitingNickname: false
   });
+  await updatePendingJoinedPlayers(sender, cleanNickname);
 
   return { ok: true, message: `✅ تم حفظ لقبك للمافيا: ${cleanNickname}` };
+}
+
+async function updatePendingJoinedPlayers(sender, nickname) {
+  const identity = buildIdentity(sender);
+  const playerData = buildSessionPlayer(sender, nickname);
+  const sessions = await MafiaSession.find({
+    gameType: "mafia",
+    status: "collecting_players",
+    $or: [
+      { "players.jid": identity.jid || normalizeJid(sender) },
+      ...(identity.lid ? [{ "players.lid": identity.lid }] : []),
+      ...(identity.rawLid ? [{ "players.rawLid": identity.rawLid }] : []),
+      ...(identity.phoneNumber ? [{ "players.phoneNumber": identity.phoneNumber }] : [])
+    ]
+  });
+
+  for (const session of sessions) {
+    const index = findSessionPlayerIndex(session, sender);
+    if (index === -1) continue;
+
+    const existing = typeof session.players[index].toObject === "function"
+      ? session.players[index].toObject()
+      : session.players[index];
+    session.players[index] = {
+      ...existing,
+      ...playerData,
+      nickname
+    };
+    session.markModified("players");
+    await session.save();
+  }
 }
 
 async function getActiveSession(groupId) {
@@ -246,8 +293,129 @@ function buildHostSessionQuery(sender) {
   return { $or: clauses };
 }
 
+function getReadyJoinedPlayers(session) {
+  return (session.players || []).filter((player) => player.nickname && !isSessionHostIdentifier(session, player.jid));
+}
+
+function getPendingJoinedPlayers(session) {
+  return (session.players || []).filter((player) => !player.nickname && player.jid && !isSessionHostIdentifier(session, player.jid));
+}
+
+async function createCollectingPlayersSession(previousSession) {
+  return MafiaSession.create({
+    groupId: previousSession.groupId,
+    gameType: "mafia",
+    status: "collecting_players",
+    configStep: "mafiaCount",
+    hostJid: previousSession.hostJid,
+    hostLid: previousSession.hostLid,
+    hostRawLid: previousSession.hostRawLid,
+    hostPhoneNumber: previousSession.hostPhoneNumber,
+    hostIdentifierType: previousSession.hostIdentifierType,
+    hostNickname: previousSession.hostNickname
+  });
+}
+
+async function joinMafiaSession(sock, session, sender) {
+  if (isSessionHostIdentifier(session, sender)) {
+    await sock.sendMessage(session.groupId, { text: "🎭 الراوي لا يدخل كلاعب في المافيا." });
+    return;
+  }
+
+  const existingIndex = findSessionPlayerIndex(session, sender);
+  const savedPlayer = await findMafiaPlayerByJid(sender);
+  const nickname = savedPlayer?.nickname || null;
+
+  if (existingIndex !== -1) {
+    if (nickname && !session.players[existingIndex].nickname) {
+      session.players[existingIndex] = {
+        ...buildSessionPlayer(sender, nickname),
+        role: null,
+        alive: true
+      };
+      session.markModified("players");
+      await session.save();
+    }
+
+    await sock.sendMessage(session.groupId, {
+      text: nickname
+        ? `✅ أنت مسجل ضمن لاعبي المافيا: ${nickname}`
+        : "✅ تم تسجيل انضمامك. أرسلت لك خاص لتثبيت لقب المافيا."
+    });
+    if (!nickname) await promptMafiaNicknameRegistration(sock, sender, session.groupId);
+    return;
+  }
+
+  session.players.push(buildSessionPlayer(sender, nickname));
+  session.markModified("players");
+  await session.save();
+
+  if (!nickname) {
+    await promptMafiaNicknameRegistration(sock, sender, session.groupId);
+    await sock.sendMessage(session.groupId, {
+      text: `✅ تم تسجيل انضمامك يا ${hostMention(sender)}.\nأرسلت لك خاص لتثبيت لقب المافيا.`,
+      mentions: [sender]
+    });
+    return;
+  }
+
+  await sock.sendMessage(session.groupId, {
+    text: `✅ انضم ${hostMention(sender)} إلى المافيا باسم: ${nickname}`,
+    mentions: [sender]
+  });
+}
+
 export async function handleMafiaCommand(sock, jid, sender, text) {
   const trimmed = String(text || "").trim();
+
+  if (isGroupJid(jid) && JOIN_COMMAND_PATTERN.test(trimmed)) {
+    const session = await getActiveSession(jid);
+    if (!session || session.status !== "collecting_players") return false;
+
+    await joinMafiaSession(sock, session, sender);
+    return true;
+  }
+
+  if (isGroupJid(jid) && START_SETUP_PATTERN.test(trimmed)) {
+    const session = await getActiveSession(jid);
+    if (!session || session.status !== "collecting_players") return false;
+
+    if (!await canControlSession(sock, session, sender)) {
+      await sock.sendMessage(jid, { text: "❌ فقط الراوي أو أدمن القروب يمكنه بدء إعداد المافيا." });
+      return true;
+    }
+
+    const readyPlayers = getReadyJoinedPlayers(session);
+    const pendingPlayers = getPendingJoinedPlayers(session);
+    if (pendingPlayers.length) {
+      await sock.sendMessage(jid, {
+        text: `⚠️ يوجد لاعبون لم يثبتوا ألقابهم بعد:\n${pendingPlayers.map((player) => `• ${hostMention(player.jid)}`).join("\n")}\n\nبعد التسجيل اكتب /ابدأ_مافيا.`,
+        mentions: pendingPlayers.map((player) => player.jid).filter(Boolean)
+      });
+      return true;
+    }
+
+    if (readyPlayers.length < 2) {
+      await sock.sendMessage(jid, { text: "❌ تحتاج لاعبين اثنين على الأقل غير الراوي قبل بدء الإعداد." });
+      return true;
+    }
+
+    session.status = "collecting_config";
+    session.configStep = "mafiaCount";
+    await session.save();
+
+    await sock.sendMessage(session.hostJid, {
+      text: `أنت الراوي للعبة المافيا 🎭
+
+اللاعبون المشاركون: ${readyPlayers.length}
+
+أرسل عدد لاعبي المافيا.
+مثال:
+2`
+    });
+    await sock.sendMessage(jid, { text: "✅ تم إغلاق الانضمام. أرسلت إعدادات الأدوار للراوي في الخاص." });
+    return true;
+  }
 
   if (isGroupJid(jid) && /^(لعب مرة أخرى|اعادة|إعادة)$/i.test(trimmed)) {
     const session = await getActiveSession(jid);
@@ -259,20 +427,18 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
     }
 
     await closeSession(session);
-      await MafiaSession.create({
-        groupId: jid,
-        gameType: "mafia",
-        status: "collecting_config",
-        configStep: "mafiaCount",
-        hostJid: session.hostJid,
-        hostLid: session.hostLid,
-        hostRawLid: session.hostRawLid,
-        hostPhoneNumber: session.hostPhoneNumber,
-        hostIdentifierType: session.hostIdentifierType,
-        hostNickname: session.hostNickname
-      });
-    await sock.sendMessage(session.hostJid, { text: "تمام. أرسل عدد لاعبي المافيا للجولة الجديدة." });
-    await sock.sendMessage(jid, { text: "تم تجهيز جولة مافيا جديدة. أرسلت الإعدادات للراوي في الخاص." });
+    await createCollectingPlayersSession(session);
+    await sock.sendMessage(jid, {
+      text: `تم فتح جولة مافيا جديدة 🎭
+الراوي هو: ${hostMention(session.hostJid)}
+
+اللي بده يلعب يكتب:
+انضم
+
+وعندما يكتمل اللاعبون يكتب الراوي:
+/ابدأ_مافيا`,
+      mentions: [session.hostJid]
+    });
     return true;
   }
 
@@ -310,23 +476,22 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
     await MafiaSession.create({
       groupId: jid,
       gameType: "mafia",
-      status: "collecting_config",
+      status: "collecting_players",
       configStep: "mafiaCount",
       ...hostFields
     });
 
-    await sock.sendMessage(sender, {
-      text: `أنت الراوي للعبة المافيا 🎭
-
-أرسل عدد لاعبي المافيا.
-مثال:
-2`
-    });
     await sock.sendMessage(jid, {
-      text: `تم بدء إعداد لعبة المافيا 🎭
+      text: `تم فتح لعبة المافيا 🎭
 الراوي هو: ${hostMention(sender)}
 
-أرسلت للراوي خطوات الإعداد في الخاص.`,
+اللي بده يلعب يكتب:
+انضم
+
+إذا ما عندك لقب مافيا، سأرسل لك خاص لتثبيته.
+
+عندما يكتمل اللاعبون يكتب الراوي:
+/ابدأ_مافيا`,
       mentions: [sender]
     });
     return true;
@@ -388,19 +553,19 @@ export async function handleMafiaHostPrivateFlow(sock, jid, sender, text) {
   if (session.status === "game_over") {
     if (/^(1|لعب مرة أخرى|اعادة|إعادة|play again)$/i.test(trimmed)) {
       await closeSession(session);
-      const newSession = await MafiaSession.create({
-        groupId: session.groupId,
-        gameType: "mafia",
-        status: "collecting_config",
-        configStep: "mafiaCount",
-        hostJid: session.hostJid,
-        hostLid: session.hostLid,
-        hostRawLid: session.hostRawLid,
-        hostPhoneNumber: session.hostPhoneNumber,
-        hostIdentifierType: session.hostIdentifierType,
-        hostNickname: session.hostNickname
+      const newSession = await createCollectingPlayersSession(session);
+      await sock.sendMessage(session.groupId, {
+        text: `تم فتح جولة مافيا جديدة 🎭
+الراوي هو: ${hostMention(session.hostJid)}
+
+اللي بده يلعب يكتب:
+انضم
+
+وعندما يكتمل اللاعبون يكتب الراوي:
+/ابدأ_مافيا`,
+        mentions: [session.hostJid]
       });
-      await sock.sendMessage(jid, { text: "تمام. أرسل عدد لاعبي المافيا للجولة الجديدة." });
+      await sock.sendMessage(jid, { text: "تمام. فتحت باب الانضمام للجولة الجديدة في القروب." });
       return Boolean(newSession);
     }
 
@@ -482,30 +647,17 @@ export async function handleMafiaHostPrivateFlow(sock, jid, sender, text) {
   return false;
 }
 
-async function getRegisteredPlayablePlayers(sock, session) {
-  const metadata = await sock.groupMetadata(session.groupId);
-  const players = [];
-
-  for (const participant of metadata.participants || []) {
-    const participantJid = normalizeJid(participant.id);
-    if (isSessionHostIdentifier(session, participantJid)) continue;
-
-    const player = await findMafiaPlayerByJid(participantJid);
-    if (!player?.nickname) continue;
-
-    players.push({
-      jid: player.jid || participantJid,
-      lid: player.lid || null,
-      rawLid: player.rawLid || null,
-      phoneNumber: player.phoneNumber || null,
-      identifierType: player.identifierType,
-      nickname: player.nickname,
-      role: null,
-      alive: true
-    });
-  }
-
-  return players;
+async function getSelectedPlayablePlayers(session) {
+  return getReadyJoinedPlayers(session).map((player) => ({
+    jid: player.jid,
+    lid: player.lid || null,
+    rawLid: player.rawLid || null,
+    phoneNumber: player.phoneNumber || null,
+    identifierType: player.identifierType,
+    nickname: player.nickname,
+    role: null,
+    alive: true
+  }));
 }
 
 function optionalRolesCount(enabledRoles) {
@@ -513,7 +665,7 @@ function optionalRolesCount(enabledRoles) {
 }
 
 async function distributeRoles(sock, session) {
-  const playablePlayers = await getRegisteredPlayablePlayers(sock, session);
+  const playablePlayers = await getSelectedPlayablePlayers(session);
   const optionalCount = optionalRolesCount(session.enabledRoles);
   const total = playablePlayers.length;
 
