@@ -33,6 +33,26 @@ export function isValidKingdomId(value) {
   return /^[a-z][a-z0-9_-]{2,30}$/.test(String(value || "").trim());
 }
 
+async function generateUniqueKingdomId(name) {
+  const baseFromName = String(name || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 20);
+  const base = isValidKingdomId(baseFromName) ? baseFromName : "kingdom";
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const suffix = crypto.randomBytes(2).toString("hex");
+    const id = `${base}_${suffix}`.slice(0, 30);
+    const existing = await Kingdom.exists({ id });
+    if (!existing) return id;
+  }
+
+  return `kingdom_${crypto.randomBytes(5).toString("hex")}`.slice(0, 30);
+}
+
 function hashCode(code) {
   return crypto.createHash("sha256").update(code).digest("hex");
 }
@@ -140,15 +160,16 @@ export async function consumeKingdomAccessCode(code, usedByJid) {
 }
 
 export async function createKingdomFromRegistration(data, actorJid, codeId) {
-  const id = String(data.id || "").trim().toLowerCase();
   const name = String(data.name || "").trim();
+  const id = data.id ? String(data.id).trim().toLowerCase() : await generateUniqueKingdomId(name);
   const mainGroup = normalizeGroupJid(data.mainGroup);
   const receptionGroup = normalizeGroupJid(data.receptionGroup);
   const adminGroup = normalizeGroupJid(data.adminGroup);
   const workGroup = normalizeGroupJid(data.workGroup);
   const bankStartingBalance = Number(data.bankStartingBalance || 1000000);
   const admins = [normalizePhoneToJid(data.ownerJid || actorJid)].filter(Boolean);
-  const groupIds = [...new Set([mainGroup, receptionGroup, adminGroup, workGroup].filter(Boolean))];
+  const extraGroupIds = Array.isArray(data.extraGroupIds) ? data.extraGroupIds.map(normalizeGroupJid) : [];
+  const groupIds = [...new Set([mainGroup, receptionGroup, adminGroup, workGroup, ...extraGroupIds].filter(Boolean))];
 
   const kingdom = await Kingdom.create({
     id,
