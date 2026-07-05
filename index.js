@@ -9,9 +9,11 @@ import User from "./database/userModel.js";
 import { KINGDOMS, getKingdomFromGroupJid } from "./config.js";
 
 import { getHighestRank } from "./commands/rankSystem.js";
+import { getMentionFromJID } from "./commands/adminSystem.js";
 import { scheduleDailyReports } from "./utils/dailyReports.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
+import { promptGroupMembersForMafiaNicknames, promptMafiaNicknameRegistration } from "./games/mafia.js";
 
 // Connect to MongoDB with better error handling
 try {
@@ -56,6 +58,14 @@ try {
 // لمتابعة الأعضاء الذين تم التعامل معهم عند بدء التشغيل (لتجنب إرسال ترحيب لحالات قديمة)
 // نحتفظ بقائمة لكل مجموعة استقبال على حدة
 const knownReceptionParticipants = new Map(); // key: receptionGroupJid, value: Set of participant JIDs
+
+function normalizeParticipantJid(value) {
+  const jid = String(value || "");
+  if (!jid.includes(":")) return jid;
+  const [userPart] = jid.split(":");
+  const serverPart = jid.split("@")[1];
+  return serverPart ? `${userPart}@${serverPart}` : userPart;
+}
 
 // دالة لتحديث رتب المملكة تلقائياً بناءً على النجوم
 async function updateKingdomRanks() {
@@ -178,6 +188,25 @@ async function startBot() {
     const { awaitingNicknameRegistration, nicknameRegistrationStages } = await import('./handlers/messageHandler.js');
 
     console.log(`Group participants update: id=${id}, action=${action}, participants=${participants}`);
+
+    if (action === 'add') {
+      try {
+        const botJid = normalizeParticipantJid(sock.user?.id);
+        const addedJids = participants.map((participant) => normalizeParticipantJid(participant.id || participant));
+        const botWasAdded = addedJids.includes(botJid);
+
+        if (botWasAdded) {
+          const prompted = await promptGroupMembersForMafiaNicknames(sock, id);
+          console.log(`🎭 Mafia nickname prompts sent to ${prompted} member(s) in ${id}`);
+        } else {
+          for (const participantJid of addedJids) {
+            await promptMafiaNicknameRegistration(sock, participantJid, id);
+          }
+        }
+      } catch (error) {
+        console.warn(`⚠️ تعذر تنفيذ تسجيل ألقاب المافيا للقروب ${id}: ${error.message}`);
+      }
+    }
 
     // التحقق من أن التحديث في مجموعة الاستقبال وأن الإجراء هو انضمام
     if (id === receptionJid && action === 'add') {

@@ -8,6 +8,7 @@ import { WELCOME_LINK, getKingdomIdFromGroupJid } from "../config.js";
 import { startGuessAnime, handleGuessAnimeResponse, activeGames, showLeaderboard, stopGuessAnime } from "../games/guessAnime.js";
 import { startWordGame, checkWordGuess, activeWordGames, stopWordGame, wordGameWaiting, handleWordGameModeSelection, handleWordGamePlayersSelection } from "../games/wordtype.js";
 import { startGuessCharacter, checkCharacterGuess, activeCharacterGames, characterGameWaiting, handleGuessCharacterResponse, handleCharacterPlayersSelection, stopGuessCharacter } from "../games/guessCharacter.js";
+import { handleMafiaCommand, handleMafiaHostPrivateFlow, handleMafiaNicknameRegistration } from "../games/mafia.js";
 import { startUnscrambleGame, checkUnscrambleGuess, activeUnscrambleGames, unscrambleGameWaiting, handleUnscrambleResponse, handleUnscramblePlayersSelection, stopUnscrambleGame } from "../games/unscramble.js";
 import { startWordSplitterGame, checkWordSplitterGuess, activeWordSplitterGames, wordSplitterGameWaiting, handleWordSplitterModeSelection, handleWordSplitterPlayersSelection, stopWordSplitterGame } from "../games/wordSplitter.js";
 import { startFlagGame, handleFlagGameResponse, activeGames as activeFlagGames, checkGuess as checkFlagGuess } from "../games/flagGame.js";
@@ -314,6 +315,18 @@ export async function messageHandler(sock, msg) {
 
   if (isIdentityCommand(trimmedText)) {
     await sock.sendMessage(jid, { text: buildIdentityInfoMessage(msg, sender, jid) });
+    return;
+  }
+
+  if (await handleMafiaHostPrivateFlow(sock, jid, sender, trimmedText)) {
+    return;
+  }
+
+  if (await handleMafiaNicknameRegistration(sock, jid, sender, trimmedText)) {
+    return;
+  }
+
+  if (await handleMafiaCommand(sock, jid, sender, trimmedText)) {
     return;
   }
 
