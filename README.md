@@ -33,6 +33,8 @@ LOG_LEVEL=info
 
 أمر المطور `/رصيد_الذكاء` يعرض استهلاك Gemini المسجل في MongoDB. لضبط النسبة المتبقية، عرّف `SAM_BOT_AI_DAILY_REQUEST_LIMIT` أو `SAM_BOT_AI_DAILY_TOKEN_LIMIT` حسب حدود مشروعك في Google.
 
+أمر المطور `/عد_التوكن <نص>` يحسب توكنات المدخلات قبل إرسالها إلى Gemini. أما توكنات output/thinking/cached/tool-use فتسجل من رد Gemini نفسه وتظهر في `/رصيد_الذكاء`.
+
 ## التشغيل
 
 ```bash

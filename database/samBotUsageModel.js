@@ -46,6 +46,21 @@ const samBotUsageSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  thinkingTokens: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  cachedTokens: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  toolUseTokens: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   lastError: {
     type: String,
     default: ""
