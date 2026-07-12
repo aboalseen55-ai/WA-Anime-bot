@@ -4,6 +4,8 @@ import KingdomAccessCode from "../database/kingdomAccessCodeModel.js";
 import KingdomAuditLog from "../database/kingdomAuditLogModel.js";
 import Bank from "../database/bankModel.js";
 import User from "../database/userModel.js";
+import MafiaSession from "../database/mafiaSessionModel.js";
+import MafiaPlayer from "../database/mafiaPlayerModel.js";
 import { ADMINS, DEFAULT_KINGDOMS, DEVELOPER_JID, DEVELOPER_JIDS, KINGDOMS, replaceKingdoms } from "../config.js";
 
 const CODE_BYTES = 6;
@@ -196,6 +198,69 @@ export async function createKingdomFromRegistration(data, actorJid, codeId) {
   await refreshKingdomCache();
 
   return kingdom;
+}
+
+export async function deleteKingdomById(kingdomId, actorJid) {
+  const id = String(kingdomId || "").trim().toLowerCase();
+  const kingdom = await Kingdom.findOne({ id }).lean();
+  if (!kingdom) {
+    throw new Error("لم أجد هذه المملكة في قاعدة البيانات.");
+  }
+
+  if (DEFAULT_KINGDOMS[kingdom.id]) {
+    throw new Error("لا يمكن حذف مملكة افتراضية من الكود. استخدم تعديل المملكة لتعطيلها بدل الحذف.");
+  }
+
+  const groupIds = [
+    kingdom.mainGroup,
+    kingdom.receptionGroup,
+    kingdom.adminGroup,
+    kingdom.workGroup,
+    ...(kingdom.groupIds || [])
+  ].filter(Boolean);
+  const uniqueGroupIds = [...new Set(groupIds)];
+
+  const [usersBefore, bankBefore, mafiaSessionsBefore] = await Promise.all([
+    User.countDocuments({ kingdom_id: kingdom.id }),
+    Bank.findOne({ kingdom: kingdom.id }).lean(),
+    uniqueGroupIds.length ? MafiaSession.countDocuments({ groupId: { $in: uniqueGroupIds } }) : 0
+  ]);
+
+  const [usersResult, bankResult, mafiaSessionsResult, mafiaPlayersResult, kingdomResult] = await Promise.all([
+    User.deleteMany({ kingdom_id: kingdom.id }),
+    Bank.deleteOne({ kingdom: kingdom.id }),
+    uniqueGroupIds.length ? MafiaSession.deleteMany({ groupId: { $in: uniqueGroupIds } }) : { deletedCount: 0 },
+    uniqueGroupIds.length ? MafiaPlayer.updateMany(
+      { groupIds: { $in: uniqueGroupIds } },
+      { $pull: { groupIds: { $in: uniqueGroupIds } } }
+    ) : { modifiedCount: 0 },
+    Kingdom.deleteOne({ _id: kingdom._id })
+  ]);
+
+  if (!kingdomResult.deletedCount) {
+    throw new Error("تعذر حذف سجل المملكة. حاول مرة أخرى.");
+  }
+
+  const deleted = {
+    users: usersResult.deletedCount || 0,
+    bank: bankResult.deletedCount || 0,
+    mafiaSessions: mafiaSessionsResult.deletedCount || 0,
+    mafiaPlayersUnlinked: mafiaPlayersResult.modifiedCount || 0
+  };
+
+  await auditKingdomAction("kingdom_deleted", actorJid, {
+    kingdom,
+    groupIds: uniqueGroupIds,
+    before: {
+      users: usersBefore,
+      bank: bankBefore ? bankBefore.totalCoins : null,
+      mafiaSessions: mafiaSessionsBefore
+    },
+    deleted
+  }, kingdom.id);
+  await refreshKingdomCache();
+
+  return { kingdom, deleted, groupIds: uniqueGroupIds };
 }
 
 export async function buildKingdomsReport() {

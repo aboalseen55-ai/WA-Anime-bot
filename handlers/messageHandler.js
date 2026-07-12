@@ -16,6 +16,7 @@ import { clearAnswerQueue } from "../utils/answerQueue.js";
 import { getCreatorInfoMessage, isCreatorQuestion } from "../utils/creatorInfo.js";
 import { handleDeveloperCommandGuide } from "../utils/developerCommandGuide.js";
 import { buildIdentityInfoMessage, isIdentityCommand } from "../utils/identityInfo.js";
+import { handleKingdomDeleteStep, handleStartKingdomDelete } from "../utils/kingdomDelete.js";
 import { handleKingdomEditStep, handleStartKingdomEdit } from "../utils/kingdomEdit.js";
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
@@ -343,6 +344,14 @@ export async function messageHandler(sock, msg) {
   }
 
   if (await handleDeveloperKingdomCommand(sock, jid, sender, trimmedText)) {
+    return;
+  }
+
+  if (await handleStartKingdomDelete(sock, jid, sender, trimmedText)) {
+    return;
+  }
+
+  if (await handleKingdomDeleteStep(sock, jid, sender, trimmedText)) {
     return;
   }
 
