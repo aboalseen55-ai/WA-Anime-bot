@@ -4,11 +4,15 @@ import stringSimilarity from "string-similarity";
 import fetch from "node-fetch";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { enqueueAnswer, processAnswerQueue, clearAnswerQueue } from "../utils/answerQueue.js";
+import { convertImageToJpeg } from "../utils/imageSearch.js";
 
 export const activeGames = {};
 const MAX_TIME = 15000; // 15 ثواني
 const HINT_TIME = 5000; // 5 ثواني
 const ROUND_DELAY = 3000; // 3 ثواني تأخير بين الجولات
+const IMAGE_LOOKUP_ATTEMPTS = 10;
+const IMAGE_API_TIMEOUT_MS = 12000;
+const ANILIST_API = "https://graphql.anilist.co";
 
 // دالة لعرض شرح اللعبة
 async function showGameExplanation(sock, jid) {
@@ -59,15 +63,187 @@ async function showGameExplanation(sock, jid) {
     await sock.sendMessage(jid, { text: explanation });
 }
 
-// دالة لجلب صورة الأنمي من API
-async function fetchImage(title) {
+function isHttpImageUrl(value) {
+    return /^https?:\/\//i.test(String(value || ""));
+}
+
+function uniqueValues(values) {
+    const seen = new Set();
+    return values
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+        .filter((value) => {
+            const key = value.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+}
+
+function getAnimeSearchTitles(anime) {
+    return uniqueValues([
+        ...(Array.isArray(anime.aliases) ? anime.aliases : []),
+        anime.title,
+        ...(Array.isArray(anime.arabicNames) ? anime.arabicNames : [])
+    ]);
+}
+
+function getJikanImageUrl(item) {
+    return item?.images?.webp?.large_image_url
+        || item?.images?.jpg?.large_image_url
+        || item?.images?.webp?.image_url
+        || item?.images?.jpg?.image_url
+        || null;
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = IMAGE_API_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
     try {
-        const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`);
+        return await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+// دالة لجلب صورة الأنمي من Jikan
+async function fetchJikanImage(title) {
+    try {
+        const res = await fetchWithTimeout(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`, {
+            headers: {
+                "User-Agent": "SamBot/1.0"
+            }
+        });
+        if (!res.ok) return null;
         const data = await res.json();
-        return data.data && data.data[0] ? data.data[0].images.jpg.image_url : null;
-    } catch {
+        return data.data && data.data[0] ? getJikanImageUrl(data.data[0]) : null;
+    } catch (error) {
+        console.warn(`⚠️ فشل جلب صورة الأنمي من Jikan (${title}): ${error.message}`);
         return null;
     }
+}
+
+async function fetchAniListImage(title) {
+    const query = `
+query ($search: String) {
+  Media(search: $search, type: ANIME, isAdult: false) {
+    coverImage {
+      extraLarge
+      large
+      medium
+    }
+  }
+}`;
+
+    try {
+        const res = await fetchWithTimeout(ANILIST_API, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({ query, variables: { search: title } })
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data?.data?.Media?.coverImage?.extraLarge
+            || data?.data?.Media?.coverImage?.large
+            || data?.data?.Media?.coverImage?.medium
+            || null;
+    } catch (error) {
+        console.warn(`⚠️ فشل جلب صورة الأنمي من AniList (${title}): ${error.message}`);
+        return null;
+    }
+}
+
+async function resolveAnimeImageUrl(anime) {
+    if (isHttpImageUrl(anime.imageUrl)) {
+        return anime.imageUrl;
+    }
+
+    const searchTitles = getAnimeSearchTitles(anime);
+    for (const title of searchTitles) {
+        const imageUrl = await fetchJikanImage(title) || await fetchAniListImage(title);
+        if (isHttpImageUrl(imageUrl)) {
+            anime.imageUrl = imageUrl;
+            await anime.save().catch((error) => {
+                console.warn(`⚠️ تعذر حفظ صورة الأنمي ${anime.title}: ${error.message}`);
+            });
+            return imageUrl;
+        }
+    }
+
+    return null;
+}
+
+async function sendAnimeImage(sock, jid, imageUrl, caption) {
+    try {
+        const jpegBuffer = await convertImageToJpeg(imageUrl);
+        if (jpegBuffer) {
+            await sock.sendMessage(jid, {
+                image: jpegBuffer,
+                caption
+            });
+            return true;
+        }
+    } catch (error) {
+        console.warn(`⚠️ فشل تحويل صورة الأنمي إلى JPEG: ${error.message}`);
+    }
+
+    try {
+        await sock.sendMessage(jid, {
+            image: { url: imageUrl },
+            caption
+        });
+        return true;
+    } catch (error) {
+        console.warn(`⚠️ فشل إرسال صورة الأنمي من الرابط: ${error.message}`);
+        return false;
+    }
+}
+
+async function pickAnimeWithImage() {
+    const query = {
+        arabicNames: { $exists: true, $ne: [] },
+        $or: [
+            { aliases: { $exists: true, $ne: [] } },
+            { title: { $exists: true, $ne: "" } }
+        ]
+    };
+    const count = await Anime.countDocuments(query);
+    if (!count) return { count, anime: null, imageUrl: null };
+
+    const triedIds = new Set();
+    const attempts = Math.min(IMAGE_LOOKUP_ATTEMPTS, count);
+
+    for (let attempt = 0; attempt < attempts; attempt++) {
+        let anime = null;
+
+        for (let guard = 0; guard < Math.min(count, 20); guard++) {
+            const rand = Math.floor(Math.random() * count);
+            anime = await Anime.findOne(query).skip(rand);
+            const id = String(anime?._id || "");
+            if (anime && !triedIds.has(id)) {
+                triedIds.add(id);
+                break;
+            }
+        }
+
+        if (!anime) continue;
+
+        const arabicName = anime.arabicNames && anime.arabicNames[0];
+        const searchTitles = getAnimeSearchTitles(anime);
+        if (!arabicName || !searchTitles.length) continue;
+
+        const imageUrl = await resolveAnimeImageUrl(anime);
+        if (imageUrl) return { count, anime, imageUrl };
+    }
+
+    return { count, anime: null, imageUrl: null };
 }
 
 // بدء اللعبة
@@ -107,37 +283,26 @@ async function startActualGame(sock, jid) {
         delete game.startingNewRound;
     }
 
-    // اختيار أنمي عشوائي من DB (فقط الأنمي التي تحتوي على أسماء عربية)
-    const count = await Anime.countDocuments({ arabicNames: { $exists: true, $ne: [] } });
+    // اختيار أنمي عشوائي من DB مع التأكد من توفر صورة قابلة للإرسال
+    const { count, anime, imageUrl } = await pickAnimeWithImage();
     if (!count) {
         await sock.sendMessage(jid, { text: "❌ لا يوجد أنميات عربية في قاعدة البيانات" });
         delete activeGames[jid];
         return;
     }
 
-    const rand = Math.floor(Math.random() * count);
-    const anime = await Anime.findOne({ arabicNames: { $exists: true, $ne: [] } }).skip(rand);
-
     if (!anime) {
-        await sock.sendMessage(jid, { text: "❌ فشل اختيار أنمي" });
+        await sock.sendMessage(jid, { text: "❌ تعذر العثور على صورة مناسبة للأنمي الآن. جرّب مرة أخرى بعد قليل." });
         delete activeGames[jid];
         return;
     }
 
     // التأكد من وجود الاسم العربي والإنجليزي
     const arabicName = anime.arabicNames && anime.arabicNames[0];
-    const englishName = anime.aliases && anime.aliases[0];
+    const searchTitles = getAnimeSearchTitles(anime);
 
-    if (!arabicName || !englishName) {
+    if (!arabicName || !searchTitles.length) {
         await sock.sendMessage(jid, { text: "❌ خطأ في تحميل اللعبة، الأنمي غير مكتمل في قاعدة البيانات." });
-        delete activeGames[jid];
-        return;
-    }
-
-    // جلب صورة الأنمي
-    const imageUrl = await fetchImage(englishName);
-    if (!imageUrl) {
-        await sock.sendMessage(jid, { text: "❌ خطأ في تحميل اللعبة، الصورة غير متوفرة." });
         delete activeGames[jid];
         return;
     }
@@ -147,6 +312,7 @@ async function startActualGame(sock, jid) {
         ...(Array.isArray(anime.arabicNames) ? anime.arabicNames : []),
         ...(Array.isArray(anime.aliases) ? anime.aliases : [])
     ].filter(Boolean);
+    if (anime.title) answerVariants.push(anime.title);
 
     // تحديث activeGames
     activeGames[jid] = {
@@ -160,10 +326,25 @@ async function startActualGame(sock, jid) {
     };
 
     // إرسال الرسالة الأولية مع الصورة
-    await sock.sendMessage(jid, {
-        image: { url: imageUrl },
-        caption: `🎮 لعبة تخمين الأنمي\n⏱ لديك 15 ثانية\n💡 سيظهر تلميح بعد 5 ثواني`
-    });
+    const caption = `🎮 لعبة تخمين الأنمي\n⏱ لديك 15 ثانية\n💡 سيظهر تلميح بعد 5 ثواني`;
+    const imageSent = await sendAnimeImage(sock, jid, imageUrl, caption);
+    if (!imageSent) {
+        anime.imageUrl = "";
+        await anime.save().catch((error) => {
+            console.warn(`⚠️ تعذر مسح رابط صورة الأنمي المعطوب ${anime.title}: ${error.message}`);
+        });
+        await sock.sendMessage(jid, { text: "❌ فشل إرسال صورة الأنمي. سأبدأ جولة جديدة بعد قليل." });
+        activeGames[jid] = {
+            state: 'interim',
+            participants: game.participants
+        };
+        setTimeout(async () => {
+            if (activeGames[jid] && activeGames[jid].state === 'interim') {
+                await startActualGame(sock, jid);
+            }
+        }, ROUND_DELAY);
+        return;
+    }
 
     // تلميح بعد 5 ثواني
     activeGames[jid].hintTimeout = setTimeout(async () => {
