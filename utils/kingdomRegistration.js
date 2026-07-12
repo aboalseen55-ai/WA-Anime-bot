@@ -1,5 +1,6 @@
 import Kingdom from "../database/kingdomModel.js";
 import KingdomRegistrationSession from "../database/kingdomRegistrationSessionModel.js";
+import { resolveMentionContext } from "../commands/adminSystem.js";
 import {
   buildKingdomsReport,
   consumeKingdomAccessCode,
@@ -210,10 +211,11 @@ ${formatGroupLines(data)}
 اكتب *تأكيد* لإنشاء المملكة أو *إلغاء* لإلغاء العملية.`;
 }
 
-async function sendDeveloperCode(sock, generatedByJid, reason) {
+async function sendDeveloperCode(sock, generatedByJid, reason, mentions = []) {
   const { code } = await generateKingdomAccessCode(generatedByJid);
   await sock.sendMessage(DEVELOPER_JID, {
-    text: `🔐 رمز فتح مملكة جديد\n\nالرمز: ${code}\nالسبب: ${reason}\n\nالرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه.`
+    text: `🔐 رمز فتح مملكة جديد\n\nالرمز: ${code}\nالسبب: ${reason}\n\nالرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه.`,
+    mentions
   });
 }
 
@@ -301,8 +303,8 @@ export async function handleDeveloperKingdomCommand(sock, jid, sender, trimmedTe
     return true;
   }
 
-  const report = await buildKingdomsReport();
-  await sock.sendMessage(jid, { text: report });
+  const report = await buildKingdomsReport({ withMentions: true });
+  await sock.sendMessage(jid, report);
   return true;
 }
 
@@ -332,7 +334,8 @@ export async function handleStartKingdomRegistration(sock, jid, sender, trimmedT
     return true;
   }
 
-  await sendDeveloperCode(sock, sender, `تم استخدام الرمز السابق بواسطة ${sender}`);
+  const actor = await resolveMentionContext(sender);
+  await sendDeveloperCode(sock, sender, `تم استخدام الرمز السابق بواسطة ${actor.text}`, actor.mentions);
 
   await KingdomRegistrationSession.create({
     codeId: codeDoc._id,
@@ -387,7 +390,11 @@ export async function handleKingdomRegistrationStep(sock, jid, sender, text) {
       await session.save();
 
       await sock.sendMessage(jid, { text: `✅ تم إنشاء ${kingdom.name} بنجاح.\nالمعرف: ${kingdom.id}` });
-      await sock.sendMessage(DEVELOPER_JID, { text: `🏰 تم إنشاء مملكة جديدة\nالاسم: ${kingdom.name}\nالمعرف: ${kingdom.id}\nبواسطة: ${sender}` });
+      const creator = await resolveMentionContext(sender, kingdom.id);
+      await sock.sendMessage(DEVELOPER_JID, {
+        text: `🏰 تم إنشاء مملكة جديدة\nالاسم: ${kingdom.name}\nالمعرف: ${kingdom.id}\nبواسطة: ${creator.text}`,
+        mentions: creator.mentions
+      });
     } catch (error) {
       await sock.sendMessage(jid, { text: `❌ فشل إنشاء المملكة: ${error.message}` });
     }

@@ -3,6 +3,7 @@ import Bank from "../database/bankModel.js";
 import User from "../database/userModel.js";
 import MafiaSession from "../database/mafiaSessionModel.js";
 import { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED, DEFAULT_KINGDOMS, DEVELOPER_JID } from "../config.js";
+import { resolveMentionContext } from "../commands/adminSystem.js";
 import { deleteKingdomById, isDeveloper } from "./kingdomService.js";
 
 const DELETE_COMMANDS = new Set(["/حذف_مملكة", "/حذف_نقابة", "/delete_kingdom"]);
@@ -211,6 +212,7 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
     try {
       const result = await deleteKingdomById(session.kingdomId, sender);
       deleteSessions.delete(sender);
+      const actor = await resolveMentionContext(sender, result.kingdom.id);
 
       const message = `✅ تم حذف المملكة بنجاح.
 
@@ -222,7 +224,8 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
 
       await sock.sendMessage(jid, { text: message });
       await sock.sendMessage(DEVELOPER_JID, {
-        text: `🗑️ تم حذف مملكة\nالمملكة: ${result.kingdom.name} (${result.kingdom.id})\nبواسطة: ${sender}`
+        text: `🗑️ تم حذف مملكة\nالمملكة: ${result.kingdom.name} (${result.kingdom.id})\nبواسطة: ${actor.text}`,
+        mentions: actor.mentions
       });
     } catch (error) {
       deleteSessions.delete(sender);

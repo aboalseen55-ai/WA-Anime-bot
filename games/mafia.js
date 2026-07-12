@@ -1,6 +1,6 @@
 import MafiaPlayer from "../database/mafiaPlayerModel.js";
 import MafiaSession from "../database/mafiaSessionModel.js";
-import { classifyIdentifier } from "../commands/adminSystem.js";
+import { classifyIdentifier, getCleanMentionTextForUser } from "../commands/adminSystem.js";
 
 const ROLE_LABELS = {
   host: "الراوي",
@@ -83,8 +83,7 @@ function shuffle(items) {
 }
 
 function hostMention(hostJid) {
-  const id = normalizeJid(hostJid);
-  return `@${id.split("@")[0]}`;
+  return getCleanMentionTextForUser(normalizeJid(hostJid));
 }
 
 function sameIdentity(stored, identifier, fallbackJid) {

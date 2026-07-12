@@ -1,5 +1,6 @@
 import Kingdom from "../database/kingdomModel.js";
 import { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED, DEVELOPER_JID } from "../config.js";
+import { resolveMentionContext } from "../commands/adminSystem.js";
 import {
   auditKingdomAction,
   isGroupJid,
@@ -681,9 +682,11 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
     try {
       const kingdom = await saveKingdomEdit(session, sender);
       editSessions.delete(sender);
+      const actor = await resolveMentionContext(sender, kingdom.id);
       await sock.sendMessage(jid, { text: `✅ تم تعديل ${kingdom.name} بنجاح.\nالحقل: ${session.field.label}` });
       await sock.sendMessage(DEVELOPER_JID, {
-        text: `🏰 تم تعديل مملكة\nالمملكة: ${kingdom.name} (${kingdom.id})\nالحقل: ${session.field.label}\nبواسطة: ${sender}`
+        text: `🏰 تم تعديل مملكة\nالمملكة: ${kingdom.name} (${kingdom.id})\nالحقل: ${session.field.label}\nبواسطة: ${actor.text}`,
+        mentions: actor.mentions
       });
     } catch (error) {
       editSessions.delete(sender);

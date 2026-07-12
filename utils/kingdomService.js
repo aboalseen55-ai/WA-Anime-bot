@@ -6,6 +6,7 @@ import Bank from "../database/bankModel.js";
 import User from "../database/userModel.js";
 import MafiaSession from "../database/mafiaSessionModel.js";
 import MafiaPlayer from "../database/mafiaPlayerModel.js";
+import { resolveMentionContext } from "../commands/adminSystem.js";
 import { ADMINS, DEFAULT_KINGDOMS, DEVELOPER_JID, DEVELOPER_JIDS, KINGDOMS, replaceKingdoms } from "../config.js";
 
 const CODE_BYTES = 6;
@@ -263,14 +264,16 @@ export async function deleteKingdomById(kingdomId, actorJid) {
   return { kingdom, deleted, groupIds: uniqueGroupIds };
 }
 
-export async function buildKingdomsReport() {
+export async function buildKingdomsReport(options = {}) {
   const kingdoms = await Kingdom.find({}).sort({ createdAt: 1 }).lean();
   const activeCodes = await KingdomAccessCode.countDocuments({ status: "active" });
   const usedCodes = await KingdomAccessCode.countDocuments({ status: "used" });
   const revokedCodes = await KingdomAccessCode.countDocuments({ status: "revoked" });
+  const mentions = [];
 
   if (!kingdoms.length) {
-    return "لا توجد ممالك مسجلة في قاعدة البيانات.";
+    const text = "لا توجد ممالك مسجلة في قاعدة البيانات.";
+    return options.withMentions ? { text, mentions: [] } : text;
   }
 
   let report = `🏰 *تقرير الممالك*\n`;
@@ -301,10 +304,16 @@ export async function buildKingdomsReport() {
     report += `\n━━━━━━━━━━━━━━━━━━━━\n`;
     report += `*آخر العمليات*\n`;
     for (const log of recentLogs) {
-      report += `• ${log.action} | ${log.actorJid} | ${new Date(log.createdAt).toLocaleString("ar-EG")}`;
+      const actor = await resolveMentionContext(log.actorJid, log.kingdomId);
+      mentions.push(...actor.mentions);
+      report += `• ${log.action} | ${actor.text} | ${new Date(log.createdAt).toLocaleString("ar-EG")}`;
       if (log.kingdomId) report += ` | ${log.kingdomId}`;
       report += `\n`;
     }
+  }
+
+  if (options.withMentions) {
+    return { text: report, mentions: [...new Set(mentions)] };
   }
 
   return report;

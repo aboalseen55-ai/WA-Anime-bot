@@ -499,6 +499,57 @@ export function getCleanMentionTextForUser(userOrJid) {
     return getPromotionMentionText(userOrJid || {});
 }
 
+function buildIdentityClauses(identifier, rawValue) {
+    const clauses = [];
+    const raw = String(rawValue || '').trim();
+    if (identifier.jid || raw) clauses.push({ jid: identifier.jid || raw });
+    if (identifier.phoneNumber) clauses.push({ phoneNumber: identifier.phoneNumber });
+    if (identifier.lid) clauses.push({ lid: identifier.lid });
+    if (identifier.rawLid) clauses.push({ rawLid: identifier.rawLid });
+    return clauses;
+}
+
+function getMentionJid(userOrJid, identifier = null) {
+    if (userOrJid && typeof userOrJid === 'object') {
+        return userOrJid.jid || null;
+    }
+
+    const raw = String(userOrJid || '').trim();
+    if (!raw) return null;
+    if (raw.includes('@')) return raw;
+    if (identifier?.jid) return identifier.jid;
+    return null;
+}
+
+export async function resolveMentionContext(userOrJid, kingdom = null) {
+    if (userOrJid && typeof userOrJid === 'object') {
+        const mentionJid = getMentionJid(userOrJid);
+        return {
+            text: getCleanMentionTextForUser(userOrJid),
+            mentions: mentionJid ? [mentionJid] : []
+        };
+    }
+
+    const identifier = classifyIdentifier(userOrJid);
+    const identityClauses = buildIdentityClauses(identifier, userOrJid);
+    let user = null;
+
+    if (identityClauses.length) {
+        if (kingdom) {
+            user = await User.findOne({ kingdom_id: kingdom, $or: identityClauses });
+        }
+        if (!user) {
+            user = await User.findOne({ $or: identityClauses }).sort({ createdAt: -1 });
+        }
+    }
+
+    const mentionJid = getMentionJid(user || userOrJid, identifier);
+    return {
+        text: getCleanMentionTextForUser(user || userOrJid),
+        mentions: mentionJid ? [mentionJid] : []
+    };
+}
+
 function getKingdomDisplayName(kingdom) {
     return KINGDOMS[kingdom]?.name || kingdom || 'المملكة';
 }
