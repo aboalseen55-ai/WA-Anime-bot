@@ -13,8 +13,8 @@ const BOT_NAMES = [
   "بوت"
 ];
 
-const DIRECT_REPLY_COOLDOWN = 20 * 1000;
-const DIRECT_MESSAGE_COOLDOWN = 8 * 1000;
+const DIRECT_REPLY_COOLDOWN = 5 * 1000;
+const DIRECT_MESSAGE_COOLDOWN = 5 * 1000;
 const AMBIENT_SOCIAL_COOLDOWN = 45 * 1000;
 const lastSmartReplyAt = new Map();
 const AMBIENT_SOCIAL_INTENTS = new Set(["greeting", "wellbeing"]);
@@ -41,28 +41,68 @@ function normalizeJid(jid = "") {
   return String(jid).split(":")[0];
 }
 
+function getJidUser(jid = "") {
+  return normalizeJid(jid).split("@")[0];
+}
+
 function getBotJids(sock) {
-  const rawId = sock.user?.id || "";
-  const normalized = normalizeJid(rawId);
-  const phone = normalized.split("@")[0];
-  return new Set([rawId, normalized, phone ? `${phone}@s.whatsapp.net` : ""].filter(Boolean));
+  const rawIds = [sock.user?.id, sock.user?.jid, sock.user?.lid].filter(Boolean);
+  const botJids = new Set();
+
+  for (const rawId of rawIds) {
+    const normalized = normalizeJid(rawId);
+    const user = getJidUser(normalized);
+    [rawId, normalized, user ? `${user}@s.whatsapp.net` : "", user ? `${user}@lid` : ""]
+      .filter(Boolean)
+      .forEach((jid) => botJids.add(jid));
+  }
+
+  return botJids;
+}
+
+function isBotIdentifier(sock, jid) {
+  if (!jid) return false;
+
+  const botJids = getBotJids(sock);
+  const normalized = normalizeJid(jid);
+  const user = getJidUser(jid);
+
+  if (botJids.has(jid) || botJids.has(normalized)) return true;
+  return [...botJids].some((botJid) => user && getJidUser(botJid) === user);
+}
+
+function getContextInfo(msg) {
+  const message = msg.message || {};
+  const inner = message.ephemeralMessage?.message
+    || message.viewOnceMessage?.message
+    || message.viewOnceMessageV2?.message
+    || message.documentWithCaptionMessage?.message
+    || message;
+
+  return inner.extendedTextMessage?.contextInfo
+    || inner.imageMessage?.contextInfo
+    || inner.videoMessage?.contextInfo
+    || inner.documentMessage?.contextInfo
+    || inner.audioMessage?.contextInfo
+    || inner.stickerMessage?.contextInfo
+    || inner.buttonsResponseMessage?.contextInfo
+    || inner.listResponseMessage?.contextInfo
+    || inner.templateButtonReplyMessage?.contextInfo
+    || inner.reactionMessage?.contextInfo
+    || null;
 }
 
 function isReplyToBot(sock, msg) {
-  const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
+  const contextInfo = getContextInfo(msg);
   if (!contextInfo?.quotedMessage) return false;
 
-  const botJids = getBotJids(sock);
-  const participant = contextInfo.participant;
-  const quotedRemoteJid = contextInfo.remoteJid;
-
-  return botJids.has(participant) || botJids.has(normalizeJid(participant)) || botJids.has(quotedRemoteJid);
+  return isBotIdentifier(sock, contextInfo.participant)
+    || isBotIdentifier(sock, contextInfo.remoteJid);
 }
 
 function mentionsBot(sock, msg) {
-  const mentionedJids = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-  const botJids = getBotJids(sock);
-  return mentionedJids.some((jid) => botJids.has(jid) || botJids.has(normalizeJid(jid)));
+  const mentionedJids = getContextInfo(msg)?.mentionedJid || [];
+  return mentionedJids.some((jid) => isBotIdentifier(sock, jid));
 }
 
 export function hasBotName(text) {
@@ -244,7 +284,7 @@ function buildReply(intent, nickname, text) {
 }
 
 function shouldUseOnlineAI(intent) {
-  return !["identity", "capabilities", "greeting", "wellbeing", "thanks", "apology", "ack", "affection"].includes(intent);
+  return !["identity", "capabilities"].includes(intent);
 }
 
 async function getNickname(jid, sender, msg) {

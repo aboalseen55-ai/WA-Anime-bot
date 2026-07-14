@@ -3,11 +3,11 @@ import { recordSamBotAIUsage } from "./samBotUsage.js";
 
 const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 const DEFAULT_TIMEOUT_MS = 12000;
-const DEFAULT_MAX_OUTPUT_TOKENS = 15;
+const DEFAULT_MAX_OUTPUT_TOKENS = 80;
 const DEFAULT_BILLING_COOLDOWN_MS = 30 * 60 * 1000;
-const MAX_ALLOWED_OUTPUT_TOKENS = 15;
-const MAX_REPLY_WORDS = 5;
-const MAX_REPLY_LENGTH = 60;
+const MAX_ALLOWED_OUTPUT_TOKENS = 80;
+const MAX_REPLY_WORDS = 20;
+const MAX_REPLY_LENGTH = 220;
 
 const geminiClients = new Map();
 let geminiBlockedUntil = 0;
@@ -77,12 +77,11 @@ function sanitizeReply(reply) {
     .trim();
 
   if (!clean) return "";
-  const firstSentence = clean.split(/[.!؟?،؛]/)[0]?.trim() || clean;
-  const words = firstSentence.split(/\s+/).filter(Boolean);
-  if (words.length > MAX_REPLY_WORDS) return "";
-  if (firstSentence.length > MAX_REPLY_LENGTH) return "";
+  const compact = clean.replace(/\s*([.!؟?،؛])\s*/g, "$1 ");
+  const words = compact.split(/\s+/).filter(Boolean);
+  const limited = words.slice(0, MAX_REPLY_WORDS).join(" ");
 
-  return firstSentence;
+  return limited.slice(0, MAX_REPLY_LENGTH).trim();
 }
 
 async function safelyRecordUsage(payload) {
@@ -114,7 +113,7 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
   const maxOutputTokens = resolveMaxOutputTokens(process.env.SAM_BOT_AI_MAX_OUTPUT_TOKENS);
   const systemInstruction = [
     "أنت سام بوت لقروبات ممالك الأنمي.",
-    "رد واتساب قصير جدًا: 2-5 كلمات.",
+    "رد واتساب قصير: سطر أو سطرين، حتى 20 كلمة.",
     "اكتب جملة كاملة، لا تقطعها.",
     "لا شرح، لا مواضيع بعيدة.",
     "خارج المجال: رجّعها للممالك/الأنمي.",
@@ -152,11 +151,6 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
         usageMetadata: result.response?.usageMetadata,
         success: true
       });
-
-      const finishReason = result.response?.candidates?.[0]?.finishReason;
-      if (finishReason === "MAX_TOKENS") {
-        return "";
-      }
 
       return sanitizeReply(result.response?.text());
     } catch (error) {
