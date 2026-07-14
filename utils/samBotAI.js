@@ -6,8 +6,6 @@ const DEFAULT_TIMEOUT_MS = 12000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 80;
 const DEFAULT_BILLING_COOLDOWN_MS = 30 * 60 * 1000;
 const MAX_ALLOWED_OUTPUT_TOKENS = 80;
-const MAX_REPLY_WORDS = 20;
-const MAX_REPLY_LENGTH = 220;
 
 const geminiClients = new Map();
 let geminiBlockedUntil = 0;
@@ -70,18 +68,11 @@ function withTimeout(promise, timeoutMs) {
 }
 
 function sanitizeReply(reply) {
-  const clean = String(reply || "")
+  return String(reply || "")
     .replace(/\r/g, "")
-    .replace(/\n+/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+/g, " ")
     .trim();
-
-  if (!clean) return "";
-  const compact = clean.replace(/\s*([.!؟?،؛])\s*/g, "$1 ");
-  const words = compact.split(/\s+/).filter(Boolean);
-  const limited = words.slice(0, MAX_REPLY_WORDS).join(" ");
-
-  return limited.slice(0, MAX_REPLY_LENGTH).trim();
 }
 
 async function safelyRecordUsage(payload) {
