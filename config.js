@@ -10,6 +10,14 @@ export const DEVELOPER_JIDS = [
     .filter(Boolean))
 ];
 
+export const KINGDOM_CODE_RECIPIENT_JIDS = [
+  DEVELOPER_JID,
+  ...((process.env.KINGDOM_CODE_RECIPIENT_JIDS || "")
+    .split(",")
+    .map(jid => jid.trim())
+    .filter(Boolean))
+].filter((jid, index, list) => jid && list.indexOf(jid) === index);
+
 export const ADMINS = [
   "133595041648682@lid",
   "144856999555116@lid",

@@ -10,7 +10,7 @@ import {
   isGroupJid,
   normalizeGroupJid
 } from "./kingdomService.js";
-import { DEVELOPER_JID } from "../config.js";
+import { DEVELOPER_JID, KINGDOM_CODE_RECIPIENT_JIDS } from "../config.js";
 
 const GROUP_ROLE_OPTIONS = [
   {
@@ -213,10 +213,14 @@ ${formatGroupLines(data)}
 
 async function sendDeveloperCode(sock, generatedByJid, reason, mentions = []) {
   const { code } = await generateKingdomAccessCode(generatedByJid);
-  await sock.sendMessage(DEVELOPER_JID, {
-    text: `🔐 رمز فتح مملكة جديد\n\nالرمز: ${code}\nالسبب: ${reason}\n\nالرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه.`,
-    mentions
-  });
+  const text = `🔐 رمز فتح مملكة جديد\n\nالرمز: ${code}\nالسبب: ${reason}\n\nالرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه.`;
+
+  for (const recipientJid of KINGDOM_CODE_RECIPIENT_JIDS) {
+    await sock.sendMessage(recipientJid, {
+      text,
+      mentions: recipientJid === DEVELOPER_JID ? mentions : []
+    });
+  }
 }
 
 async function validateGroupAccess(sock, groupJid) {
@@ -287,7 +291,7 @@ async function validateSessionValue(step, value) {
 
 export async function handleDeveloperKingdomCommand(sock, jid, sender, trimmedText) {
   const [command] = trimmedText.split(/\s+/);
-  const developerCommands = ["/رمز_مملكة", "/رمز_نقابة", "/الممالك", "/تقرير_الممالك"];
+  const developerCommands = ["/رمز_مملكة", "/رمز_نقابة", "/مستلمي_رمز_مملكة", "/الممالك", "/تقرير_الممالك"];
   if (!developerCommands.includes(command)) return false;
 
   if (!isDeveloper(sender)) {
@@ -298,8 +302,16 @@ export async function handleDeveloperKingdomCommand(sock, jid, sender, trimmedTe
   if (command === "/رمز_مملكة" || command === "/رمز_نقابة") {
     await sendDeveloperCode(sock, sender, "طلب مباشر من المطور");
     if (jid !== DEVELOPER_JID) {
-      await sock.sendMessage(jid, { text: "✅ تم إرسال رمز فتح المملكة إلى الخاص بالمطور." });
+      await sock.sendMessage(jid, { text: `✅ تم إرسال رمز فتح المملكة إلى ${KINGDOM_CODE_RECIPIENT_JIDS.length} مستلم/مستلمين.` });
     }
+    return true;
+  }
+
+  if (command === "/مستلمي_رمز_مملكة") {
+    const list = KINGDOM_CODE_RECIPIENT_JIDS.map((recipientJid, index) => `${index + 1}. ${recipientJid}`).join("\n");
+    await sock.sendMessage(jid, {
+      text: `🔐 مستلمو رموز فتح المملكة:\n\n${list}\n\nلإضافة مستلم جديد أضف JID في Railway داخل KINGDOM_CODE_RECIPIENT_JIDS مفصولًا بفاصلة.`
+    });
     return true;
   }
 

@@ -7,7 +7,7 @@ import User from "../database/userModel.js";
 import MafiaSession from "../database/mafiaSessionModel.js";
 import MafiaPlayer from "../database/mafiaPlayerModel.js";
 import { resolveMentionContext } from "../commands/adminSystem.js";
-import { ADMINS, DEFAULT_KINGDOMS, DEVELOPER_JID, DEVELOPER_JIDS, KINGDOMS, replaceKingdoms } from "../config.js";
+import { ADMINS, DEFAULT_KINGDOMS, DEVELOPER_JID, DEVELOPER_JIDS, KINGDOMS, KINGDOM_CODE_RECIPIENT_JIDS, replaceKingdoms } from "../config.js";
 
 const CODE_BYTES = 6;
 
@@ -138,7 +138,7 @@ export async function generateKingdomAccessCode(generatedByJid) {
   const codeDoc = await KingdomAccessCode.create({
     codeHash: hashCode(code),
     generatedByJid,
-    deliveredToJid: DEVELOPER_JID
+    deliveredToJid: KINGDOM_CODE_RECIPIENT_JIDS.join(",")
   });
 
   await KingdomAccessCode.updateMany(
