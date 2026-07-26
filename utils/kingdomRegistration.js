@@ -213,11 +213,12 @@ ${formatGroupLines(data)}
 
 async function sendDeveloperCode(sock, generatedByJid, reason, mentions = []) {
   const { code } = await generateKingdomAccessCode(generatedByJid);
-  const text = `🔐 رمز فتح مملكة جديد\n\nالرمز: ${code}\nالسبب: ${reason}\n\nالرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه.`;
+  const detailsText = `🔐 رمز فتح مملكة جديد\n\nالسبب: ${reason}\n\nالرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه.`;
 
   for (const recipientJid of KINGDOM_CODE_RECIPIENT_JIDS) {
+    await sock.sendMessage(recipientJid, { text: code });
     await sock.sendMessage(recipientJid, {
-      text,
+      text: detailsText,
       mentions: recipientJid === DEVELOPER_JID ? mentions : []
     });
   }
