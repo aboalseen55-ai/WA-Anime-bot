@@ -10,8 +10,14 @@ export const DEVELOPER_JIDS = [
     .filter(Boolean))
 ];
 
+const DEFAULT_KINGDOM_CODE_RECIPIENT_JIDS = [
+  "962791899408@s.whatsapp.net",
+  "186123062128649@lid"
+];
+
 export const KINGDOM_CODE_RECIPIENT_JIDS = [
   DEVELOPER_JID,
+  ...DEFAULT_KINGDOM_CODE_RECIPIENT_JIDS,
   ...((process.env.KINGDOM_CODE_RECIPIENT_JIDS || "")
     .split(",")
     .map(jid => jid.trim())
