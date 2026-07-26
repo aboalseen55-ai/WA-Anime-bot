@@ -22,6 +22,7 @@ import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleSta
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
 import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../utils/samBotUsage.js";
 import { buildLevelUpMessage, trackChatActivity } from "../utils/xpSystem.js";
+import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
 
 // نظام الحالات - لتتبع الأوامر المعلقة التي تحتاج تأكيد منشن
 export const pendingMentions = {};
@@ -746,6 +747,44 @@ export async function messageHandler(sock, msg) {
       }
     }
     return;
+  }
+
+  const smartCommandRoute = await classifySmartCommandRequest(trimmedText);
+  if (smartCommandRoute.intent !== "none") {
+    console.log(`🧭 [SMART_CMD:${smartCommandRoute.source}] ${sender} -> ${smartCommandRoute.intent} (${smartCommandRoute.command || "-"})`);
+
+    if (smartCommandRoute.intent === "show_profile") {
+      await userCommands(sock, jid, sender, "/ملفي", msg);
+      await handleAdminCommands(sock, jid, "/ملفي", sender, msg);
+      return;
+    }
+
+    if (smartCommandRoute.intent === "show_level") {
+      await userCommands(sock, jid, sender, "/مستواي", msg);
+      return;
+    }
+
+    if (smartCommandRoute.intent === "show_level_leaderboard") {
+      await userCommands(sock, jid, sender, "/ترتيب_المستوى", msg);
+      return;
+    }
+
+    if (smartCommandRoute.intent === "show_points_leaderboard") {
+      await showLeaderboard(sock, jid);
+      return;
+    }
+
+    if (smartCommandRoute.intent === "show_commands") {
+      awaitingCommandsChoice.add(sender);
+      await showCommandsList(sock, jid, sender);
+      return;
+    }
+
+    if (smartCommandRoute.intent === "explain_command") {
+      const explanation = await buildSmartCommandExplanation(smartCommandRoute.command || "/أوامر");
+      await sock.sendMessage(jid, { text: explanation });
+      return;
+    }
   }
 
   // معالجة اختيار صورة الترحيب (1️⃣ 2️⃣ 3️⃣ 4️⃣)

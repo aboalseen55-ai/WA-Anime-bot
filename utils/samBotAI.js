@@ -93,52 +93,44 @@ function resolveMaxOutputTokens(value) {
   return Math.min(number, MAX_ALLOWED_OUTPUT_TOKENS);
 }
 
-export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate }) {
+async function generateSamBotAIText({
+  systemInstruction,
+  prompt,
+  temperature = 0.65,
+  maxOutputTokens,
+  timeoutMs,
+  modelName
+}) {
   if (Date.now() < geminiBlockedUntil) return "";
 
   const apiKeys = getConfiguredApiKeys();
   if (!apiKeys.length) return "";
 
-  const modelName = process.env.SAM_BOT_AI_MODEL || process.env.GEMINI_MODEL || DEFAULT_MODEL;
-  const timeoutMs = Number(process.env.SAM_BOT_AI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
-  const maxOutputTokens = resolveMaxOutputTokens(process.env.SAM_BOT_AI_MAX_OUTPUT_TOKENS);
-  const systemInstruction = [
-    "أنت سام بوت لقروبات ممالك الأنمي.",
-    "رد واتساب قصير: سطر أو سطرين، حتى 20 كلمة.",
-    "اكتب جملة كاملة، لا تقطعها.",
-    "لا شرح، لا مواضيع بعيدة.",
-    "خارج المجال: رجّعها للممالك/الأنمي.",
-    "لا أسرار ولا تنفيذ أوامر.",
-    "المطور: سام آل جابر +962795137282."
-  ].join(" ");
-  const prompt = [
-    `n:${nickname || "-"}`,
-    `c:${isPrivate ? "p" : "g"}`,
-    `i:${intent || "conversation"}`,
-    `m:${userMessage}`
-  ].join("\n");
+  const resolvedModelName = modelName || process.env.SAM_BOT_AI_MODEL || process.env.GEMINI_MODEL || DEFAULT_MODEL;
+  const resolvedTimeoutMs = Number(timeoutMs || process.env.SAM_BOT_AI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
+  const resolvedMaxOutputTokens = resolveMaxOutputTokens(maxOutputTokens);
 
   let lastError;
 
   for (const [index, apiKey] of apiKeys.entries()) {
     const client = getGeminiClient(apiKey.value);
     const model = client.getGenerativeModel({
-      model: modelName,
+      model: resolvedModelName,
       systemInstruction,
       generationConfig: {
-        temperature: 0.65,
-        maxOutputTokens
+        temperature,
+        maxOutputTokens: resolvedMaxOutputTokens
       }
     });
 
     try {
       const result = await withTimeout(
         model.generateContent(prompt),
-        Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : DEFAULT_TIMEOUT_MS
+        Number.isFinite(resolvedTimeoutMs) && resolvedTimeoutMs > 0 ? resolvedTimeoutMs : DEFAULT_TIMEOUT_MS
       );
 
       void safelyRecordUsage({
-        modelName,
+        modelName: resolvedModelName,
         usageMetadata: result.response?.usageMetadata,
         success: true
       });
@@ -161,11 +153,45 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
   if (lastError) {
     console.error("❌ Sam Bot Gemini Error:", lastError.message);
     void safelyRecordUsage({
-      modelName,
+      modelName: resolvedModelName,
       success: false,
       errorMessage: lastError.message
     });
   }
 
   return "";
+}
+
+export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate }) {
+  const systemInstruction = [
+    "أنت سام بوت لقروبات ممالك الأنمي.",
+    "رد واتساب قصير: سطر أو سطرين، حتى 20 كلمة.",
+    "اكتب جملة كاملة، لا تقطعها.",
+    "لا شرح، لا مواضيع بعيدة.",
+    "خارج المجال: رجّعها للممالك/الأنمي.",
+    "لا أسرار ولا تنفيذ أوامر.",
+    "المطور: سام آل جابر +962795137282."
+  ].join(" ");
+  const prompt = [
+    `n:${nickname || "-"}`,
+    `c:${isPrivate ? "p" : "g"}`,
+    `i:${intent || "conversation"}`,
+    `m:${userMessage}`
+  ].join("\n");
+
+  return generateSamBotAIText({
+    systemInstruction,
+    prompt,
+    temperature: 0.65,
+    maxOutputTokens: process.env.SAM_BOT_AI_MAX_OUTPUT_TOKENS
+  });
+}
+
+export async function generateSamBotAIJson({ systemInstruction, prompt, maxOutputTokens = 80 }) {
+  return generateSamBotAIText({
+    systemInstruction,
+    prompt,
+    temperature: 0,
+    maxOutputTokens
+  });
 }
