@@ -2,22 +2,23 @@ import "dotenv/config";
 
 export const DEVELOPER_PHONE = "962795137282";
 export const DEVELOPER_JID = `${DEVELOPER_PHONE}@s.whatsapp.net`;
-export const DEVELOPER_JIDS = [
-  DEVELOPER_JID,
-  ...((process.env.DEVELOPER_JIDS || "")
-    .split(",")
-    .map(jid => jid.trim())
-    .filter(Boolean))
-];
-
-const DEFAULT_KINGDOM_CODE_RECIPIENT_JIDS = [
+const DEFAULT_EXTRA_DEVELOPER_JIDS = [
   "962791899408@s.whatsapp.net",
   "186123062128649@lid"
 ];
 
+export const DEVELOPER_JIDS = [
+  DEVELOPER_JID,
+  ...DEFAULT_EXTRA_DEVELOPER_JIDS,
+  ...((process.env.DEVELOPER_JIDS || "")
+    .split(",")
+    .map(jid => jid.trim())
+    .filter(Boolean))
+].filter((jid, index, list) => jid && list.indexOf(jid) === index);
+
 export const KINGDOM_CODE_RECIPIENT_JIDS = [
   DEVELOPER_JID,
-  ...DEFAULT_KINGDOM_CODE_RECIPIENT_JIDS,
+  ...DEFAULT_EXTRA_DEVELOPER_JIDS,
   ...((process.env.KINGDOM_CODE_RECIPIENT_JIDS || "")
     .split(",")
     .map(jid => jid.trim())
