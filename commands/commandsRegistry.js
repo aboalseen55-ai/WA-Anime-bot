@@ -19,6 +19,13 @@ export const COMMANDS_REGISTRY = {
       emoji: '📋'
     },
     {
+      command: '/مستواي',
+      description: 'عرض مستوى XP والتقدم',
+      usage: '/مستواي',
+      category: 'profile',
+      emoji: '✨'
+    },
+    {
       command: '/معرف',
       description: 'عرض رقمك الشخصي (JID)',
       usage: '/معرف',
@@ -110,6 +117,13 @@ export const COMMANDS_REGISTRY = {
       usage: '/ترتيب',
       category: 'stats',
       emoji: '🏆'
+    },
+    {
+      command: '/ترتيب_المستوى',
+      description: 'ترتيب أعلى مستويات XP',
+      usage: '/ترتيب_المستوى',
+      category: 'stats',
+      emoji: '✨'
     }
   ],
 

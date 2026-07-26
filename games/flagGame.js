@@ -6,6 +6,7 @@ import axios from "axios";
 import sharp from "sharp";
 import { convertImageToJpeg } from "../utils/imageSearch.js";
 import { enqueueAnswer, processAnswerQueue, clearAnswerQueue } from "../utils/answerQueue.js";
+import { awardGameXp } from "../utils/xpSystem.js";
 
 export const activeGames = {};
 const MAX_TIME = 10000; // 10 ثواني
@@ -190,9 +191,10 @@ export async function checkGuess(sock, jid, sender, text) {
                 } else {
                     const user = await User.findOne({ nickname: userByJid.nickname, kingdom_id: kingdom });
                     user.points = (user.points || 0) + 2; // نقطتين
+                    const xpResult = awardGameXp(user, 2);
                     await user.save();
                     await sock.sendMessage(jid, {
-                        text: `✅ إجابة صحيحة!\nالدولة: ${g.answerVariants[0]}\n+2 نقاط\nمجموع نقاطك: 💰${user.points}`
+                        text: `✅ إجابة صحيحة!\nالدولة: ${g.answerVariants[0]}\n+2 نقاط\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}\nمجموع نقاطك: 💰${user.points}`
                     });
                 }
 

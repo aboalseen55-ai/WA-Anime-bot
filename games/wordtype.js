@@ -2,6 +2,7 @@ import { getWords } from "../utils/wordList.js";
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { getCleanMentionTextForUser } from "../commands/adminSystem.js";
+import { awardGameXp } from "../utils/xpSystem.js";
 
 export const activeWordGames = {};
 export const wordGameWaiting = {};
@@ -295,9 +296,10 @@ export async function checkWordGuess(sock, jid, sender, guess) {
     // حفظ النقطة في قاعدة البيانات
     if (userByJid) {
       userByJid.points = (userByJid.points || 0) + 1;
+      const xpResult = awardGameXp(userByJid, 1);
       await userByJid.save();
       await sock.sendMessage(jid, {
-        text: `✅ أحسنت يا ${playerNickname}! الكلمة الصحيحة هي: *${game.word}*\n💰 +1 نقطة\nمجموع نقاطك: 💰${userByJid.points}\n\n⏭️ جولة جديدة قادمة...`,
+        text: `✅ أحسنت يا ${playerNickname}! الكلمة الصحيحة هي: *${game.word}*\n💰 +1 نقطة\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}\nمجموع نقاطك: 💰${userByJid.points}\n\n⏭️ جولة جديدة قادمة...`,
       });
     } else {
       await sock.sendMessage(jid, {

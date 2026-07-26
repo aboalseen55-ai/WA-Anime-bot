@@ -3,6 +3,7 @@ import stringSimilarity from "string-similarity";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { enqueueAnswer, processAnswerQueue, clearAnswerQueue } from "../utils/answerQueue.js";
 import { getCleanMentionTextForUser } from "../commands/adminSystem.js";
+import { awardGameXp } from "../utils/xpSystem.js";
 
 export const activeCharacterGames = {};
 const MAX_TIME = 20000; // 20 ثانية
@@ -655,10 +656,11 @@ export async function checkCharacterGuess(sock, jid, sender, text) {
                     } else {
                         const user = await User.findOne({ nickname: userByJid.nickname, kingdom_id: kingdom });
                         user.points = (user.points || 0) + 1;
+                        const xpResult = awardGameXp(user, 1);
                         await user.save();
 
                         await sock.sendMessage(jid, {
-                            text: `✅ إجابة صحيحة!\nالإجابة: ${g.character.name}\nمن أنمي: ${g.character.anime}\n+1 نقطة\nمجموع نقاطك: 💰${user.points}`
+                            text: `✅ إجابة صحيحة!\nالإجابة: ${g.character.name}\nمن أنمي: ${g.character.anime}\n+1 نقطة\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}\nمجموع نقاطك: 💰${user.points}`
                         });
                     }
 

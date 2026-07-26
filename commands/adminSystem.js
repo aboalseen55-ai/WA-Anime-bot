@@ -1272,12 +1272,14 @@ export async function showUserStats(sock, jid, targetNickname, kingdom = null) {
         message += `📛 اللقب: ${user.nickname}\n`;
         message += `🎖️ الرتبة الإدارية: ${roleText}\n`;
         message += `👑 رتبة المملكة: ${kingdomRankDisplay}\n`;
+        message += `✨ المستوى: ${user.level || 0} (${user.xp || 0} XP)\n`;
         message += `💰 النقاط: ${user.points || 0}\n`;
         message += `🎖️ نجوم الرتب: ${rankStars}\n`;
         message += `💰 العملات: ${user.coins}\n`;
         message += `🏦 البنك: ${user.bankCoins || 0}\n`;
         message += `📊 الرسائل اليومية: ${user.dailyMessages || 0}\n`;
-        message += `�📅 تاريخ الانضمام: ${user.createdAt.toLocaleDateString('ar-EG')}\n`;
+        message += `📊 إجمالي الرسائل: ${user.totalMessages || 0}\n`;
+        message += `📅 تاريخ الانضمام: ${user.createdAt.toLocaleDateString('ar-EG')}\n`;
 
         if (user.isBanned) {
             message += `🚫 محظور - السبب: ${user.banReason}\n`;

@@ -182,6 +182,40 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // 💬 إجمالي الرسائل/التفاعل المحفوظ دائمًا
+  totalMessages: {
+    type: Number,
+    default: 0
+  },
+  // ✨ نظام الخبرة والمستويات المستقل عن نقاط الألعاب
+  xp: {
+    type: Number,
+    default: 0
+  },
+  level: {
+    type: Number,
+    default: 0
+  },
+  chatXp: {
+    type: Number,
+    default: 0
+  },
+  gameXp: {
+    type: Number,
+    default: 0
+  },
+  lastXpAt: {
+    type: Date,
+    default: null
+  },
+  lastXpTextHash: {
+    type: String,
+    default: null
+  },
+  lastActivityAt: {
+    type: Date,
+    default: null
+  },
   // 📅 تاريخ آخر تجديد لعداد الرسائل اليومية
   lastMessageResetDate: {
     type: Date,
@@ -215,5 +249,7 @@ userSchema.index({ kingdom_id: 1, jid: 1 });
 userSchema.index({ kingdom_id: 1, phoneNumber: 1 });
 userSchema.index({ kingdom_id: 1, lid: 1 });
 userSchema.index({ kingdom_id: 1, role: 1 });
+userSchema.index({ kingdom_id: 1, xp: -1 });
+userSchema.index({ kingdom_id: 1, level: -1 });
 
 export default mongoose.models.User || mongoose.model("User", userSchema);

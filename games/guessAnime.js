@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { enqueueAnswer, processAnswerQueue, clearAnswerQueue } from "../utils/answerQueue.js";
 import { convertImageToJpeg } from "../utils/imageSearch.js";
+import { awardGameXp } from "../utils/xpSystem.js";
 
 export const activeGames = {};
 const MAX_TIME = 15000; // 15 ثواني
@@ -488,10 +489,11 @@ export async function handleGuessAnimeResponse(sock, jid, sender, text) {
                         const user = await User.findOne({ jid: answerSender, kingdom_id: kingdom });
                         if (user) {
                             user.points = (user.points || 0) + 1;
+                            const xpResult = awardGameXp(user, 1);
 
                             await user.save();
                             await sock.sendMessage(jid, {
-                                text: `🎉 أحسنت ${user.nickname}!\nالأنمي هو: ${g.answerVariants[0]}\n💰 +1 نقطة`
+                                text: `🎉 أحسنت ${user.nickname}!\nالأنمي هو: ${g.answerVariants[0]}\n💰 +1 نقطة\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}`
                             });
                         } else {
                             await sock.sendMessage(jid, {

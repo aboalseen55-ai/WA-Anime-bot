@@ -2,6 +2,7 @@ import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { enqueueAnswer, processAnswerQueue, clearAnswerQueue } from "../utils/answerQueue.js";
 import { getCleanMentionTextForUser } from "../commands/adminSystem.js";
+import { awardGameXp } from "../utils/xpSystem.js";
 
 export const activeUnscrambleGames = {};
 const MAX_TIME = 30000; // 30 ثانية
@@ -389,6 +390,7 @@ export async function checkUnscrambleGuess(sock, jid, sender, text) {
                 if (player) {
                     const correctWithSpaces = separateLetters(g.word);
                     player.points = (player.points || 0) + 1;
+                    const xpResult = awardGameXp(player, 1);
                     await player.save();
 
                     const winMessage = `🎉 **برافو ${player.nickname}!**
@@ -396,6 +398,7 @@ export async function checkUnscrambleGuess(sock, jid, sender, text) {
 ✅ الإجابة صحيحة!
 🔤 الحروف المفصولة: ${correctWithSpaces}
 ⭐ +1 نقطة
+✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}
 💰 إجمالي نقاطك: ${player.points}`;
 
                     await sock.sendMessage(jid, { text: winMessage, mentions: [answerSender] });

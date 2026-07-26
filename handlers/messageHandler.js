@@ -21,6 +21,7 @@ import { handleKingdomEditStep, handleStartKingdomEdit } from "../utils/kingdomE
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
 import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../utils/samBotUsage.js";
+import { buildLevelUpMessage, trackChatActivity } from "../utils/xpSystem.js";
 
 // نظام الحالات - لتتبع الأوامر المعلقة التي تحتاج تأكيد منشن
 export const pendingMentions = {};
@@ -214,7 +215,7 @@ export async function messageHandler(sock, msg) {
   addRecentMessage(jid, msg.key);
 
   // ============================================
-  // �📊 تتبع الرسائل اليومية في القروب الأساسي
+  // 📊 تتبع الرسائل اليومية في القروب الأساسي
   // ============================================
   let kingdom;
   let kingdomData;
@@ -261,9 +262,18 @@ export async function messageHandler(sock, msg) {
           user.lastMessageResetDate = new Date();
         }
 
+        const xpResult = trackChatActivity(user, text, new Date());
+
         // ✅ حفظ فوري للبيانات
         await user.save();
-        console.log(`📊 [${user.nickname}] رسائل اليوم: ${user.dailyMessages}`);
+        console.log(`📊 [${user.nickname}] رسائل اليوم: ${user.dailyMessages} | XP: ${user.xp || 0} | Level: ${user.level || 0}`);
+
+        if (xpResult.leveledUp) {
+          await sock.sendMessage(jid, {
+            text: buildLevelUpMessage(user, xpResult),
+            mentions: [user.jid]
+          });
+        }
 
         // إشعار تلقائي عند الوصول إلى شوط جديد (كل 100 تفاعل)
         const prevDailyMessages = (user.dailyMessages || 1) - 1;
@@ -1014,10 +1024,12 @@ export async function messageHandler(sock, msg) {
             message += `📛 اللقب: ${targetUser.nickname}\n`;
             message += `🎖️ الرتبة الإدارية: ${roleText}\n`;
             message += `👑 رتبة المملكة: ${kingdomRankDisplay}\n`;
+            message += `✨ المستوى: ${targetUser.level || 0} (${targetUser.xp || 0} XP)\n`;
             message += `💰 النقاط: ${targetUser.points || 0}\n`;
             message += `🎖️ نجوم الرتب: ${rankStars}\n`;
             message += `💰 العملات: ${targetUser.coins}\n`;
             message += `🏦 البنك: ${targetUser.bankCoins || 0}\n`;
+            message += `📊 إجمالي الرسائل: ${targetUser.totalMessages || 0}\n`;
             message += `📅 تاريخ الانضمام: ${targetUser.createdAt.toLocaleDateString('ar-EG')}\n`;
 
             if (targetUser.isBanned) {

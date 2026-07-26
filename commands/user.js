@@ -3,6 +3,7 @@ import { showBankBalance, depositToBank, withdrawFromBank, classifyIdentifier, i
 import { getHighestRank, displayRank } from "./rankSystem.js";
 import { pendingMentions } from "../handlers/messageHandler.js";
 import { ADMINS, getKingdomIdFromGroupJid, DEVELOPER_JIDS } from "../config.js";
+import { formatLevelProgress } from "../utils/xpSystem.js";
 
 // دالة موحدة لإرسال رسالة بمنشن
 async function sendMentionMessage(sock, jid, targetUser, customMessage = null) {
@@ -21,6 +22,48 @@ export async function userCommands(sock, jid, sender, text, msg) {
   const command = args[0];
   const kingdom = getKingdomIdFromGroupJid(jid);
   let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
+
+  if (command === "/مستواي" || command === "/مستوى" || command === "/لفلي") {
+    if (!user) {
+      await sock.sendMessage(jid, { text: "❌ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك" });
+      return true;
+    }
+
+    const progress = formatLevelProgress(user);
+    let message = `✨ مستوى ${user.nickname}\n`;
+    message += `━━━━━━━━━━━━━━━━━\n`;
+    message += `🏅 المستوى: ${progress.level}\n`;
+    message += `✨ XP: ${progress.xp}\n`;
+    message += `📈 التقدم: ${progress.progressBar} ${progress.percent}%\n`;
+    message += `⬆️ المتبقي للمستوى ${progress.level + 1}: ${progress.remaining} XP\n`;
+    message += `💬 رسائل اليوم: ${user.dailyMessages || 0}\n`;
+    message += `📊 إجمالي الرسائل: ${user.totalMessages || 0}\n`;
+    message += `🗨️ XP المحادثة: ${user.chatXp || 0}\n`;
+    message += `🎮 XP الألعاب: ${user.gameXp || 0}`;
+
+    await sock.sendMessage(jid, { text: message });
+    return true;
+  }
+
+  if (command === "/ترتيب_المستوى" || command === "/ترتيب_اللفل" || command === "/اللفلات") {
+    const users = await User.find({ kingdom_id: kingdom, xp: { $gt: 0 } })
+      .sort({ xp: -1, totalMessages: -1 })
+      .limit(10);
+
+    if (!users.length) {
+      await sock.sendMessage(jid, { text: "لا يوجد ترتيب مستويات بعد." });
+      return true;
+    }
+
+    let message = `🏆 ترتيب المستويات\n`;
+    message += `━━━━━━━━━━━━━━━━━\n`;
+    users.forEach((member, index) => {
+      message += `${index + 1}. ${member.nickname} - Lv.${member.level || 0} | ${member.xp || 0} XP\n`;
+    });
+
+    await sock.sendMessage(jid, { text: message.trim() });
+    return true;
+  }
 
   // أمر تعيين أو تغيير المنشن (للأدمن والمشرفين فقط)
   if (command === "/تعيين_منشن" || command === "/تغيير_منشن") {
@@ -136,7 +179,9 @@ export async function userCommands(sock, jid, sender, text, msg) {
     info += `🧾 *اسم واتساب:* ${t.whatsappName || 'غير متوفر'}\n`;
     info += `👤 *الدور:* ${t.role || 'غير محدد'}\n`;
     info += `💰 *نقاط:* ${t.points ?? 0}    💸 *عملات:* ${t.coins ?? 0}    🏦 *بنك:* ${t.bankCoins ?? 0}\n`;
-    info += `📊 *الرسائل اليومية:* ${t.dailyMessages ?? 0}    ⏱️ *تاريخ الإنشاء:* ${t.createdAt ? new Date(t.createdAt).toLocaleString() : 'N/A'}\n`;
+    info += `✨ *المستوى:* ${t.level ?? 0}    XP: ${t.xp ?? 0}\n`;
+    info += `📊 *الرسائل اليومية:* ${t.dailyMessages ?? 0}    الكلية: ${t.totalMessages ?? 0}\n`;
+    info += `⏱️ *تاريخ الإنشاء:* ${t.createdAt ? new Date(t.createdAt).toLocaleString() : 'N/A'}\n`;
     info += `🚫 *محظور؟* ${t.isBanned ? 'نعم' : 'لا'}    ${t.isBanned ? ` (بسبب: ${t.banReason || 'غير معروف'})` : ''}\n`;
 
     // رتب وممالك
@@ -275,12 +320,14 @@ export async function userCommands(sock, jid, sender, text, msg) {
     message += `📛 اللقب: ${user.nickname}\n`;
     message += `🎖️ الرتبة الإدارية: ${roleText}\n`;
     message += `👑 رتبة المملكة: ${kingdomRankDisplay}\n`;
+    message += `✨ المستوى: ${user.level || 0} (${user.xp || 0} XP)\n`;
     message += `💰 النقاط: ${user.points || 0}\n`;
     message += `🎖️ نجوم الرتب: ${user.rankStarsByKingdom?.[kingdom] || 0}\n`;
     message += `💰 العملات: ${user.coins}\n`;
     message += `🏦 البنك: ${user.bankCoins || 0}\n`;
-    message += `� الرسائل اليومية: 💬 ${user.dailyMessages || 0}\n`;
-    message += `�📅 تاريخ الانضمام: ${user.createdAt.toLocaleDateString('ar-EG')}\n`;
+    message += `💬 الرسائل اليومية: ${user.dailyMessages || 0}\n`;
+    message += `📊 إجمالي الرسائل: ${user.totalMessages || 0}\n`;
+    message += `📅 تاريخ الانضمام: ${user.createdAt.toLocaleDateString('ar-EG')}\n`;
 
     if (user.isBanned) {
       message += `🚫 محظور - السبب: ${user.banReason}\n`;
@@ -445,6 +492,8 @@ export async function userCommands(sock, jid, sender, text, msg) {
       if (t.points !== undefined) {
         userInfo += `\n💰 *النقاط:* ${t.points}`;
       }
+      userInfo += `\n✨ *المستوى:* ${t.level || 0} (${t.xp || 0} XP)`;
+      userInfo += `\n📊 *إجمالي الرسائل:* ${t.totalMessages || 0}`;
 
       // إضافة البنك
       if (t.bankBalance !== undefined) {
