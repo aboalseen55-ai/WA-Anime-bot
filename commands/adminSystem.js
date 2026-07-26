@@ -2821,46 +2821,53 @@ export function getDailyGameStats(adminJid, user) {
  */
 export function generateAdminDailyReport(user) {
     const { gameStats, totalDuration, sessionCount } = getDailyGameStats(user.jid, user);
+    const dailyMessages = Number(user.dailyMessages) || 0;
 
-    if (sessionCount === 0) {
-        return `📊 *تقرير الألعاب اليومي*\n\n✅ لم تقم ببدء أي لعبة اليوم`;
+    if (sessionCount === 0 && dailyMessages === 0) {
+        return null;
     }
 
-    let report = `📊 *تقرير الألعاب اليومي - ${user.nickname || user.name}*\n\n`;
+    let report = `📊 *التقرير الإداري اليومي - ${user.nickname || user.name}*\n\n`;
     report += `📅 التاريخ: ${new Date().toLocaleDateString('ar-SA')}\n\n`;
+    report += `💬 *تفاعل اليوم:* ${dailyMessages} رسالة\n`;
 
-    let gameIndex = 1;
-    for (const [gameName, stats] of Object.entries(gameStats)) {
-        const hours = Math.floor(stats.totalDuration / 3600);
-        const minutes = Math.floor((stats.totalDuration % 3600) / 60);
-        const seconds = stats.totalDuration % 60;
+    if (sessionCount > 0) {
+        report += `\n🎮 *جلسات الألعاب:*\n`;
 
-        let timeStr = '';
-        if (hours > 0) timeStr += `${hours}س `;
-        if (minutes > 0) timeStr += `${minutes}د `;
-        if (seconds > 0 || timeStr === '') timeStr += `${seconds}ث`;
+        let gameIndex = 1;
+        for (const [gameName, stats] of Object.entries(gameStats)) {
+            const hours = Math.floor(stats.totalDuration / 3600);
+            const minutes = Math.floor((stats.totalDuration % 3600) / 60);
+            const seconds = stats.totalDuration % 60;
 
-        report += `${gameIndex}️⃣ *${gameName}*\n`;
-        report += `   • عدد الجلسات: ${stats.count}\n`;
-        report += `   • الوقت الإجمالي: ${timeStr}\n\n`;
-        gameIndex++;
+            let timeStr = '';
+            if (hours > 0) timeStr += `${hours}س `;
+            if (minutes > 0) timeStr += `${minutes}د `;
+            if (seconds > 0 || timeStr === '') timeStr += `${seconds}ث`;
+
+            report += `${gameIndex}️⃣ *${gameName}*\n`;
+            report += `   • عدد الجلسات: ${stats.count}\n`;
+            report += `   • الوقت الإجمالي: ${timeStr}\n\n`;
+            gameIndex++;
+        }
+
+        // المجموع الكلي
+        const totalHours = Math.floor(totalDuration / 3600);
+        const totalMinutes = Math.floor((totalDuration % 3600) / 60);
+        const totalSeconds = totalDuration % 60;
+
+        let totalTimeStr = '';
+        if (totalHours > 0) totalTimeStr += `${totalHours}س `;
+        if (totalMinutes > 0) totalTimeStr += `${totalMinutes}د `;
+        if (totalSeconds > 0 || totalTimeStr === '') totalTimeStr += `${totalSeconds}ث`;
+
+        report += `⏱️ *الإجمالي*\n`;
+        report += `   • إجمالي الجلسات: ${sessionCount}\n`;
+        report += `   • الوقت الكلي: ${totalTimeStr}\n\n`;
     }
 
-    // المجموع الكلي
-    const totalHours = Math.floor(totalDuration / 3600);
-    const totalMinutes = Math.floor((totalDuration % 3600) / 60);
-    const totalSeconds = totalDuration % 60;
-
-    let totalTimeStr = '';
-    if (totalHours > 0) totalTimeStr += `${totalHours}س `;
-    if (totalMinutes > 0) totalTimeStr += `${totalMinutes}د `;
-    if (totalSeconds > 0 || totalTimeStr === '') totalTimeStr += `${totalSeconds}ث`;
-
-    report += `⏱️ *الإجمالي*\n`;
-    report += `   • إجمالي الجلسات: ${sessionCount}\n`;
-    report += `   • الوقت الكلي: ${totalTimeStr}\n\n`;
     report += `━━━━━━━━━━━━━━━━━\n`;
-    report += `✨ شكراً على إدارتك للألعاب!`;
+    report += `✨ شكراً على نشاطك اليوم.`;
 
     return report;
 }
@@ -2881,7 +2888,8 @@ export async function sendAdminsDailyReports(sock, groupJid) {
         for (const admin of admins) {
             try {
                 const report = generateAdminDailyReport(admin);
-                
+                if (!report) continue;
+
                 // إرسال التقرير فقط في المجموعة الإدارية
                 if (groupJid) {
                     const groupReport = `👤 *${admin.nickname || admin.name}*\n${report}`;
