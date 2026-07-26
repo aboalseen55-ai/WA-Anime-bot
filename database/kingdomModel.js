@@ -33,6 +33,11 @@ const kingdomSchema = new mongoose.Schema({
     default: "",
     trim: true
   },
+  timeZone: {
+    type: String,
+    default: "",
+    trim: true
+  },
   groupIds: [{
     type: String,
     trim: true

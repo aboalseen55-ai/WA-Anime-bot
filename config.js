@@ -61,6 +61,7 @@ export const DEFAULT_KINGDOMS = {
       "120363424110401057@g.us"      // مجموعة الاستقبال
     ],
     adminGroup: "120363425063189388@g.us",  // المجموعة الإدارية لتقارير الألعاب
+    timeZone: "Asia/Amman",
     admins: ADMINS,
     bankStartingBalance: 1000000
   },
@@ -76,6 +77,7 @@ export const DEFAULT_KINGDOMS = {
       "120363343443001024@g.us" // أضف جميع المجموعات المرتبطة بهذه المملكة هنا
     ],
     adminGroup: "120363409550189527@g.us", // مجموعة الأدمن لهذه المملكة
+    timeZone: "Asia/Amman",
     admins: [...ADMINS], // يمكنك تخصيص قائمة الأدمنز هنا
     bankStartingBalance: 500000
   },
@@ -92,6 +94,7 @@ export const DEFAULT_KINGDOMS = {
       "120363409550189527@g.us"
     ],
     adminGroup: "120363409550189527@g.us",
+    timeZone: "Asia/Amman",
     admins: [...ADMINS],
     bankStartingBalance: 500000
   }

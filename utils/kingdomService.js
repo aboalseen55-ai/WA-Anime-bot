@@ -73,6 +73,7 @@ function kingdomDocToConfig(doc) {
     workGroup: doc.workGroup || "",
     groupIds: doc.groupIds || [],
     adminGroup: doc.adminGroup || "",
+    timeZone: doc.timeZone || "",
     admins: doc.admins?.length ? doc.admins : ADMINS,
     bankStartingBalance: doc.bankStartingBalance ?? 1000000
   };
@@ -86,6 +87,7 @@ function defaultKingdomToDoc(kingdom) {
     receptionGroup: kingdom.receptionGroup || "",
     workGroup: kingdom.workGroup || "",
     adminGroup: kingdom.adminGroup || "",
+    timeZone: kingdom.timeZone || "",
     groupIds: kingdom.groupIds?.length ? kingdom.groupIds : [kingdom.mainGroup].filter(Boolean),
     admins: kingdom.admins?.length ? kingdom.admins : ADMINS,
     bankStartingBalance: kingdom.bankStartingBalance ?? 1000000,
@@ -296,6 +298,7 @@ export async function buildKingdomsReport(options = {}) {
     report += `الاستقبال: ${kingdom.receptionGroup || "-"}\n`;
     report += `الإدارة: ${kingdom.adminGroup || "-"}\n`;
     report += `الوورك: ${kingdom.workGroup || "-"}\n`;
+    report += `التوقيت: ${kingdom.timeZone || "Asia/Amman"}\n`;
     report += `تاريخ الإنشاء: ${new Date(kingdom.createdAt).toLocaleString("ar-EG")}\n`;
   }
 

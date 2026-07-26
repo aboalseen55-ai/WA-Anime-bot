@@ -2,15 +2,72 @@ import User from "../database/userModel.js";
 import { KINGDOMS } from "../config.js";
 import { sendAdminsDailyReports, resetDailyGameStats } from "../commands/adminSystem.js";
 
+const DEFAULT_REPORT_TIME_ZONE = process.env.DAILY_REPORT_TIME_ZONE || "Asia/Amman";
+const REPORT_HOUR = Number(process.env.DAILY_REPORT_HOUR ?? 0);
+const REPORT_MINUTE = Number(process.env.DAILY_REPORT_MINUTE ?? 0);
+
+export function getKingdomReportTimeZone(kingdomData = {}) {
+  return kingdomData.timeZone || kingdomData.timezone || DEFAULT_REPORT_TIME_ZONE;
+}
+
+function getTimeZoneParts(date, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date);
+
+  return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
+}
+
+function getTimeZoneOffsetMs(date, timeZone) {
+  const parts = getTimeZoneParts(date, timeZone);
+  const localAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  return localAsUtc - date.getTime();
+}
+
+function zonedTimeToUtc(year, month, day, hour, minute, second, timeZone) {
+  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, second);
+  const firstOffset = getTimeZoneOffsetMs(new Date(utcGuess), timeZone);
+  const firstUtc = utcGuess - firstOffset;
+  const secondOffset = getTimeZoneOffsetMs(new Date(firstUtc), timeZone);
+  return new Date(utcGuess - secondOffset);
+}
+
+export function getNextDailyReportDate(timeZone = DEFAULT_REPORT_TIME_ZONE) {
+  const now = new Date();
+  const parts = getTimeZoneParts(now, timeZone);
+  const hour = Number.isFinite(REPORT_HOUR) ? REPORT_HOUR : 0;
+  const minute = Number.isFinite(REPORT_MINUTE) ? REPORT_MINUTE : 0;
+  let target = zonedTimeToUtc(parts.year, parts.month, parts.day, hour, minute, 0, timeZone);
+
+  if (target <= now) {
+    target = zonedTimeToUtc(parts.year, parts.month, parts.day + 1, hour, minute, 0, timeZone);
+  }
+
+  return target;
+}
+
 /**
  * إنشاء ديلي تقرير شامل لجميع المستخدمين
- * ويُرسل للقروب الإضافي ويُجدد العداد
+ * ويُرسل لقروب إدارة المملكة فقط
  */
 export async function generateDailyReport(sock, kingdom = 'clover') {
   try {
     const kingdomData = KINGDOMS[kingdom];
     if (!kingdomData) {
       console.error(`❌ مملكة ${kingdom} غير موجودة`);
+      return;
+    }
+
+    const adminGroupJid = kingdomData.adminGroup;
+    if (!adminGroupJid) {
+      console.warn(`⚠️ لا يوجد قروب إدارة للمملكة ${kingdom}؛ لن يتم إرسال تقرير النشاط.`);
       return;
     }
 
@@ -67,80 +124,59 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🌟 شكراً على نشاطكم المستمر! 🌟`;
 
-    // إرسال التقرير للقروب الإضافي (أول قروب إضافي)
-    const additionalGroupJid = kingdomData.groupIds && kingdomData.groupIds.length > 2 
-      ? kingdomData.groupIds[2] 
-      : kingdomData.mainGroup;
-
-    if (additionalGroupJid && additionalGroupJid !== kingdomData.mainGroup) {
-      await sock.sendMessage(additionalGroupJid, { text: reportMessage });
-      console.log(`✅ تم إرسال التقرير اليومي للمملكة ${kingdom}`);
-    } else {
-      console.warn(`⚠️ لم يتم العثور على قروب إضافي للمملكة ${kingdom}`);
-    }
-
-    // 🔄 إعادة تعيين عدادات التفاعل بعد إرسال التقرير
-    const usersToReset = await User.find({ kingdom_id: kingdom });
-    for (const user of usersToReset) {
-      user.dailyMessages = 0;
-      user.lastMessageResetDate = new Date();
-      await user.save();
-    }
-
-    console.log(`✅ تم تجديد العدادات لـ ${usersToReset.length} مستخدم`);
+    await sock.sendMessage(adminGroupJid, { text: reportMessage });
+    console.log(`✅ تم إرسال تقرير النشاط اليومي للمملكة ${kingdom} إلى قروب الإدارة`);
 
   } catch (error) {
     console.error('❌ خطأ في إنشاء التقرير اليومي:', error.message);
   }
 }
 
+async function runKingdomDailyReports(sock, kingdomId) {
+  const kingdomData = KINGDOMS[kingdomId];
+  if (!kingdomData) return;
+  const timeZone = getKingdomReportTimeZone(kingdomData);
+
+  if (!kingdomData.adminGroup) {
+    console.warn(`⚠️ لا يوجد قروب إدارة للمملكة ${kingdomId}؛ سيتم تصفير اليوم بدون إرسال تقارير.`);
+    await resetDailyGameStats(kingdomId, timeZone);
+    return;
+  }
+
+  await sendAdminsDailyReports(sock, kingdomData.adminGroup, kingdomId, timeZone);
+  await generateDailyReport(sock, kingdomId);
+  await resetDailyGameStats(kingdomId, timeZone);
+}
+
 /**
  * جدولة التقرير اليومي باستخدام setTimeout
- * يُرسل كل يوم في الساعة 11 مساءاً
+ * يُرسل كل يوم عند 12:00 منتصف الليل حسب توقيت المملكة
  */
 export function scheduleDailyReports(sock) {
   try {
-    function scheduleNextReport() {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(23, 59, 0, 0); // 11:59 مساءً
+    function scheduleNextReport(kingdomId) {
+      const kingdomData = KINGDOMS[kingdomId];
+      if (!kingdomData) return;
 
-      const timeUntilReport = tomorrow.getTime() - now.getTime();
+      const timeZone = getKingdomReportTimeZone(kingdomData);
+      const nextReport = getNextDailyReportDate(timeZone);
+      const timeUntilReport = Math.max(1000, nextReport.getTime() - Date.now());
 
-      console.log(`✅ التقرير اليومي التالي سيُرسل في ${tomorrow.toLocaleString('ar-EG')}`);
+      console.log(`✅ التقرير اليومي التالي لمملكة ${kingdomId} في ${nextReport.toLocaleString('ar-EG', { timeZone })} (${timeZone})`);
 
       setTimeout(async () => {
-        console.log('🔔 بدء إرسال التقارير اليومية...');
-        
-        // إرسال تقرير لكل مملكة
-        for (const kingdomId of Object.keys(KINGDOMS)) {
-          await generateDailyReport(sock, kingdomId);
-        }
-
-        // 🎮 إرسال تقارير الألعاب للأداريين
-        console.log('🎮 بدء إرسال تقارير الألعاب للأداريين...');
-        const kingdomData = KINGDOMS['clover'] || Object.values(KINGDOMS)[0];
-        const adminGroupJid = kingdomData?.adminGroup || kingdomData?.groupIds?.[2];
-        await sendAdminsDailyReports(sock, adminGroupJid);
-
-        // 🔄 تصفير التفاعل اليومي لجميع المستخدمين (بدون حذف recentMessages)
-        console.log('🔄 تصفير التفاعل اليومي لجميع المستخدمين...');
-        await User.updateMany({}, { dailyMessages: 0 });
-
-        // 🔄 إعادة تعيين إحصائيات الألعاب
-        console.log('🔄 إعادة تعيين إحصائيات الألعاب...');
-        await resetDailyGameStats();
-        
-        console.log('✅ انتهى إرسال التقارير اليومية');
-        
-        // جدولة التقرير التالي
-        scheduleNextReport();
+        console.log(`🔔 بدء إرسال التقارير اليومية لمملكة ${kingdomId}...`);
+        await runKingdomDailyReports(sock, kingdomId);
+        console.log(`✅ انتهى إرسال التقارير اليومية لمملكة ${kingdomId}`);
+        scheduleNextReport(kingdomId);
       }, timeUntilReport);
     }
 
-    scheduleNextReport();
-    console.log('✅ تم تفعيل جدولة التقارير اليومية (الساعة 11 مساءاً)');
+    for (const kingdomId of Object.keys(KINGDOMS)) {
+      scheduleNextReport(kingdomId);
+    }
+
+    console.log('✅ تم تفعيل جدولة التقارير اليومية حسب توقيت كل مملكة');
   } catch (error) {
     console.error('❌ خطأ في جدولة التقارير اليومية:', error.message);
   }

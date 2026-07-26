@@ -2785,9 +2785,21 @@ export async function stopGameSession(adminJid) {
  * @param {string} adminJid - معرف الأدمن
  * @returns {Object} إحصائيات الألعاب لليوم
  */
-export function getDailyGameStats(adminJid, user) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+const DEFAULT_REPORT_TIME_ZONE = process.env.DAILY_REPORT_TIME_ZONE || "Asia/Amman";
+
+function getTimeZoneDateKey(date = new Date(), timeZone = DEFAULT_REPORT_TIME_ZONE) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).formatToParts(date);
+    const mapped = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+    return `${mapped.year}-${mapped.month}-${mapped.day}`;
+}
+
+export function getDailyGameStats(adminJid, user, timeZone = DEFAULT_REPORT_TIME_ZONE) {
+    const todayKey = getTimeZoneDateKey(new Date(), timeZone);
 
     const gameStats = {};
     let totalDuration = 0;
@@ -2795,11 +2807,10 @@ export function getDailyGameStats(adminJid, user) {
 
     if (user.gamesSessions) {
         user.gamesSessions.forEach(session => {
-            const sessionDate = new Date(session.startTime);
-            sessionDate.setHours(0, 0, 0, 0);
+            const sessionDateKey = getTimeZoneDateKey(new Date(session.startTime), timeZone);
 
             // فقط الجلسات من اليوم الحالي والمنتهية
-            if (sessionDate.getTime() === today.getTime() && session.endTime) {
+            if (sessionDateKey === todayKey && session.endTime) {
                 if (!gameStats[session.gameName]) {
                     gameStats[session.gameName] = { count: 0, totalDuration: 0 };
                 }
@@ -2819,8 +2830,8 @@ export function getDailyGameStats(adminJid, user) {
  * @param {Object} user - بيانات المستخدم
  * @returns {string} نص التقرير
  */
-export function generateAdminDailyReport(user) {
-    const { gameStats, totalDuration, sessionCount } = getDailyGameStats(user.jid, user);
+export function generateAdminDailyReport(user, timeZone = DEFAULT_REPORT_TIME_ZONE) {
+    const { gameStats, totalDuration, sessionCount } = getDailyGameStats(user.jid, user, timeZone);
     const dailyMessages = Number(user.dailyMessages) || 0;
 
     if (sessionCount === 0 && dailyMessages === 0) {
@@ -2877,17 +2888,28 @@ export function generateAdminDailyReport(user) {
  * @param {Object} sock - كائن الـ socket
  * @param {string} groupJid - معرف المجموعة الداخلية (التقارير)
  */
-export async function sendAdminsDailyReports(sock, groupJid) {
+export async function sendAdminsDailyReports(sock, groupJid, kingdomId = null, timeZone = DEFAULT_REPORT_TIME_ZONE) {
     try {
+        if (!groupJid) {
+            console.warn('⚠️ لا يوجد قروب إدارة؛ لن يتم إرسال تقارير الإداريين.');
+            return 0;
+        }
+
         // جلب جميع الأداريين والمشرفين
-        const admins = await User.find({ 
+        const query = {
             role: { $in: ['admin', 'moderator', 'super_admin'] }
-        });
+        };
+
+        if (kingdomId) {
+            query.kingdom_id = kingdomId;
+        }
+
+        const admins = await User.find(query);
 
         let reportsSent = 0;
         for (const admin of admins) {
             try {
-                const report = generateAdminDailyReport(admin);
+                const report = generateAdminDailyReport(admin, timeZone);
                 if (!report) continue;
 
                 // إرسال التقرير فقط في المجموعة الإدارية
@@ -2916,15 +2938,15 @@ export async function sendAdminsDailyReports(sock, groupJid) {
  * إعادة تعيين إحصائيات الألعاب اليومية
  * تُدعى يومياً في منتصف الليل (بعد إرسال التقارير)
  */
-export async function resetDailyGameStats() {
+export async function resetDailyGameStats(kingdomId = null, timeZone = DEFAULT_REPORT_TIME_ZONE) {
     try {
-        // 🔄 إعادة تعيين إحصائيات جميع المستخدمين (رسائل + ألعاب)
-        const allUsers = await User.find({});
+        // 🔄 إعادة تعيين إحصائيات المستخدمين (رسائل + ألعاب)
+        const userQuery = kingdomId ? { kingdom_id: kingdomId } : {};
+        const allUsers = await User.find(userQuery);
         
         let gameStatsReset = 0;
         let messageStatsReset = 0;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const todayKey = getTimeZoneDateKey(new Date(), timeZone);
         
         for (const user of allUsers) {
             let updated = false;
@@ -2942,10 +2964,9 @@ export async function resetDailyGameStats() {
                 if (user.gamesSessions && user.gamesSessions.length > 0) {
                     // حذف جلسات اليوم الحالي فقط (إبقاء السجل التاريخي)
                     user.gamesSessions = user.gamesSessions.filter(session => {
-                        const sessionDate = new Date(session.startTime);
-                        sessionDate.setHours(0, 0, 0, 0);
+                        const sessionDateKey = getTimeZoneDateKey(new Date(session.startTime), timeZone);
                         // إبقاء الجلسات القديمة، حذف جلسات اليوم
-                        return sessionDate.getTime() < today.getTime();
+                        return sessionDateKey < todayKey;
                     });
                     
                     user.lastGamesResetDate = new Date();

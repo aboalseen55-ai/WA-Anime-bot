@@ -43,6 +43,7 @@ import { pendingMentions } from "../handlers/messageHandler.js";
 import { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED, getKingdomIdFromGroupJid, KINGDOMS, getKingdomFromGroupJid } from "../config.js";
 import { showCommandsList, handleCommandsChoice } from "./commandsList.js";
 import { sendRulesMessage, sendReminderMessage, startReminderSystem } from "../utils/rulesSystem.js";
+import { getKingdomReportTimeZone, getNextDailyReportDate } from "../utils/dailyReports.js";
 import { getRecentMessages, popRecentMessages } from "../utils/messageCache.js";
 
 export async function handleAdminCommands(sock, jid, message, sender, msg) {
@@ -59,10 +60,16 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             await sock.sendMessage(jid, { text: '❌ هذا الأمر متاح فقط للأدمن الرئيسي في هذه المملكة.' });
             return true;
         }
-        // جلب JID المجموعة الإدارية من الكونفيج
-        const adminGroupJid = KINGDOMS[kingdom]?.adminGroup || '120363425063189388@g.us';
-        // إرسال تقرير الألعاب لجميع الأداريين
-        await sendAdminsDailyReports(sock, adminGroupJid);
+        const kingdomData = KINGDOMS[kingdom];
+        const adminGroupJid = kingdomData?.adminGroup;
+        if (!adminGroupJid) {
+            await sock.sendMessage(jid, { text: '❌ لا يوجد قروب إدارة لهذه المملكة، لذلك لن يتم إرسال التقرير.' });
+            return true;
+        }
+
+        const timeZone = getKingdomReportTimeZone(kingdomData);
+        // إرسال تقرير الألعاب والتفاعل لإداريي هذه المملكة فقط
+        await sendAdminsDailyReports(sock, adminGroupJid, kingdom, timeZone);
         // إرسال تقرير التفاعل اليومي (نفس منطق /التفاعل)
         const users = await User.find({ kingdom_id: kingdom, dailyMessages: { $gte: 1 } }).sort({ dailyMessages: -1 });
         if (!users.length) {
@@ -84,19 +91,12 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             });
             await sock.sendMessage(adminGroupJid, { text: report });
         }
-        // حساب وقت السيرفر الحالي وموعد التقرير التالي
         const now = new Date();
-        const nextReport = new Date(now);
-        if (now.getHours() < 23 || (now.getHours() === 23 && now.getMinutes() < 59)) {
-            nextReport.setHours(23, 59, 0, 0);
-        } else {
-            nextReport.setDate(nextReport.getDate() + 1);
-            nextReport.setHours(23, 59, 0, 0);
-        }
-        const nowStr = now.toLocaleString('ar-EG');
-        const nextReportStr = nextReport.toLocaleString('ar-EG');
+        const nextReport = getNextDailyReportDate(timeZone);
+        const nowStr = now.toLocaleString('ar-EG', { timeZone });
+        const nextReportStr = nextReport.toLocaleString('ar-EG', { timeZone });
         await sock.sendMessage(jid, {
-            text: `✅ تم إرسال التقارير الإدارية للمجموعة الإدارية.\n\n🕒 وقت السيرفر الحالي: ${nowStr}\n📅 موعد التقرير اليومي التالي: ${nextReportStr}`
+            text: `✅ تم إرسال التقارير الإدارية لقروب إدارة المملكة.\n\n🕒 وقت المملكة الآن: ${nowStr}\n🌐 التوقيت: ${timeZone}\n📅 موعد التقرير اليومي التالي: ${nextReportStr}`
         });
         return true;
     }
