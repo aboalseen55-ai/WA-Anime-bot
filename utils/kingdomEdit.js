@@ -103,6 +103,36 @@ const EDIT_FIELDS = [
     aliases: ["9", "الحالة", "active", "status"],
     label: "حالة المملكة",
     prompt: "أرسل: نشطة أو معطلة"
+  },
+  {
+    key: "mainGroupInviteLink",
+    aliases: ["10", "رابط_الرئيسي", "رابط الأساسي", "رابط_الأساسي", "mainLink", "mainInvite"],
+    label: "رابط دعوة القروب الرئيسي",
+    prompt: "أرسل رابط دعوة القروب الرئيسي، أو اكتب: مسح"
+  },
+  {
+    key: "receptionGroupInviteLink",
+    aliases: ["11", "رابط_الاستقبال", "receptionLink", "receptionInvite"],
+    label: "رابط دعوة قروب الاستقبال",
+    prompt: "أرسل رابط دعوة قروب الاستقبال، أو اكتب: مسح"
+  },
+  {
+    key: "workGroupInviteLink",
+    aliases: ["12", "رابط_الوورك", "رابط_الترحيب", "workLink", "workInvite"],
+    label: "رابط دعوة قروب الوورك",
+    prompt: "أرسل رابط دعوة قروب الوورك، أو اكتب: مسح"
+  },
+  {
+    key: "adminGroupInviteLink",
+    aliases: ["13", "رابط_الإدارة", "رابط_الادارة", "adminLink", "adminInvite"],
+    label: "رابط دعوة قروب الإدارة",
+    prompt: "أرسل رابط دعوة قروب الإدارة، أو اكتب: مسح"
+  },
+  {
+    key: "announcementLink",
+    aliases: ["14", "رابط_الإعلانات", "رابط_الاعلانات", "رابط الإعلانات", "announcementLink"],
+    label: "رابط الإعلانات",
+    prompt: "أرسل رابط الإعلانات، أو اكتب: مسح"
   }
 ];
 
@@ -225,6 +255,23 @@ function formatValue(value) {
   return String(value);
 }
 
+function isInviteLinkField(key) {
+  return [
+    "mainGroupInviteLink",
+    "receptionGroupInviteLink",
+    "workGroupInviteLink",
+    "adminGroupInviteLink"
+  ].includes(key);
+}
+
+function isUrl(value) {
+  return /^https?:\/\/\S+$/i.test(String(value || "").trim());
+}
+
+function isWhatsappInviteLink(value) {
+  return /^https?:\/\/chat\.whatsapp\.com\/[A-Za-z0-9_-]+/i.test(String(value || "").trim());
+}
+
 function buildGroupIds(data, explicitGroupIds = data.groupIds || []) {
   return [
     ...new Set([
@@ -275,6 +322,11 @@ function buildFieldsMenu(kingdom) {
 7. أدمن المملكة
 8. رصيد البنك الابتدائي
 9. حالة المملكة
+10. رابط دعوة القروب الرئيسي
+11. رابط دعوة قروب الاستقبال
+12. رابط دعوة قروب الوورك
+13. رابط دعوة قروب الإدارة
+14. رابط الإعلانات
 
 أرسل الرقم أو الاسم، وللإلغاء اكتب: إلغاء`;
 }
@@ -419,6 +471,22 @@ async function validateNewValue(sock, session, rawValue) {
     return { ok: false, message: "❌ الحالة يجب أن تكون: نشطة أو معطلة." };
   }
 
+  if (isInviteLinkField(key)) {
+    if (CLEAR_PATTERN.test(value)) return { ok: true, value: "" };
+    if (!isWhatsappInviteLink(value)) {
+      return { ok: false, message: "❌ رابط الدعوة يجب أن يكون من نوع https://chat.whatsapp.com/..." };
+    }
+    return { ok: true, value };
+  }
+
+  if (key === "announcementLink") {
+    if (CLEAR_PATTERN.test(value)) return { ok: true, value: "" };
+    if (!isUrl(value)) {
+      return { ok: false, message: "❌ رابط الإعلانات يجب أن يبدأ بـ http:// أو https://" };
+    }
+    return { ok: true, value };
+  }
+
   return { ok: false, message: "❌ هذا الحقل غير مدعوم." };
 }
 
@@ -535,7 +603,7 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
   if (session.stage === "field") {
     const field = findField(trimmed);
     if (!field) {
-      await sock.sendMessage(jid, { text: "❌ اختر رقمًا من 1 إلى 9 أو اسم الحقل." });
+      await sock.sendMessage(jid, { text: "❌ اختر رقمًا من 1 إلى 14 أو اسم الحقل." });
       return true;
     }
 

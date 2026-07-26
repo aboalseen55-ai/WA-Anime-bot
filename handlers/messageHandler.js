@@ -23,6 +23,7 @@ import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
 import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../utils/samBotUsage.js";
 import { buildLevelUpMessage, trackChatActivity } from "../utils/xpSystem.js";
 import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
+import { extractReceptionOnboardingInfo, isReceptionGreetingOnly, resolveMainGroupInviteLink } from "../utils/receptionOnboarding.js";
 
 // نظام الحالات - لتتبع الأوامر المعلقة التي تحتاج تأكيد منشن
 export const pendingMentions = {};
@@ -43,7 +44,7 @@ export const awaitingNicknameRegistration = new Set();
 export const pendingKick = {};
 
 // نظام الحالات - لتتبع مراحل التسجيل المتقدمة
-// { userJid: { stage: 'welcome'|'nicknameInput'|'nicknameConfirmation'|'enteringSource', nickname: string } }
+// { userJid: { stage: 'sourceInput'|'nicknameInput'|'nicknameConfirmation'|'enteringSource', nickname: string, enteringSource: string } }
 export const nicknameRegistrationStages = {};
 
 // نظام الحالات - لتتبع الأدمنز الذين ينتظرون إرسال صورة الترحيب
@@ -51,6 +52,142 @@ export const awaitingWelcomeImage = {};
 
 // نظام الحالات - لتتبع الرسائل المرسلة للتشجيع على الوصول لـ 50 عضو
 const milestoneMessagesSent = new Set();
+
+async function validateReceptionNickname(sock, jid, sender, nickname, kingdom) {
+  if (!nickname || nickname.length < 2) {
+    await sock.sendMessage(jid, {
+      text: 'اكتب لقب أو اسم أوضح شوي.',
+      mentions: [sender]
+    });
+    return false;
+  }
+
+  if (nickname.length > 30) {
+    await sock.sendMessage(jid, {
+      text: 'اللقب طويل. خليه 30 حرف أو أقل.',
+      mentions: [sender]
+    });
+    return false;
+  }
+
+  const existingUser = await User.findOne({
+    nickname: { $regex: `^${nickname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: 'i' },
+    kingdom_id: kingdom
+  });
+
+  if (existingUser && existingUser.jid !== sender) {
+    await sock.sendMessage(jid, {
+      text: 'هذا اللقب مستخدم. جرّب لقب ثاني.',
+      mentions: [sender]
+    });
+    return false;
+  }
+
+  return true;
+}
+
+async function removeFromReceptionGroup(sock, receptionJid, sender) {
+  try {
+    await sock.groupParticipantsUpdate(receptionJid, [sender], "remove");
+    return true;
+  } catch (error) {
+    console.warn(`⚠️ تعذر إخراج العضو من الاستقبال ${sender}: ${error.message}`);
+    return false;
+  }
+}
+
+async function completeReceptionRegistration(sock, jid, sender, msg, userStage, enteringSource) {
+  const kingdom = getKingdomIdFromGroupJid(jid);
+  let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
+  const whatsappName = msg.pushName || 'صديق';
+  const originalNickname = userStage.nickname;
+
+  if (!user) {
+    const identifier = classifyIdentifier(sender);
+    user = new User({
+      jid: identifier.jid || sender,
+      kingdom_id: kingdom,
+      nickname: originalNickname,
+      phoneNumber: identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null,
+      lid: identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null,
+      rawLid: identifier.identifierType === 'raw_lid' ? identifier.rawLid : null,
+      identifierType: identifier.identifierType,
+      countryCode: identifier.countryCode,
+      countryName: identifier.countryName,
+      mention: getMentionFromJID(identifier.jid || sender),
+      whatsappName,
+      enteringSource
+    });
+  } else {
+    user.nickname = originalNickname;
+    user.whatsappName = whatsappName;
+    user.enteringSource = enteringSource;
+  }
+
+  await user.save();
+  console.log(`✅ تم تسجيل مستخدم جديد: ${originalNickname} (${sender}) - من طرف: ${enteringSource}`);
+
+  awaitingNicknameRegistration.delete(sender);
+  delete nicknameRegistrationStages[sender];
+
+  const { KINGDOMS } = await import('../config.js');
+  const kingdomData = KINGDOMS[kingdom];
+  const kingdomName = kingdomData?.name || 'المملكة';
+  const inviteLink = await resolveMainGroupInviteLink(sock, kingdomData);
+
+  await sock.sendMessage(jid, {
+    text: `تم تسجيلك يا ${originalNickname}. أرسلت لك رابط القروب الأساسي على الخاص.`,
+    mentions: [sender]
+  });
+
+  if (inviteLink) {
+    try {
+      await sock.sendMessage(sender, {
+        text: `أهلًا ${originalNickname}.\nهذا رابط دخول ${kingdomName}:\n${inviteLink}`
+      });
+    } catch (error) {
+      console.warn(`⚠️ تعذر إرسال رابط الدعوة للخاص ${sender}: ${error.message}`);
+      await sock.sendMessage(jid, {
+        text: `تم التسجيل، لكن ما قدرت أرسل الرابط على الخاص. افتح الخاص للبوت أو تواصل مع الإدارة.`,
+        mentions: [sender]
+      });
+    }
+  } else {
+    await sock.sendMessage(jid, {
+      text: `تم التسجيل، لكن رابط القروب الأساسي غير مضبوط في بيانات المملكة.`,
+      mentions: [sender]
+    });
+  }
+
+  const removed = await removeFromReceptionGroup(sock, jid, sender);
+  if (!removed) {
+    await sock.sendMessage(jid, {
+      text: `تم التسجيل، لكن لم أستطع إخراج العضو من الاستقبال. تأكد أن البوت أدمن.`,
+      mentions: [sender]
+    });
+  }
+
+  try {
+    const workGroupJid = kingdomData?.workGroup;
+
+    if (workGroupJid) {
+      const formMessage = buildWorkWelcomeFormMessage({
+        nickname: originalNickname,
+        status: 'جديد ⭐',
+        enteringSource,
+        moderatorName: 'غير محدد',
+        kingdom
+      });
+
+      await sock.sendMessage(workGroupJid, { text: formMessage });
+      console.log(`✅ تم إرسال نموذج الترحيب إلى مجموعة الوورك: ${originalNickname}`);
+    } else {
+      console.log(`ℹ️ لا توجد مجموعة وورك محددة للمملكة: ${kingdom}`);
+    }
+  } catch (workError) {
+    console.error(`⚠️ خطأ في إرسال نموذج الترحيب: ${workError.message}`);
+  }
+}
 
 // (نظام حذف الرسائل يُدار عبر وحدة منفصلة في utils/messageCache.js)
 
@@ -1361,29 +1498,68 @@ export async function messageHandler(sock, msg) {
 
     const userStage = nicknameRegistrationStages[sender];
 
-    // ============================================
-    // المرحلة الأولى: انتظار تأكيد الترحيب
-    // ============================================
+    // دعم الجلسات القديمة التي بدأت قبل تحديث التسلسل
     if (userStage && userStage.stage === 'welcome') {
       console.log(`✅ مرحلة الترحيب: تم استقبال رد من ${sender}`);
-      
-      // الانتقال للمرحلة الثانية: طلب اللقب
-      nicknameRegistrationStages[sender].stage = 'nicknameInput';
-      
-      const nicknameRequestMessage = `✅ شكراً على تفاعلك! 😊
-
-*📝 الآن يرجى اختيار لقب لك من شخصيات الأنمي*
-
-*❓ ما هو لقبك المفضل؟*
-*💡 أمثلة: غوكو • ناروتو • لوفي • ساسوكي*
-
-⚠️ تأكد أن اللقب:
-• فريد وغير مستخدم من قبل
-• بدون أرقام أو رموز
-• بعدد أحرف معقول`;
+      nicknameRegistrationStages[sender].stage = 'sourceInput';
 
       await sock.sendMessage(jid, {
-        text: nicknameRequestMessage,
+        text: 'تمام، مين اللي جابك أو من طرف مين دخلت؟',
+        mentions: [sender]
+      });
+      return;
+    }
+
+    // ============================================
+    // المرحلة الأولى: سؤال من طرف من
+    // ============================================
+    if (userStage && userStage.stage === 'sourceInput') {
+      console.log(`🔗 مرحلة مصدر الدخول: تم استقبال الرد من ${sender}`);
+
+      const info = await extractReceptionOnboardingInfo(text);
+      const enteringSource = info.source || text.trim();
+
+      if (!info.source && isReceptionGreetingOnly(text)) {
+        await sock.sendMessage(jid, {
+          text: 'أهلًا فيك. مين اللي دخلت من طرفه؟',
+          mentions: [sender]
+        });
+        return;
+      }
+
+      if (!enteringSource || enteringSource.length < 2) {
+        await sock.sendMessage(jid, {
+          text: 'اكتب اسم الشخص اللي دخلت من طرفه.',
+          mentions: [sender]
+        });
+        return;
+      }
+
+      if (enteringSource.length > 50) {
+        await sock.sendMessage(jid, {
+          text: 'الاسم طويل شوي. اكتب اسم الشخص فقط.',
+          mentions: [sender]
+        });
+        return;
+      }
+
+      nicknameRegistrationStages[sender].enteringSource = enteringSource;
+
+      if (info.nickname) {
+        const kingdom = getKingdomIdFromGroupJid(jid);
+        if (!(await validateReceptionNickname(sock, jid, sender, info.nickname, kingdom))) return;
+        nicknameRegistrationStages[sender].stage = 'nicknameConfirmation';
+        nicknameRegistrationStages[sender].nickname = info.nickname;
+        await sock.sendMessage(jid, {
+          text: `لقبك هو: ${info.nickname}\nاكتبه مرة ثانية للتأكيد.`,
+          mentions: [sender]
+        });
+        return;
+      }
+
+      nicknameRegistrationStages[sender].stage = 'nicknameInput';
+      await sock.sendMessage(jid, {
+        text: 'تمام. شو اللقب اللي تحب نسجلك فيه؟',
         mentions: [sender]
       });
       return;
@@ -1394,52 +1570,29 @@ export async function messageHandler(sock, msg) {
     // ============================================
     if (userStage && userStage.stage === 'nicknameInput') {
       console.log(`📝 مرحلة إدخال اللقب: تم استقبال لقب من ${sender}`);
-      
-      const nickname = text.trim();
-      
-      // التحقق من صحة اللقب
-      if (!nickname || nickname.length < 2) {
-        await sock.sendMessage(jid, {
-          text: '❌ اللقب قصير جداً! يجب أن يكون أطول من حرفين.',
-          mentions: [sender]
-        });
-        return;
-      }
 
-      if (nickname.length > 30) {
-        await sock.sendMessage(jid, {
-          text: '❌ اللقب طويل جداً! يجب أن لا يتجاوز 30 حرف.',
-          mentions: [sender]
-        });
-        return;
-      }
-
-      // التحقق من أن اللقب غير مستخدم
+      const info = await extractReceptionOnboardingInfo(text);
+      const nickname = info.nickname || text.trim();
       const kingdom = getKingdomIdFromGroupJid(jid);
-      const existingUser = await User.findOne({ 
-        nickname: { $regex: `^${nickname}$`, $options: 'i' }, 
-        kingdom_id: kingdom 
-      });
-      
-      if (existingUser && existingUser.jid !== sender) {
+      if (!info.nickname && isReceptionGreetingOnly(text)) {
         await sock.sendMessage(jid, {
-          text: `❌ هذا اللقب مستخدم بالفعل! 😞\n\n💡 يرجى اختيار لقب آخر.`,
+          text: 'أهلًا. شو اللقب اللي نسجلك فيه؟',
           mentions: [sender]
         });
         return;
+      }
+      if (!(await validateReceptionNickname(sock, jid, sender, nickname, kingdom))) return;
+
+      if (info.source && !nicknameRegistrationStages[sender].enteringSource) {
+        nicknameRegistrationStages[sender].enteringSource = info.source;
       }
 
       // الانتقال للمرحلة الثالثة: طلب التأكيد
       nicknameRegistrationStages[sender].stage = 'nicknameConfirmation';
       nicknameRegistrationStages[sender].nickname = nickname;
 
-      const confirmationMessage = `✨ هذا لقبك الجديد؟ ✨
-
-*💫 لقبك: ${nickname}*
-
-*✍️ لتأكيد اللقب، يرجى إعادة كتابته*
-
-📝 اكتب اللقب مرة أخرى بدقة:`;
+      const confirmationMessage = `لقبك هو: ${nickname}
+اكتبه مرة ثانية للتأكيد.`;
 
       await sock.sendMessage(jid, {
         text: confirmationMessage,
@@ -1459,23 +1612,16 @@ export async function messageHandler(sock, msg) {
 
       // التحقق من أن الإجابة مطابقة للقب الأصلي
       if (confirmedNickname.toLowerCase() === originalNickname.toLowerCase()) {
-        // ✅ التأكيد صحيح - الانتقال للمرحلة التالية: السؤال عن المرجع
-        const kingdom = getKingdomIdFromGroupJid(jid);
-        
-        // الانتقال للمرحلة الرابعة: سؤال من طرف من
+        const enteringSource = userStage.enteringSource;
+        if (enteringSource) {
+          await completeReceptionRegistration(sock, jid, sender, msg, userStage, enteringSource);
+          return;
+        }
+
         nicknameRegistrationStages[sender].stage = 'enteringSource';
         nicknameRegistrationStages[sender].nickname = originalNickname;
 
-        const sourceMessage = `✅ تم حفظ لقبك: *${originalNickname}* 🎭
-
-*━━━━━━━━━━━━━━━━━*
-
-📝 *سؤال مهم:*
-
-*من طرف من دخلت المجموعة؟*
-*🔗 (اكتب اسم الشخص الذي عرّفك على المجموعة)*
-
-*💡 مثال: حمد • فاطمة • علي*`;
+        const sourceMessage = `تمام. مين اللي جابك أو من طرف مين دخلت؟`;
 
         await sock.sendMessage(jid, {
           text: sourceMessage,
@@ -1488,12 +1634,8 @@ export async function messageHandler(sock, msg) {
         nicknameRegistrationStages[sender].stage = 'nicknameInput';
         delete nicknameRegistrationStages[sender].nickname;
 
-        const retryMessage = `⚠️ اللقب لم يطابق! ❌
-
-*اللقب الذي أرسلته:* ${confirmedNickname}
-*اللقب المطلوب:* ${originalNickname}
-
-🔄 لنحاول مرة أخرى. الرجاء كتابة لقبك من جديد (بشكل دقيق):`;
+        const retryMessage = `ما طابق اللقب.
+اكتب لقبك من جديد.`;
 
         await sock.sendMessage(jid, {
           text: retryMessage,
@@ -1508,13 +1650,21 @@ export async function messageHandler(sock, msg) {
     // ============================================
     if (userStage && userStage.stage === 'enteringSource') {
       console.log(`🔗 مرحلة مصدر الدخول: تم استقبال الرد من ${sender}`);
-      
-      const enteringSource = text.trim();
-      
-      // التحقق من صحة الإجابة
+
+      const info = await extractReceptionOnboardingInfo(text);
+      const enteringSource = info.source || text.trim();
+
+      if (!info.source && isReceptionGreetingOnly(text)) {
+        await sock.sendMessage(jid, {
+          text: 'أهلًا فيك. مين اللي دخلت من طرفه؟',
+          mentions: [sender]
+        });
+        return;
+      }
+
       if (!enteringSource || enteringSource.length < 2) {
         await sock.sendMessage(jid, {
-          text: '❌ الرجاء إدخال اسم الشخص بشكل صحيح!',
+          text: 'اكتب اسم الشخص اللي دخلت من طرفه.',
           mentions: [sender]
         });
         return;
@@ -1522,98 +1672,13 @@ export async function messageHandler(sock, msg) {
 
       if (enteringSource.length > 50) {
         await sock.sendMessage(jid, {
-          text: '❌ الاسم طويل جداً! يجب أن لا يتجاوز 50 حرف.',
+          text: 'الاسم طويل شوي. اكتب اسم الشخص فقط.',
           mentions: [sender]
         });
         return;
       }
 
-      // ✅ حفظ البيانات ونهاية التسجيل
-      const kingdom = getKingdomIdFromGroupJid(jid);
-      let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
-      const whatsappName = msg.pushName || 'صديق';
-      const originalNickname = userStage.nickname;
-
-      if (!user) {
-        const identifier = classifyIdentifier(sender);
-        user = new User({
-          jid: identifier.jid || sender,
-          kingdom_id: kingdom,
-          nickname: originalNickname,
-          phoneNumber: identifier.identifierType === 'phone_jid' ? identifier.phoneNumber : null,
-          lid: identifier.identifierType === 'lid_jid' || identifier.identifierType === 'raw_lid' ? identifier.lid : null,
-          rawLid: identifier.identifierType === 'raw_lid' ? identifier.rawLid : null,
-          identifierType: identifier.identifierType,
-          countryCode: identifier.countryCode,
-          countryName: identifier.countryName,
-          mention: getMentionFromJID(identifier.jid || sender),
-          whatsappName: whatsappName,
-          enteringSource: enteringSource // حفظ مصدر الدخول
-        });
-      } else {
-        user.nickname = originalNickname;
-        user.whatsappName = whatsappName;
-        user.enteringSource = enteringSource;
-      }
-
-      await user.save();
-      console.log(`✅ تم تسجيل مستخدم جديد: ${originalNickname} (${sender}) - من طرف: ${enteringSource}`);
-
-      // حذف من الحالات المعلقة
-      awaitingNicknameRegistration.delete(sender);
-      delete nicknameRegistrationStages[sender];
-
-      const { KINGDOMS } = await import('../config.js');
-      const kingdomData = KINGDOMS[kingdom];
-      const kingdomName = kingdomData?.name || 'المملكة';
-
-      const successMessage = `🎉 *مرحباً بك في ${kingdomName} يا ${whatsappName}!* 🍀
-
-✨ تم تسجيلك بنجاح! ✨
-
-*💫 لقبك الرسمي: ${originalNickname}*
-*🔗 أحضرك: ${enteringSource}*
-
-🌟 الآن يمكنك:
-• الاستمتاع بجميع أوامر البوت
-• المشاركة في الألعاب
-• جمع النقاط والترقي
-
-🚀 رحلتك في المملكة بدأت! أتمنى لك وقتاً رائعاً! 🎊`;
-
-      await sock.sendMessage(jid, {
-        text: successMessage,
-        mentions: [sender]
-      });
-
-      // إرسال نموذج الترحيب إلى مجموعة الوورك (إذا كانت موجودة)
-      try {
-        const workGroupJid = kingdomData?.workGroup;
-
-        if (workGroupJid) {
-          // تحديد الحالة (جديد/محرر)
-          const status = 'جديد ⭐';
-
-          // البحث عن اسم المسؤول (الشخص الذي أضاف العضو)
-          // في هذاالحالة قد لا يكون معروفاً، لذا سنتركه فارغاً أو نضع "غير محدد"
-          const moderatorName = 'غير محدد';
-
-          const formMessage = buildWorkWelcomeFormMessage({
-            nickname: originalNickname,
-            status,
-            enteringSource,
-            moderatorName,
-            kingdom
-          });
-
-          await sock.sendMessage(workGroupJid, { text: formMessage });
-          console.log(`✅ تم إرسال نموذج الترحيب إلى مجموعة الوورك: ${originalNickname}`);
-        } else {
-          console.log(`ℹ️ لا توجد مجموعة وورك محددة للمملكة: ${kingdom}`);
-        }
-      } catch (workError) {
-        console.error(`⚠️ خطأ في إرسال نموذج الترحيب: ${workError.message}`);
-      }
+      await completeReceptionRegistration(sock, jid, sender, msg, userStage, enteringSource);
 
       return;
     }

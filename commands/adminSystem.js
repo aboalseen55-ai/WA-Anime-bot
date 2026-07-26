@@ -562,6 +562,7 @@ function getKingdomShortName(kingdom) {
 export function buildWelcomeFormMessage({ nickname, user, userJid, moderatorName, kingdom }) {
     const kingdomName = getKingdomDisplayName(kingdom);
     const kingdomShortName = getKingdomShortName(kingdom);
+    const announcementLink = KINGDOMS[kingdom]?.announcementLink || WELCOME_LINK;
     const mention = getCleanMentionTextForUser(user || userJid);
 
     return `*~╃ ${kingdomName} ╄~*
@@ -579,7 +580,7 @@ export function buildWelcomeFormMessage({ nickname, user, userJid, moderatorName
 
 📌 *يُرجى زيارة رابط الإعلانات الرسمي للاطلاع على كل جديد:*
 『 📰』
-${WELCOME_LINK}
+${announcementLink}
 *
 *❀✦═══ •『🍀』• ═══✦❀*
 

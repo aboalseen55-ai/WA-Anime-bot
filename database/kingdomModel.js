@@ -33,6 +33,31 @@ const kingdomSchema = new mongoose.Schema({
     default: "",
     trim: true
   },
+  mainGroupInviteLink: {
+    type: String,
+    default: "",
+    trim: true
+  },
+  receptionGroupInviteLink: {
+    type: String,
+    default: "",
+    trim: true
+  },
+  workGroupInviteLink: {
+    type: String,
+    default: "",
+    trim: true
+  },
+  adminGroupInviteLink: {
+    type: String,
+    default: "",
+    trim: true
+  },
+  announcementLink: {
+    type: String,
+    default: "",
+    trim: true
+  },
   timeZone: {
     type: String,
     default: "",

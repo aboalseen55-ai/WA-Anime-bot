@@ -215,10 +215,10 @@ async function startBot() {
           // إضافة المستخدم إلى قائمة الانتظار مع المرحلة الأولى (ترحيب)
           awaitingNicknameRegistration.add(participantJid);
           nicknameRegistrationStages[participantJid] = {
-            stage: 'welcome', // المرحلة الأولى: ترحيب
+            stage: 'sourceInput',
             jid: id
           };
-          console.log(`Added ${participantJid} to awaitingNicknameRegistration (stage: welcome)`);
+          console.log(`Added ${participantJid} to awaitingNicknameRegistration (stage: sourceInput)`);
 
           // محاولة الحصول على اسم الواتساب
           let whatsappUserName = 'صديق';
@@ -229,15 +229,13 @@ async function startBot() {
             whatsappUserName = participant.notify || existingUser?.whatsappName || 'صديق';
           }
 
-          // إرسال رسالة ترحيب بسيطة (بدون طلب اللقب الآن)
           const welcomeMessage = `*🎉 نورت ${kingdom.name} ${mentionText}*
 
-✨ أهلاً وسهلاً بك معنا! ✨
+أهلًا فيك.
 
-*🤝 لتأكيد استقبالك، يرجى إرسال أي رسالة*
-*💬 اكتب مثلاً: "أهلا" أو "مرحبا"*
+مين اللي جابك أو من طرف مين دخلت؟
 
-👋 بعد ذلك سنطلب منك اختيار لقبك الخاص`;
+مثال: من طرف أحمد`;
 
           await sock.sendMessage(id, { text: welcomeMessage, mentions: [participantJid] });
           console.log(`Sent welcome message to ${participantJid}`);
