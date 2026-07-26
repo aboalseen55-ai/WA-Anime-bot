@@ -275,15 +275,6 @@ export async function messageHandler(sock, msg) {
           });
         }
 
-        // إشعار تلقائي عند الوصول إلى شوط جديد (كل 100 تفاعل)
-        const prevDailyMessages = (user.dailyMessages || 1) - 1;
-        const prevMilestone = Math.floor(prevDailyMessages / 100);
-        const newMilestone = Math.floor(user.dailyMessages / 100);
-        if (user.dailyMessages >= 100 && newMilestone > prevMilestone) {
-          const mentionText = getCleanMentionTextForUser(user);
-          const congratsMsg = `🎉 رائع يا ${mentionText}\nلقد وصلت إلى ${user.dailyMessages} تفاعل! 🏆🔥👏`;
-          await sock.sendMessage(jid, { text: congratsMsg, mentions: [user.jid] });
-        }
       } catch (error) {
         console.error('❌ خطأ في تتبع الرسائل اليومية:', error.message);
       }

@@ -70,8 +70,6 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         } else {
             let report = '\u200F📊 *تفاعل الأعضاء اليومي*\n';
             report += '--------------------------\n';
-            let mentions = [];
-            let congratsMessages = '';
             const emojis = ['🥇', '🥈', '🥉'];
             users.forEach((user, idx) => {
                 let line = '';
@@ -83,16 +81,8 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                 if (idx < 2 && idx < users.length - 1) {
                     report += '_________________\n';
                 }
-                if (user.dailyMessages === 100) {
-                    const mentionText = getCleanMentionTextForUser(user);
-                    congratsMessages += `\n🎉 رائع يا ${mentionText}\nلقد وصلت إلى 100 تفاعل! 🏆🔥👏\n`;
-                    if (user.jid) mentions.push(user.jid);
-                }
             });
-            if (congratsMessages) {
-                report += `\n${congratsMessages}`;
-            }
-            await sock.sendMessage(adminGroupJid, { text: report, ...(mentions.length ? { mentions } : {}) });
+            await sock.sendMessage(adminGroupJid, { text: report });
         }
         // حساب وقت السيرفر الحالي وموعد التقرير التالي
         const now = new Date();
@@ -145,8 +135,6 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         report += '--------------------------\n';
         report += `📈 *التفاعل الإجمالي:* ${totalInteractions}\n`;
         report += '--------------------------\n';
-        let mentions = [];
-        let congratsMessages = '';
         const emojis = ['🥇', '🥈', '🥉'];
         
         users.forEach((user, idx) => {
@@ -160,18 +148,9 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             if (idx < 2 && idx < users.length - 1) {
                 report += '_________________\n';
             }
-            if (user.dailyMessages === 100) {
-                // تهنئة مع منشن مخصص إذا وجد
-                const mentionText = getCleanMentionTextForUser(user);
-                congratsMessages += `\n🎉 رائع يا ${mentionText}\nلقد وصلت إلى 100 تفاعل! 🏆🔥👏\n`;
-                if (user.jid) mentions.push(user.jid);
-            }
         });
-        
-        if (congratsMessages) {
-            report += `\n${congratsMessages}`;
-        }
-        await sock.sendMessage(jid, { text: report, ...(mentions.length ? { mentions } : {}) });
+
+        await sock.sendMessage(jid, { text: report });
         return true;
     }
 
