@@ -302,6 +302,9 @@ export async function buildKingdomsReport(options = {}) {
   for (const kingdom of kingdoms) {
     const defaultKingdom = DEFAULT_KINGDOMS[kingdom.id] || {};
     const mainGroupInviteLink = kingdom.mainGroupInviteLink || defaultKingdom.mainGroupInviteLink || "";
+    const receptionGroupInviteLink = kingdom.receptionGroupInviteLink || defaultKingdom.receptionGroupInviteLink || "";
+    const workGroupInviteLink = kingdom.workGroupInviteLink || defaultKingdom.workGroupInviteLink || "";
+    const adminGroupInviteLink = kingdom.adminGroupInviteLink || defaultKingdom.adminGroupInviteLink || "";
     const announcementLink = kingdom.announcementLink || defaultKingdom.announcementLink || "";
     const [usersCount, adminsCount, bank] = await Promise.all([
       User.countDocuments({ kingdom_id: kingdom.id }),
@@ -318,6 +321,9 @@ export async function buildKingdomsReport(options = {}) {
     report += `الإدارة: ${kingdom.adminGroup || "-"}\n`;
     report += `الوورك: ${kingdom.workGroup || "-"}\n`;
     report += `رابط الأساسي: ${mainGroupInviteLink ? "مضبوط" : "-"}\n`;
+    report += `رابط الاستقبال: ${receptionGroupInviteLink ? "مضبوط" : "-"}\n`;
+    report += `رابط الوورك: ${workGroupInviteLink ? "مضبوط" : "-"}\n`;
+    report += `رابط الإدارة: ${adminGroupInviteLink ? "مضبوط" : "-"}\n`;
     report += `رابط الإعلانات: ${announcementLink ? "مضبوط" : "-"}\n`;
     report += `التوقيت: ${kingdom.timeZone || "Asia/Amman"}\n`;
     report += `تاريخ الإنشاء: ${new Date(kingdom.createdAt).toLocaleString("ar-EG")}\n`;

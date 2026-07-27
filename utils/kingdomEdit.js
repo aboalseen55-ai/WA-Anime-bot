@@ -3,6 +3,7 @@ import { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED, DEVELOPER_JID } from "../con
 import { resolveMentionContext } from "../commands/adminSystem.js";
 import {
   auditKingdomAction,
+  isDeveloper,
   isGroupJid,
   normalizeGroupJid,
   normalizePhoneToJid,
@@ -328,6 +329,8 @@ function buildFieldsMenu(kingdom) {
 13. رابط دعوة قروب الإدارة
 14. رابط الإعلانات
 
+روابط الدعوات والفورمات تعدل من الخيارات 10 إلى 14.
+
 أرسل الرقم أو الاسم، وللإلغاء اكتب: إلغاء`;
 }
 
@@ -529,6 +532,11 @@ export async function handleStartKingdomEdit(sock, jid, sender, trimmedText) {
 
   if (!isPrivateChat(jid)) {
     await sock.sendMessage(jid, { text: "🔐 للتعديل بأمان، أرسل أمر /تعديل_مملكة في خاص البوت فقط." });
+    return true;
+  }
+
+  if (!isDeveloper(sender)) {
+    await sock.sendMessage(jid, { text: "❌ تعديل المملكة وروابط الفورمات خاص بالمطور فقط." });
     return true;
   }
 
