@@ -3,7 +3,6 @@ import "dotenv/config";
 export const DEVELOPER_PHONE = "962795137282";
 export const DEVELOPER_JID = `${DEVELOPER_PHONE}@s.whatsapp.net`;
 const DEFAULT_EXTRA_DEVELOPER_JIDS = [
-  "962791899408@s.whatsapp.net",
   "186123062128649@lid"
 ];
 
