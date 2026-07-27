@@ -1,163 +1,86 @@
-// commands/dynamicCommandsList.js
-// نظام أكثر فاعلية لعرض قوائم الأوامر
-
-import { COMMANDS_REGISTRY, formatCommandList, getCommandsByCategory } from './commandsRegistry.js';
-import User from '../database/userModel.js';
-import { isAdmin, isModerator } from './adminSystem.js';
-import { getHighestRank, displayRank } from './rankSystem.js';
-import { getKingdomIdFromGroupJid } from '../config.js';
+// قائمة ديناميكية مختصرة للأوامر
+import { COMMANDS_REGISTRY, formatCommandList } from "./commandsRegistry.js";
+import { isAdmin, isModerator } from "./adminSystem.js";
+import { getKingdomIdFromGroupJid } from "../config.js";
 
 export async function showDynamicCommandsList(sock, jid, sender) {
   const kingdom = getKingdomIdFromGroupJid(jid);
   const userIsAdmin = await isAdmin(sender, kingdom);
   const userIsModerator = await isModerator(sender, kingdom);
 
-  let mainMenu = `
-╔════════════════════════════════════╗
-║      📋 قائمة الأوامر الديناميكية  ║
-║      𝘾𝙇𝙊𝙑𝙀𝙍 🍀 HUNTER             ║
-╚════════════════════════════════════╝
+  const rows = [
+    ["1", "👤", "أوامر الأعضاء"],
+    ["2", "🎮", "أوامر الألعاب"],
+    ["3", "💰", "البنك والعملات"]
+  ];
 
-اختر رقم القائمة التي تريد عرضها:
-
-*1️⃣  أوامر الأعضاء العامة*
-*2️⃣  أوامر الألعاب* 🎮
-*3️⃣  أوامر البنك والعملات* 💰`;
-
-  // إضافة أوامر المشرفين فقط للمشرفين والأدمنز
-  if (userIsModerator) {
-    mainMenu += `\n*4️⃣  أوامر المشرفين* 🔰`;
-  }
-
-  // إضافة أوامر الأدمن فقط للأدمنز
+  if (userIsModerator) rows.push(["4", "🛡️", "أوامر المشرفين"]);
   if (userIsAdmin) {
-    mainMenu += `\n*5️⃣  أوامر الأدمن الرئيسي* 👑
-*6️⃣  نظام الرتب والنجوم* 🎖️`;
+    rows.push(["5", "👑", "أوامر الأدمن"]);
+    rows.push(["6", "⭐", "الرتب والنجوم"]);
   }
 
-  // أوامر البحث متاحة للجميع
-  mainMenu += `\n*7️⃣  أوامر البحث والمعلومات* 🔍
-*8️⃣  البحث في الأوامر* 🔎
+  rows.push(["7", "🔎", "البحث والمعلومات"]);
+  rows.push(["8", "🔍", "البحث في الأوامر"]);
 
-*اكتب الرقم فقط لعرض القائمة* ✨`;
+  const text = [
+    "*📋 قائمة الأوامر*",
+    "اختر رقم القائمة:",
+    "",
+    ...rows.map(([number, emoji, label]) => `${emoji} ${number}. ${label}`),
+    "",
+    "اكتب الرقم فقط."
+  ].join("\n");
 
-  await sock.sendMessage(jid, { text: mainMenu });
+  await sock.sendMessage(jid, { text });
 }
 
-// عرض قائمة بفئة محددة
 export async function showCategoryCommands(sock, jid, category, title, userPermissions = {}) {
   const commands = COMMANDS_REGISTRY[category] || [];
-
-  // فلترة الأوامر حسب الصلاحيات
   let filteredCommands = commands;
-  if (category === 'moderator' && !userPermissions.isModerator && !userPermissions.isAdmin) {
+
+  if (category === "moderator" && !userPermissions.isModerator && !userPermissions.isAdmin) {
     filteredCommands = [];
   }
-  if (category === 'admin' && !userPermissions.isAdmin) {
+  if (category === "admin" && !userPermissions.isAdmin) {
     filteredCommands = [];
   }
 
-  if (filteredCommands.length === 0) {
-    await sock.sendMessage(jid, {
-      text: `❌ ليس لديك صلاحية لعرض هذه القائمة أو القائمة فارغة.`
-    });
+  if (!filteredCommands.length) {
+    await sock.sendMessage(jid, { text: "❌ لا تملك صلاحية لهذه القائمة." });
     return;
   }
 
-  let msg = `
-╔════════════════════════════════════╗
-║   ${title}   ║
-╚════════════════════════════════════╝`;
-
-  // تجميع الأوامر حسب الفئة الفرعية
-  const categories = {};
-  filteredCommands.forEach(cmd => {
-    if (!categories[cmd.category]) categories[cmd.category] = [];
-    categories[cmd.category].push(cmd);
-  });
-
-  // عرض كل فئة فرعية
-  Object.entries(categories).forEach(([subCategory, cmds]) => {
-    const categoryTitle = getCategoryTitle(subCategory);
-    msg += formatCommandList(cmds, categoryTitle);
-  });
-
-  msg += `\n💡 اكتب /أوامر لرجوع القائمة الرئيسية`;
-
-  await sock.sendMessage(jid, { text: msg });
+  const text = `${formatCommandList(filteredCommands, title)}\nاكتب /أوامر للرجوع.`.trim();
+  await sock.sendMessage(jid, { text });
 }
 
-// ترجمة أسماء الفئات
-function getCategoryTitle(category) {
-  const titles = {
-    profile: 'الملف الشخصي',
-    info: 'المعلومات',
-    danger: 'العمليات الخطرة',
-    birthday: 'عيد الميلاد',
-    communication: 'الاتصال',
-    anime: 'ألعاب الأنمي',
-    word: 'ألعاب الكلمات',
-    flag: 'ألعاب الأعلام',
-    stats: 'الإحصائيات',
-    view: 'العرض',
-    transaction: 'المعاملات',
-    management: 'الإدارة',
-    points: 'النقاط',
-    currency: 'العملات',
-    moderation: 'الإشراف',
-    ranks: 'الرتب',
-    whatsapp: 'واتساب',
-    stars: 'النجوم',
-    lists: 'القوائم',
-    search: 'البحث',
-    help: 'المساعدة',
-    monitoring: 'المراقبة',
-    maintenance: 'الصيانة'
-  };
-  return titles[category] || category;
-}
-
-// البحث في الأوامر
 export async function searchInCommands(sock, jid, query, userPermissions = {}) {
-  const { searchCommands } = await import('./commandsRegistry.js');
+  const { searchCommands } = await import("./commandsRegistry.js");
   let results = searchCommands(query);
 
-  // فلترة حسب الصلاحيات
-  results = results.filter(cmd => {
-    if (cmd.permission === 'admin' && !userPermissions.isAdmin) return false;
-    if (cmd.permission === 'moderator' && !userPermissions.isModerator && !userPermissions.isAdmin) return false;
+  results = results.filter((cmd) => {
+    if (cmd.permission === "admin" && !userPermissions.isAdmin) return false;
+    if (cmd.permission === "moderator" && !userPermissions.isModerator && !userPermissions.isAdmin) return false;
     return true;
   });
 
-  if (results.length === 0) {
-    await sock.sendMessage(jid, {
-      text: `❌ لم يتم العثور على أوامر تحتوي على "${query}"\n\n💡 جرب كلمات مختلفة أو اكتب /أوامر للقائمة الكاملة`
-    });
+  if (!results.length) {
+    await sock.sendMessage(jid, { text: `❌ لم أجد أمرًا يطابق: ${query}` });
     return;
   }
 
-  let msg = `
-╔════════════════════════════════════╗
-║   🔎 نتائج البحث: "${query}"       ║
-╚════════════════════════════════════╝
+  const text = [
+    `*🔍 نتائج البحث: ${query}*`,
+    "",
+    ...results.map((cmd) => `▪️ ${cmd.emoji} ${cmd.command} — ${cmd.description}`),
+    "",
+    "اكتب /أوامر للرجوع."
+  ].join("\n");
 
-تم العثور على ${results.length} أمر${results.length > 1 ? '' : 'اً'}:
-
-`;
-
-  results.forEach((cmd, index) => {
-    msg += `${index + 1}. ${cmd.emoji} ${cmd.command}\n`;
-    msg += `   ${cmd.description}\n`;
-    if (cmd.usage) msg += `   استخدام: ${cmd.usage}\n`;
-    msg += `\n`;
-  });
-
-  msg += `💡 اكتب /أوامر لرجوع القائمة الرئيسية`;
-
-  await sock.sendMessage(jid, { text: msg });
+  await sock.sendMessage(jid, { text });
 }
 
-// معالجة اختيار القائمة الديناميكية
 export async function handleDynamicCommandsChoice(sock, jid, sender, text) {
   const kingdom = getKingdomIdFromGroupJid(jid);
   const userPermissions = {
@@ -168,93 +91,60 @@ export async function handleDynamicCommandsChoice(sock, jid, sender, text) {
   const choice = text.trim();
 
   switch (choice) {
-    case '1':
-      await showCategoryCommands(sock, jid, 'member', '👤 أوامر الأعضاء العامة', userPermissions);
+    case "1":
+      await showCategoryCommands(sock, jid, "member", "👤 أوامر الأعضاء", userPermissions);
       break;
-
-    case '2':
-      await showCategoryCommands(sock, jid, 'games', '🎮 أوامر الألعاب', userPermissions);
+    case "2":
+      await showCategoryCommands(sock, jid, "games", "🎮 أوامر الألعاب", userPermissions);
       break;
-
-    case '3':
-      await showCategoryCommands(sock, jid, 'bank', '💰 أوامر البنك والعملات', userPermissions);
+    case "3":
+      await showCategoryCommands(sock, jid, "bank", "💰 البنك والعملات", userPermissions);
       break;
-
-    case '4':
+    case "4":
       if (!userPermissions.isModerator) {
-        await sock.sendMessage(jid, {
-          text: '❌ هذه الأوامر متاحة للمشرفين والأدمنين الأساسيين فقط!'
-        });
+        await sock.sendMessage(jid, { text: "❌ هذه القائمة للمشرفين فقط." });
         return;
       }
-      await showCategoryCommands(sock, jid, 'moderator', '🔰 أوامر المشرفين', userPermissions);
+      await showCategoryCommands(sock, jid, "moderator", "🛡️ أوامر المشرفين", userPermissions);
       break;
-
-    case '5':
+    case "5":
       if (!userPermissions.isAdmin) {
-        await sock.sendMessage(jid, {
-          text: '❌ هذه الأوامر متاحة للأدمن الرئيسي فقط!'
-        });
+        await sock.sendMessage(jid, { text: "❌ هذه القائمة للأدمن فقط." });
         return;
       }
-      await showCategoryCommands(sock, jid, 'admin', '👑 أوامر الأدمن الرئيسي', userPermissions);
+      await showCategoryCommands(sock, jid, "admin", "👑 أوامر الأدمن", userPermissions);
       break;
-
-    case '6':
+    case "6":
       if (!userPermissions.isAdmin) {
-        await sock.sendMessage(jid, {
-          text: '❌ هذه الأوامر متاحة للأدمن الرئيسي فقط!'
-        });
+        await sock.sendMessage(jid, { text: "❌ هذه القائمة للأدمن فقط." });
         return;
       }
-      // نظام الرتب (احتفظ بالقديم للآن)
       await showLegacyRanksSystem(sock, jid);
       break;
-
-    case '7':
-      await showCategoryCommands(sock, jid, 'search', '🔍 أوامر البحث والمعلومات', userPermissions);
+    case "7":
+      await showCategoryCommands(sock, jid, "search", "🔎 البحث والمعلومات", userPermissions);
       break;
-
-    case '8':
-      await sock.sendMessage(jid, {
-        text: '🔎 *البحث في الأوامر*\n\nاكتب كلمة البحث بعد "بحث":\n\nمثال: `بحث نقاط`\nأو `بحث لعبة`\nأو `بحث حذف`'
-      });
+    case "8":
+      await sock.sendMessage(jid, { text: "*🔍 البحث في الأوامر*\nاكتب: بحث كلمة\nمثال: بحث نقاط" });
       break;
-
     default:
-      await sock.sendMessage(jid, {
-        text: '❌ اختيار غير صحيح!\n\nاكتب أحد الأرقام المتاحة في القائمة'
-      });
+      await sock.sendMessage(jid, { text: "❌ اختيار غير صحيح. اكتب رقم من القائمة." });
   }
 }
 
-// نظام الرتب القديم (احتفظ به مؤقتاً)
 async function showLegacyRanksSystem(sock, jid) {
-  const msg = `
-╔════════════════════════════════════╗
-║   🎖️ نظام الرتب والنجوم           ║
-║   (مملكة جديدة 🏰)                 ║
-╚════════════════════════════════════╝
+  const text = [
+    "*⭐ الرتب والنجوم*",
+    "▪️ نواب الأدميرال — 24000 نجم",
+    "▪️ العميد — 15000 نجم",
+    "▪️ التشيبوكاي — 6500 نجم",
+    "▪️ ملازم — 1500 نجم",
+    "▪️ بيرق — 800 نجم",
+    "▪️ راية — 500 نجم",
+    "▪️ مشرف متدرب — 400 نجم",
+    "",
+    "اكتب /أوامر للرجوع."
+  ].join("\n");
 
-*الرتب والمستويات (7 رتب فقط):*
-┌─────────────────────────────────
-│ ⭐ نظام النجوم والرتب:
-│
-│ 🍃 نواب الأدميرال = 24000 نجم
-│ 🔱 العميد = 15000 نجم
-│ 🌊 التشيبوكاي = 6500 نجم
-│ ♦️ ملازم = 1500 نجم
-│ 🍷 بيرق = 800 نجم
-│ 🦁 راية = 500 نجم
-│ ♟️ مشرف متدرّب = 400 نجم
-├─────────────────────────────────
-│ 🏆 كيف تحصل على النجوم:
-│ • الفوز في الألعاب
-│ • الأداء الممتاز في المملكة
-│ • التفاعل والمشاركة
-└─────────────────────────────────
-
-💡 اكتب /أوامر لرجوع القائمة الرئيسية`;
-
-  await sock.sendMessage(jid, { text: msg });
+  await sock.sendMessage(jid, { text });
 }

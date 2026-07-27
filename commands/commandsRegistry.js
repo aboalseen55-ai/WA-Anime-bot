@@ -356,15 +356,10 @@ export function getCommandsByPermission(permission) {
 export function formatCommandList(commands, title) {
   if (commands.length === 0) return '';
 
-  let msg = `\n*${title}:*\n┌─────────────────────────────────\n`;
+  let msg = `\n*${title}*\n`;
 
-  commands.forEach((cmd, index) => {
-    msg += `│ ${cmd.emoji} ${cmd.command}\n`;
-    msg += `│ ${cmd.description}\n`;
-    if (cmd.usage) msg += `│ استخدام: ${cmd.usage}\n`;
-    if (cmd.note) msg += `│ ملاحظة: ${cmd.note}\n`;
-    if (index < commands.length - 1) msg += `├─────────────────────────────────\n`;
-    else msg += `└─────────────────────────────────\n`;
+  commands.forEach((cmd) => {
+    msg += `▪️ ${cmd.emoji} ${cmd.command} — ${cmd.description}\n`;
   });
 
   return msg;

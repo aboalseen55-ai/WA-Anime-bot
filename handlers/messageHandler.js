@@ -527,16 +527,17 @@ export async function messageHandler(sock, msg) {
     }
 
     awaitingGameChoice.add(sender);
-    const gamesMenu = `🎮 **قائمة الألعاب المتاحة**
-━━━━━━━━━━━━━━━━━━━━
-1️⃣ تخمين الأنمي
-2️⃣ لعبة الكلمات
-3️⃣ تخمين الشخصيات
-4️⃣ ترتيب الحروف
-5️⃣ تفكيك الكلمات
-6️⃣ لعبة الأعلام
+    const gamesMenu = `*🎮 قائمة الألعاب*
+اختر رقم اللعبة:
 
-💡 أرسل الرقم المطلوب (1-6) لبدء اللعبة`;
+🎬 1. تخمين الأنمي
+📝 2. لعبة الكلمات
+🎭 3. تخمين الشخصيات
+🔤 4. ترتيب الحروف
+✂️ 5. تفكيك الكلمات
+🚩 6. لعبة الأعلام
+
+اكتب الرقم فقط.`;
 
     await sock.sendMessage(jid, { text: gamesMenu });
     return;
@@ -1438,15 +1439,17 @@ export async function messageHandler(sock, msg) {
       }
       awaitingCommandsChoice.delete(sender);
       awaitingGameChoice.add(sender);
-      const gamesMenu = `🎮 **قائمة الألعاب المتاحة**
-━━━━━━━━━━━━━━━━━━━━
-1️⃣ تخمين الأنمي
-2️⃣ لعبة الكلمات
-3️⃣ تخمين الشخصيات
-4️⃣ ترتيب الحروف
-5️⃣ تفكيك الكلمات
+      const gamesMenu = `*🎮 قائمة الألعاب*
+اختر رقم اللعبة:
 
-💡 أرسل الرقم المطلوب (1-5) لبدء اللعبة`;
+🎬 1. تخمين الأنمي
+📝 2. لعبة الكلمات
+🎭 3. تخمين الشخصيات
+🔤 4. ترتيب الحروف
+✂️ 5. تفكيك الكلمات
+🚩 6. لعبة الأعلام
+
+اكتب الرقم فقط.`;
       await sock.sendMessage(jid, { text: gamesMenu });
       return;
     }
