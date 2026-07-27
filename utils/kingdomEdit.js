@@ -33,8 +33,8 @@ const GROUP_ROLE_OPTIONS = [
   {
     key: "workGroup",
     number: "3",
-    label: "مجموعة الترحيب/الوورك",
-    prompt: "أرسل JID مجموعة الترحيب أو الوورك."
+    label: "مجموعة الوورك",
+    prompt: "أرسل JID مجموعة الوورك.\nهذه المجموعة مخصصة لإنجازات الإدارة، وليست مجموعة الترحيب."
   },
   {
     key: "adminGroup",
@@ -79,7 +79,7 @@ const EDIT_FIELDS = [
     key: "workGroup",
     aliases: ["5", "الوورك", "قروب_الوورك", "work", "workGroup"],
     label: "قروب الوورك",
-    prompt: "أرسل JID قروب الوورك الجديد، أو اكتب: مسح"
+    prompt: "أرسل JID قروب الوورك الجديد، أو اكتب: مسح\nالوورك مخصص لإنجازات الإدارة، وليس الترحيب."
   },
   {
     key: "groupsSetup",
@@ -119,7 +119,7 @@ const EDIT_FIELDS = [
   },
   {
     key: "workGroupInviteLink",
-    aliases: ["12", "رابط_الوورك", "رابط_الترحيب", "workLink", "workInvite"],
+    aliases: ["12", "رابط_الوورك", "workLink", "workInvite"],
     label: "رابط دعوة قروب الوورك",
     prompt: "أرسل رابط دعوة قروب الوورك، أو اكتب: مسح"
   },
@@ -158,7 +158,7 @@ function buildGroupRolesPrompt(count) {
 
 1. المجموعة الأساسية
 2. مجموعة الاستقبال
-3. مجموعة الترحيب/الوورك
+3. مجموعة الوورك
 4. مجموعة الإدارة
 5. مجموعة إضافية
 
@@ -303,7 +303,7 @@ function formatGroupSetup(groupSetup) {
   const lines = [];
   if (groupSetup?.mainGroup) lines.push(`الأساسية: ${groupSetup.mainGroup}`);
   if (groupSetup?.receptionGroup) lines.push(`الاستقبال: ${groupSetup.receptionGroup}`);
-  if (groupSetup?.workGroup) lines.push(`الترحيب/الوورك: ${groupSetup.workGroup}`);
+  if (groupSetup?.workGroup) lines.push(`الوورك: ${groupSetup.workGroup}`);
   if (groupSetup?.adminGroup) lines.push(`الإدارة: ${groupSetup.adminGroup}`);
   for (const [index, groupJid] of (groupSetup?.extraGroupIds || []).entries()) {
     lines.push(`إضافية ${index + 1}: ${groupJid}`);
@@ -330,6 +330,7 @@ function buildFieldsMenu(kingdom) {
 14. رابط الإعلانات
 
 روابط الدعوات والفورمات تعدل من الخيارات 10 إلى 14.
+لتعيين جروب إضافي كـ work اختر رقم 5 وضع JID ذلك الجروب.
 
 أرسل الرقم أو الاسم، وللإلغاء اكتب: إلغاء`;
 }

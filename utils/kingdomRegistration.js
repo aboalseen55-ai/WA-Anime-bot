@@ -28,8 +28,8 @@ const GROUP_ROLE_OPTIONS = [
   {
     key: "workGroup",
     number: "3",
-    label: "مجموعة الترحيب/الوورك",
-    prompt: "أرسل JID مجموعة الترحيب أو الوورك."
+    label: "مجموعة الوورك",
+    prompt: "أرسل JID مجموعة الوورك.\nهذه المجموعة مخصصة لإنجازات الإدارة، وليست مجموعة الترحيب."
   },
   {
     key: "adminGroup",
@@ -88,7 +88,7 @@ function buildGroupRolesPrompt(count) {
 
 1. المجموعة الأساسية
 2. مجموعة الاستقبال
-3. مجموعة الترحيب/الوورك
+3. مجموعة الوورك
 4. مجموعة الإدارة
 5. مجموعة إضافية
 
@@ -181,7 +181,7 @@ function formatGroupLines(data) {
   const lines = [];
   if (data.mainGroup) lines.push(`الأساسية: ${data.mainGroup}`);
   if (data.receptionGroup) lines.push(`الاستقبال: ${data.receptionGroup}`);
-  if (data.workGroup) lines.push(`الترحيب/الوورك: ${data.workGroup}`);
+  if (data.workGroup) lines.push(`الوورك: ${data.workGroup}`);
   if (data.adminGroup) lines.push(`الإدارة: ${data.adminGroup}`);
   for (const [index, groupJid] of (data.extraGroupIds || []).entries()) {
     lines.push(`إضافية ${index + 1}: ${groupJid}`);

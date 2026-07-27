@@ -590,7 +590,9 @@ ${announcementLink}
 export function buildWorkWelcomeFormMessage({ nickname, status, enteringSource, moderatorName, kingdom }) {
     const kingdomName = getKingdomDisplayName(kingdom);
 
-    return `*☜ اللقب 🎭 ⟦ ${nickname} ⟧ ➪*
+    return `*☜ إنجاز إداري 📌 ⟦ استقبال عضو ⟧ ➪*
+
+*☜ اللقب 🎭 ⟦ ${nickname} ⟧ ➪*
 
 *☜ الحالة ⚡ ⟦ ${status} ⟧ ➪*
 
