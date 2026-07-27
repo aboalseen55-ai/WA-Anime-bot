@@ -8,6 +8,29 @@ const REGION_DISPLAY_NAMES = typeof Intl === 'object' && typeof Intl.DisplayName
   ? new Intl.DisplayNames(['en'], { type: 'region' })
   : null;
 
+function getDisplayRankInfo(kingdom, rankKey, fallbackName = 'بدون رتبة') {
+    if (!rankKey) return { name: fallbackName, emoji: '' };
+
+    const roleNames = {
+        member: { name: 'عضو', emoji: '👤' },
+        moderator: { name: 'مشرف', emoji: '🔰' },
+        admin: { name: 'أدمن', emoji: '👑' },
+        super_admin: { name: 'أدمن رئيسي', emoji: '👑' }
+    };
+
+    if (roleNames[rankKey]) return roleNames[rankKey];
+
+    const rankInfo = getRankInfo(kingdom || 'clover', rankKey) || getRankInfo('clover', rankKey);
+    if (rankInfo) return rankInfo;
+
+    return { name: 'رتبة غير معروفة', emoji: '' };
+}
+
+function formatDisplayRank(kingdom, rankKey, fallbackName = 'بدون رتبة') {
+    const rankInfo = getDisplayRankInfo(kingdom, rankKey, fallbackName);
+    return `${rankInfo.emoji ? `${rankInfo.emoji} ` : ''}${rankInfo.name}`;
+}
+
 function defaultIdentifierMetadata() {
   return {
     identifierType: 'unknown',
@@ -603,6 +626,17 @@ export function buildWorkWelcomeFormMessage({ nickname, status, enteringSource, 
 *𓆩 ${kingdomName} 𓆪*`;
 }
 
+export async function recordSuccessfulWelcome(moderatorJid, kingdom) {
+    if (!moderatorJid || !kingdom) return false;
+
+    const moderator = await User.findOne({ jid: moderatorJid, kingdom_id: kingdom });
+    if (!moderator) return false;
+
+    moderator.dailyWelcomes = (Number(moderator.dailyWelcomes) || 0) + 1;
+    await moderator.save();
+    return true;
+}
+
 async function getPromotionSignature(adminJid, kingdom) {
     const identifier = classifyIdentifier(adminJid);
     const identityClauses = [
@@ -757,7 +791,7 @@ export async function promoteModerator(sock, jid, targetNickname, adminJid, ment
                 text: `🔰 تم ترقية ${user.nickname} من مشرف إلى أدمن بنجاح!`
             });
             // إرسال رسالة الترقية
-            await sendPromotionMessage(sock, jid, user, null, 'admin', adminJid);
+            await sendPromotionMessage(sock, jid, user, 'moderator', 'admin', adminJid);
             return true;
         }
 
@@ -1236,7 +1270,12 @@ export async function showUserStats(sock, jid, targetNickname, kingdom = null) {
     try {
         // إذا لم تُمرر kingdom، حاول استخراجها من jid
         if (!kingdom) {
-            kingdom = getKingdomIdFromGroupJid(jid) || 'clover';
+            kingdom = getKingdomIdFromGroupJid(jid);
+        }
+
+        if (!kingdom) {
+            await sock.sendMessage(jid, { text: '❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.' });
+            return false;
         }
         
         // استخدم دالة البحث المحسّنة لتجنب مطابقة أجزاء من الألقاب الطويلة
@@ -1299,7 +1338,7 @@ export async function showUserStats(sock, jid, targetNickname, kingdom = null) {
 // الحصول على معلومات البنك
 export async function getBankInfo(kingdom = null) {
     if (!kingdom) {
-        kingdom = 'clover'; // افتراضياً
+        throw new Error('لا يمكن فتح بنك بدون مملكة مرتبطة.');
     }
     let bank = await Bank.findOne({ kingdom: kingdom });
     if (!bank) {
@@ -1771,8 +1810,14 @@ export async function retrieveOrCreateNickname(sock, jid, mentionedJid) {
             return null;
         }
 
+        const kingdom = getKingdomIdFromGroupJid(jid);
+        if (!kingdom) {
+            await sock.sendMessage(jid, { text: '❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.' });
+            return null;
+        }
+
         // البحث عن المستخدم بناءً على JID المنشن عليه
-        let user = await User.findOne({ jid: mentionedJid });
+        let user = await User.findOne({ jid: mentionedJid, kingdom_id: kingdom });
 
         // إذا كان المستخدم موجود وله لقب
         if (user && user.nickname) {
@@ -1806,7 +1851,7 @@ export async function retrieveOrCreateNickname(sock, jid, mentionedJid) {
             // التحقق من عدم وجود مستخدم بنفس JID من قبل
             user = new User({
                 jid: mentionedJid,
-                kingdom_id: 'clover'
+                kingdom_id: kingdom
             });
         } else if (!user.nickname) {
             // مستخدم موجود لكن بدون لقب
@@ -2187,6 +2232,7 @@ export async function addRankStars(sock, jid, targetNickname, amount, adminJid, 
 
         if (!user.rankStarsByKingdom) user.rankStarsByKingdom = {};
         user.rankStarsByKingdom[kingdom] = oldRankStars + amount;
+        user.dailyRankStarsEarned = (Number(user.dailyRankStarsEarned) || 0) + amount;
         user.markModified('rankStarsByKingdom');
         
         // تحديث الرتبة تلقائياً بناءً على النجوم الجديدة
@@ -2198,9 +2244,11 @@ export async function addRankStars(sock, jid, targetNickname, amount, adminJid, 
         let message = `⭐ تم إضافة ${amount} نجمة رتبة لـ ${user.nickname}!\nمجموع نجومه: ${user.rankStarsByKingdom[kingdom]}`;
         
         if (rankUpdate.changed) {
-            message += `\n🎖️ ترقية: ${rankUpdate.oldRank || 'بدون رتبة'} → ${rankUpdate.newRank || 'بدون رتبة'}`;
+            const oldRankText = formatDisplayRank(kingdom, rankUpdate.oldRank);
+            const newRankText = formatDisplayRank(kingdom, rankUpdate.newRank);
+            message += `\n🎖️ ترقية: ${oldRankText} → ${newRankText}`;
         } else {
-            message += `\n👑 رتبة المملكة: ${rankUpdate.newRank || '❌ بدون رتبة'}`;
+            message += `\n👑 رتبة المملكة: ${formatDisplayRank(kingdom, rankUpdate.newRank, '❌ بدون رتبة')}`;
         }
 
         await sock.sendMessage(jid, { text: message });
@@ -2260,9 +2308,11 @@ export async function removeRankStars(sock, jid, targetNickname, amount, modJid,
         let message = `⭐ تم إزالة ${amount} نجمة رتبة من ${user.nickname}!\nمجموع نجومه: ${user.rankStarsByKingdom[kingdom]}`;
         
         if (rankUpdate.changed) {
-            message += `\n🎖️ تغيير رتبة: ${rankUpdate.oldRank || 'بدون رتبة'} → ${rankUpdate.newRank || 'بدون رتبة'}`;
+            const oldRankText = formatDisplayRank(kingdom, rankUpdate.oldRank);
+            const newRankText = formatDisplayRank(kingdom, rankUpdate.newRank);
+            message += `\n🎖️ تغيير رتبة: ${oldRankText} → ${newRankText}`;
         } else {
-            message += `\n👑 رتبة المملكة: ${rankUpdate.newRank || '❌ بدون رتبة'}`;
+            message += `\n👑 رتبة المملكة: ${formatDisplayRank(kingdom, rankUpdate.newRank, '❌ بدون رتبة')}`;
         }
 
         await sock.sendMessage(jid, { text: message });
@@ -2317,14 +2367,19 @@ export async function grantEmperorDecisionRank(sock, jid, targetNickname, rankKe
         
         // منح الرتبة وتعيين أنها ممنوحة (لا تتغير بالنجوم)
         if (!user.kingdomRankByKingdom) user.kingdomRankByKingdom = {};
+        if (!user.rankStarsByKingdom) user.rankStarsByKingdom = {};
+        const previousRankStars = Number(user.rankStarsByKingdom[kingdom]) || 0;
         user.kingdomRankByKingdom[kingdom] = rankKey;
+        user.rankStarsByKingdom[kingdom] = Math.max(previousRankStars, Number(rankData.requiredStars) || 0);
+        user.dailyRankStarsEarned = (Number(user.dailyRankStarsEarned) || 0) + Math.max(0, user.rankStarsByKingdom[kingdom] - previousRankStars);
         user.markModified('kingdomRankByKingdom');
+        user.markModified('rankStarsByKingdom');
         user.isRankGranted = true;
         await user.save();
 
         // رسالة التأكيد
         await sock.sendMessage(jid, {
-            text: `✅ تم منح رتبة ${rankData.emoji} ${rankData.name} للاعب ${user.nickname} بقرار من الإمبراطور!`
+            text: `✅ تم منح رتبة ${rankData.emoji} ${rankData.name} للاعب ${user.nickname} بقرار من الإمبراطور!\n🎖️ نجوم الرتبة: ${user.rankStarsByKingdom[kingdom]}`
         });
 
         // إرسال رسالة للاعب بالترقية
@@ -2383,19 +2438,11 @@ export async function checkAutoRankPromotion(user, kingdom = 'clover') {
 async function sendPromotionMessage(sock, jid, user, oldRank, newRank, admin, mentionedJid = null) {
     try {
         const rankKingdom = user.kingdom_id || 'clover';
-        const oldRankInfo = oldRank ? getRankInfo(rankKingdom, oldRank) : null;
-        let newRankInfo = null;
-
-        if (newRank === 'moderator') {
-            newRankInfo = { name: 'مشرف', emoji: '🔰' };
-        } else if (newRank === 'admin') {
-            newRankInfo = { name: 'أدمن', emoji: '👑' };
-        } else {
-            newRankInfo = getRankInfo(rankKingdom, newRank);
-        }
+        const oldRankInfo = getDisplayRankInfo(rankKingdom, oldRank, 'عضو');
+        const newRankInfo = getDisplayRankInfo(rankKingdom, newRank);
 
         // التحقق من أن newRankInfo موجود
-        if (!newRankInfo) {
+        if (!newRankInfo || newRankInfo.name === 'رتبة غير معروفة') {
             console.warn(`تحذير: لم يتم العثور على بيانات الرتبة للرتبة: ${newRank}`);
             return;
         }
@@ -2413,7 +2460,7 @@ async function sendPromotionMessage(sock, jid, user, oldRank, newRank, admin, me
 
 *˼‏🍂┆الـمـنـ@ـشـن »「 ${mention}」*
 
-*˼‏🎻┆مــن مـنـصـب 巛「${oldRankInfo ? oldRankInfo.name : 'عضو'}」*
+*˼‏🎻┆مــن مـنـصـب 巛「${oldRankInfo.name}」*
 
 *˼‏⚕️┆إلـى مـنـصـب 巛「${newRankInfo.name}」*
 
@@ -2521,21 +2568,24 @@ export async function grantEmperorRankWithPassword(sock, jid, targetNickname, pa
         // منح الرتبة وتعيين أنها ممنوحة (لا تتغير بالنجوم)
         if (!user.kingdomRankByKingdom) user.kingdomRankByKingdom = {};
         if (!user.rankStarsByKingdom) user.rankStarsByKingdom = {};
+        const previousRankStars = Number(user.rankStarsByKingdom[kingdom]) || 0;
         user.kingdomRankByKingdom[kingdom] = 'emperor';
         user.isRankGranted = true;
-        user.rankStarsByKingdom[kingdom] = Math.max(user.rankStarsByKingdom[kingdom] || 0, 2000);
+        const emperorRank = getRankInfo(kingdom, 'emperor');
+        user.rankStarsByKingdom[kingdom] = Math.max(previousRankStars, emperorRank?.requiredStars || 350000);
+        user.dailyRankStarsEarned = (Number(user.dailyRankStarsEarned) || 0) + Math.max(0, user.rankStarsByKingdom[kingdom] - previousRankStars);
         user.markModified('kingdomRankByKingdom');
         user.markModified('rankStarsByKingdom');
         await user.save();
 
         // إرسال رسالة تأكيد في الخاص
         await sock.sendMessage(adminJid, {
-            text: `✅ تم منح رتبة الإمبراطور لـ ${targetNickname} بنجاح!\n✨ شرف عظيم!`
+            text: `✅ تم منح رتبة الإمبراطور لـ ${targetNickname} بنجاح!\n🎖️ نجوم الرتبة: ${user.rankStarsByKingdom[kingdom]}\n✨ شرف عظيم!`
         });
 
         // إرسال رسالة تأكيد في المجموعة
         await sock.sendMessage(jid, {
-            text: `👑 تم منح رتبة الإمبراطور لـ ${targetNickname} بنجاح!\n✨ شرف عظيم!`
+            text: `👑 تم منح رتبة الإمبراطور لـ ${targetNickname} بنجاح!\n🎖️ نجوم الرتبة: ${user.rankStarsByKingdom[kingdom]}\n✨ شرف عظيم!`
         });
 
         // إرسال رسالة للاعب بالترقية
@@ -2701,9 +2751,10 @@ export async function handleChangeMention(sock, jid, sender, mentionedJid, oldNi
  * @param {string} gameName - اسم اللعبة
  * @returns {boolean} نجاح العملية
  */
-export async function startGameSession(adminJid, gameName) {
+export async function startGameSession(adminJid, gameName, kingdomId = null) {
     try {
-        const user = await User.findOne({ jid: adminJid });
+        const query = kingdomId ? { jid: adminJid, kingdom_id: kingdomId } : { jid: adminJid };
+        const user = await User.findOne(query);
         if (!user) {
             console.log(`لم يتم العثور على مستخدم: ${adminJid}`);
             return false;
@@ -2721,6 +2772,7 @@ export async function startGameSession(adminJid, gameName) {
         // إنشاء جلسة جديدة
         const newSession = {
             gameName: gameName,
+            kingdomId: kingdomId || user.kingdom_id,
             startTime: new Date(),
             endTime: null,
             duration: 0,
@@ -2746,9 +2798,10 @@ export async function startGameSession(adminJid, gameName) {
  * @param {string} adminJid - معرف الأدمن
  * @returns {Object} بيانات الجلسة المُغلقة
  */
-export async function stopGameSession(adminJid) {
+export async function stopGameSession(adminJid, kingdomId = null) {
     try {
-        const user = await User.findOne({ jid: adminJid });
+        const query = kingdomId ? { jid: adminJid, kingdom_id: kingdomId } : { jid: adminJid };
+        const user = await User.findOne(query);
         if (!user || !user.gamesSessions) {
             return null;
         }
@@ -2836,14 +2889,36 @@ export function getDailyGameStats(adminJid, user, timeZone = DEFAULT_REPORT_TIME
 export function generateAdminDailyReport(user, timeZone = DEFAULT_REPORT_TIME_ZONE) {
     const { gameStats, totalDuration, sessionCount } = getDailyGameStats(user.jid, user, timeZone);
     const dailyMessages = Number(user.dailyMessages) || 0;
+    const dailyWelcomes = Number(user.dailyWelcomes) || 0;
+    const dailyGameAnswers = Number(user.dailyGameAnswers) || 0;
+    const dailyGameXp = Number(user.dailyGameXp) || 0;
+    const dailyRankStarsEarned = Number(user.dailyRankStarsEarned) || 0;
+    const totalXp = Number(user.xp) || 0;
 
-    if (sessionCount === 0 && dailyMessages === 0) {
+    if (
+        sessionCount === 0 &&
+        dailyMessages === 0 &&
+        dailyWelcomes === 0 &&
+        dailyGameAnswers === 0 &&
+        dailyRankStarsEarned === 0
+    ) {
         return null;
     }
 
-    let report = `📊 *التقرير الإداري اليومي - ${user.nickname || user.name}*\n\n`;
+    const mention = getCleanMentionTextForUser(user);
+
+    let report = `📊 *التقرير الإداري اليومي*\n\n`;
+    report += `👤 الأدمن: *${user.nickname || user.name}*\n`;
+    report += `🔗 المنشن: ${mention}\n\n`;
     report += `📅 التاريخ: ${new Date().toLocaleDateString('ar-SA')}\n\n`;
-    report += `💬 *تفاعل اليوم:* ${dailyMessages} رسالة\n`;
+    report += `📌 *ملخص اليوم:*\n`;
+    report += `• الاستقبال الناجح: ${dailyWelcomes}\n`;
+    report += `• التفاعل: ${dailyMessages} رسالة\n`;
+    report += `• الفعاليات المُدارة: ${sessionCount}\n`;
+    report += `• المشاركة بالفعاليات: ${dailyGameAnswers} إجابة\n`;
+    report += `• XP الكلي: ${totalXp}\n`;
+    report += `• XP الألعاب اليوم: ${dailyGameXp}\n`;
+    report += `• نجوم اليوم: ${dailyRankStarsEarned}🎖️\n`;
 
     if (sessionCount > 0) {
         report += `\n🎮 *جلسات الألعاب:*\n`;
@@ -2917,8 +2992,8 @@ export async function sendAdminsDailyReports(sock, groupJid, kingdomId = null, t
 
                 // إرسال التقرير فقط في المجموعة الإدارية
                 if (groupJid) {
-                    const groupReport = `👤 *${admin.nickname || admin.name}*\n${report}`;
-                    await sock.sendMessage(groupJid, { text: groupReport });
+                    const mentions = admin.jid ? [admin.jid] : [];
+                    await sock.sendMessage(groupJid, { text: report, mentions });
                     reportsSent++;
                 }
 
@@ -2949,6 +3024,7 @@ export async function resetDailyGameStats(kingdomId = null, timeZone = DEFAULT_R
         
         let gameStatsReset = 0;
         let messageStatsReset = 0;
+        let gameActivityReset = 0;
         const todayKey = getTimeZoneDateKey(new Date(), timeZone);
         
         for (const user of allUsers) {
@@ -2959,6 +3035,24 @@ export async function resetDailyGameStats(kingdomId = null, timeZone = DEFAULT_R
                 user.dailyMessages = 0;
                 user.lastMessageResetDate = new Date();
                 messageStatsReset++;
+                updated = true;
+            }
+
+            // ✅ إعادة تعيين نشاط الألعاب اليومي العام
+            if ((Number(user.dailyGameAnswers) || 0) > 0 || (Number(user.dailyGameXp) || 0) > 0) {
+                user.dailyGameAnswers = 0;
+                user.dailyGameXp = 0;
+                gameActivityReset++;
+                updated = true;
+            }
+
+            if ((Number(user.dailyWelcomes) || 0) > 0) {
+                user.dailyWelcomes = 0;
+                updated = true;
+            }
+
+            if ((Number(user.dailyRankStarsEarned) || 0) > 0) {
+                user.dailyRankStarsEarned = 0;
                 updated = true;
             }
             
@@ -2986,9 +3080,10 @@ export async function resetDailyGameStats(kingdomId = null, timeZone = DEFAULT_R
         
         console.log(`✅ إعادة ضبط يومية مكتملة:`);
         console.log(`   📊 رسائل يومية: ${messageStatsReset} مستخدم`);
+        console.log(`   🎮 نشاط ألعاب يومي: ${gameActivityReset} مستخدم`);
         console.log(`   🎮 جلسات ألعاب: ${gameStatsReset} أدمن/مشرف`);
         
-        return { gameStatsReset, messageStatsReset };
+        return { gameStatsReset, messageStatsReset, gameActivityReset };
     } catch (error) {
         console.error('❌ خطأ في إعادة تعيين الإحصائيات:', error);
         return { gameStatsReset: 0, messageStatsReset: 0 };

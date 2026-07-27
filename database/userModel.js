@@ -42,6 +42,12 @@ const userSchema = new mongoose.Schema({
     })
   },
 
+  // 📈 آخر مستوى تم احتساب نجوم XP له داخل كل مملكة
+  rankStarsLevelByKingdom: {
+    type: mongoose.Schema.Types.Mixed,
+    default: () => ({})
+  },
+
   // 🏦 عملات البنك
   bankCoins: {
     type: Number,
@@ -204,6 +210,22 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  dailyGameAnswers: {
+    type: Number,
+    default: 0
+  },
+  dailyGameXp: {
+    type: Number,
+    default: 0
+  },
+  dailyWelcomes: {
+    type: Number,
+    default: 0
+  },
+  dailyRankStarsEarned: {
+    type: Number,
+    default: 0
+  },
   lastXpAt: {
     type: Date,
     default: null
@@ -224,6 +246,7 @@ const userSchema = new mongoose.Schema({
   // � نظام تتبع الألعاب للأعضاء الإداريين
   gamesSessions: [{
     gameName: String,           // اسم اللعبة (انمي، شخصيات، etc)
+    kingdomId: String,          // المملكة التي بدأت فيها الفعالية
     startTime: Date,            // وقت البداية
     endTime: Date,              // وقت النهاية (null إذا كانت جارية)
     duration: Number,           // المدة بالثوانيّ
@@ -251,5 +274,6 @@ userSchema.index({ kingdom_id: 1, lid: 1 });
 userSchema.index({ kingdom_id: 1, role: 1 });
 userSchema.index({ kingdom_id: 1, xp: -1 });
 userSchema.index({ kingdom_id: 1, level: -1 });
+userSchema.index({ kingdom_id: 1, dailyGameAnswers: -1 });
 
 export default mongoose.models.User || mongoose.model("User", userSchema);

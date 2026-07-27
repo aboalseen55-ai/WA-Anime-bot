@@ -2,7 +2,7 @@ import Kingdom from "../database/kingdomModel.js";
 import Bank from "../database/bankModel.js";
 import User from "../database/userModel.js";
 import MafiaSession from "../database/mafiaSessionModel.js";
-import { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED, DEFAULT_KINGDOMS, DEVELOPER_JID } from "../config.js";
+import { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED, DEVELOPER_JID } from "../config.js";
 import { resolveMentionContext } from "../commands/adminSystem.js";
 import { deleteKingdomById, isDeveloper } from "./kingdomService.js";
 
@@ -30,8 +30,7 @@ function formatKingdomChoiceList(kingdoms) {
   if (!kingdoms.length) return "لا توجد ممالك قابلة للحذف.";
 
   return kingdoms.map((kingdom, index) => {
-    const protectedLabel = DEFAULT_KINGDOMS[kingdom.id] ? " - محمية" : "";
-    return `${index + 1}. ${kingdom.name} (${kingdom.id})${protectedLabel}`;
+    return `${index + 1}. ${kingdom.name} (${kingdom.id})`;
   }).join("\n");
 }
 
@@ -145,15 +144,14 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
     }
 
     const kingdoms = await loadKingdomChoices();
-    const deletable = kingdoms.filter((kingdom) => !DEFAULT_KINGDOMS[kingdom.id]);
-    if (!deletable.length) {
+    if (!kingdoms.length) {
       deleteSessions.delete(sender);
-      await sock.sendMessage(jid, { text: "لا توجد ممالك قابلة للحذف. الممالك الافتراضية محمية ويمكن تعطيلها من /تعديل_مملكة." });
+      await sock.sendMessage(jid, { text: "لا توجد ممالك في قاعدة البيانات لحذفها." });
       return true;
     }
 
     session.stage = "select";
-    session.kingdoms = deletable.map((kingdom) => ({
+    session.kingdoms = kingdoms.map((kingdom) => ({
       ...kingdom,
       _id: String(kingdom._id)
     }));
@@ -176,11 +174,6 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
       await sock.sendMessage(jid, {
         text: `وجدت أكثر من مملكة بهذا الاسم. اختر بالرقم أو المعرف:\n${formatKingdomChoiceList(selected.matches)}`
       });
-      return true;
-    }
-
-    if (DEFAULT_KINGDOMS[selected.id]) {
-      await sock.sendMessage(jid, { text: "❌ هذه المملكة محمية لأنها افتراضية. استخدم /تعديل_مملكة لتعطيلها بدل حذفها." });
       return true;
     }
 

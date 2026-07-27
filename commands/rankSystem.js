@@ -8,7 +8,7 @@ export const kingdomRanks = {
       emoji: '👑',
       requiredStars: 350000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     emperorVice: {
@@ -16,7 +16,7 @@ export const kingdomRanks = {
       emoji: '🔱',
       requiredStars: 300000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     lord: {
@@ -24,7 +24,7 @@ export const kingdomRanks = {
       emoji: '🌑',
       requiredStars: 250000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     lordVice: {
@@ -32,23 +32,23 @@ export const kingdomRanks = {
       emoji: '🌙',
       requiredStars: 200000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     marquis: {
-      name: 'الماركيز',
+      name: 'دوميناتور',
       emoji: '🌀',
       requiredStars: 150000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     marquisVice: {
-      name: 'نواب الماركيز',
+      name: 'نواب الدوميناتور',
       emoji: '🔱',
       requiredStars: 100000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     king: {
@@ -56,28 +56,28 @@ export const kingdomRanks = {
       emoji: '🍁',
       requiredStars: 95000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     kingVice: {
       name: 'نائب ملك',
       emoji: '🍂',
       requiredStars: 90000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     duke: {
       name: 'دوق',
       emoji: '♨️',
       requiredStars: 80000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     dukeVice: {
       name: 'نائب دوق',
       emoji: '🌠',
       requiredStars: 70000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     admiral: {
       name: 'أدميرال',
@@ -150,7 +150,7 @@ export const kingdomRanks = {
       emoji: '👑',
       requiredStars: 350000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     emperorVice: {
@@ -158,7 +158,7 @@ export const kingdomRanks = {
       emoji: '🔱',
       requiredStars: 300000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     lord: {
@@ -166,7 +166,7 @@ export const kingdomRanks = {
       emoji: '🌑',
       requiredStars: 250000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     lordVice: {
@@ -174,23 +174,23 @@ export const kingdomRanks = {
       emoji: '🌙',
       requiredStars: 200000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     marquis: {
-      name: 'الماركيز',
+      name: 'دوميناتور',
       emoji: '🌀',
       requiredStars: 150000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     marquisVice: {
-      name: 'نواب الماركيز',
+      name: 'نواب الدوميناتور',
       emoji: '🔱',
       requiredStars: 100000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     king: {
@@ -198,28 +198,28 @@ export const kingdomRanks = {
       emoji: '🍁',
       requiredStars: 95000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     kingVice: {
       name: 'نائب ملك',
       emoji: '🍂',
       requiredStars: 90000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     duke: {
       name: 'دوق',
       emoji: '♨️',
       requiredStars: 80000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     dukeVice: {
       name: 'نائب دوق',
       emoji: '🌠',
       requiredStars: 70000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     admiral: {
       name: 'أدميرال',
@@ -292,7 +292,7 @@ export const kingdomRanks = {
       emoji: '👑',
       requiredStars: 350000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     emperorVice: {
@@ -300,7 +300,7 @@ export const kingdomRanks = {
       emoji: '🔱',
       requiredStars: 300000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     lord: {
@@ -308,7 +308,7 @@ export const kingdomRanks = {
       emoji: '🌑',
       requiredStars: 250000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     lordVice: {
@@ -316,23 +316,23 @@ export const kingdomRanks = {
       emoji: '🌙',
       requiredStars: 200000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     marquis: {
-      name: 'الماركيز',
+      name: 'دوميناتور',
       emoji: '🌀',
       requiredStars: 150000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     marquisVice: {
-      name: 'نواب الماركيز',
+      name: 'نواب الدوميناتور',
       emoji: '🔱',
       requiredStars: 100000,
       category: 'ranks',
-      requiresEmperorDecision: false,
+      requiresEmperorDecision: true,
       specialDisplay: true
     },
     king: {
@@ -340,28 +340,28 @@ export const kingdomRanks = {
       emoji: '🍁',
       requiredStars: 95000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     kingVice: {
       name: 'نائب ملك',
       emoji: '🍂',
       requiredStars: 90000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     duke: {
       name: 'دوق',
       emoji: '♨️',
       requiredStars: 80000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     dukeVice: {
       name: 'نائب دوق',
       emoji: '🌠',
       requiredStars: 70000,
       category: 'ranks',
-      requiresEmperorDecision: false
+      requiresEmperorDecision: true
     },
     admiral: {
       name: 'أدميرال',
@@ -429,14 +429,19 @@ export const kingdomRanks = {
   }
 };
 
-// دالة للحصول على أعلى رتبة للعضو بناءً على نجوم الرتبة (النظام الجديد: جميع الرتب تلقائية)
+function isManualRank(rankData) {
+  return Boolean(rankData?.specialDisplay || rankData?.requiresEmperorDecision);
+}
+
+// دالة للحصول على أعلى رتبة تلقائية للعضو بناءً على نجوم الرتبة
 export function getHighestRank(kingdom, rankStars) {
   const kingdomRanksData = kingdomRanks[kingdom] || kingdomRanks.clover;
   let highestRank = null;
   let maxStars = -1;
 
   for (const [key, rankData] of Object.entries(kingdomRanksData)) {
-    // جميع الرتب تلقائية الآن
+    if (isManualRank(rankData)) continue;
+
     if (rankStars >= rankData.requiredStars && rankData.requiredStars > maxStars) {
       highestRank = key;
       maxStars = rankData.requiredStars;
@@ -464,8 +469,14 @@ export function updateUserRank(user, kingdom) {
   if (!user) return { changed: false, oldRank: null, newRank: null };
 
   const rankStars = user.rankStarsByKingdom?.[kingdom] || 0;
-  const newRank = getHighestRank(kingdom, rankStars);
   const oldRank = user.kingdomRankByKingdom?.[kingdom];
+  const oldRankData = oldRank ? getRankInfo(kingdom, oldRank) : null;
+
+  if (isManualRank(oldRankData)) {
+    return { changed: false, oldRank, newRank: oldRank };
+  }
+
+  const newRank = getHighestRank(kingdom, rankStars);
 
   if (oldRank !== newRank) {
     if (!user.kingdomRankByKingdom) user.kingdomRankByKingdom = {};
@@ -507,7 +518,7 @@ export function getAllRanksDisplay(kingdom = 'clover') {
     const rankData = kingdomRanksData[rankKey];
     if (rankData) {
       display += `*⌬┇↲${rankData.name}┇${rankData.emoji}┇⇜⇘*\n`;
-      display += `${rankData.requiredStars}\n\n`;
+      display += `*قرار الإمبراطور*\n\n`;
     }
   }
 
@@ -540,12 +551,12 @@ export function getRankKeysTable() {
   table += `🔱 نواب الإمبراطور (قرار رتب عليا) → emperorVice\n`;
   table += `🌑 اللورد (قرار رتب عليا) → lord\n`;
   table += `🌙 نواب اللورد (قرار رتب عليا) → lordVice\n`;
-  table += `🌀 الماركيز (قرار رتب عليا) → marquis\n`;
-  table += `🔱 نواب الماركيز (قرار رتب عليا) → marquisVice\n`;
-  table += `🍁 ملك (95000⭐) → king\n`;
-  table += `🍂 نائب ملك (90000⭐) → kingVice\n`;
-  table += `♨️ دوق (80000⭐) → duke\n`;
-  table += `🌠 نائب دوق (70000⭐) → dukeVice\n`;
+  table += `🌀 دوميناتور (قرار رتب عليا) → marquis\n`;
+  table += `🔱 نواب الدوميناتور (قرار رتب عليا) → marquisVice\n`;
+  table += `🍁 ملك (قرار الإمبراطور) → king\n`;
+  table += `🍂 نائب ملك (قرار الإمبراطور) → kingVice\n`;
+  table += `♨️ دوق (قرار الإمبراطور) → duke\n`;
+  table += `🌠 نائب دوق (قرار الإمبراطور) → dukeVice\n`;
   table += `🍷 أدميرال (50000⭐) → admiral\n`;
   table += `⭐ نائب أدميرال (24000⭐) → admiralVice\n`;
   table += `🏮 عميد (15000⭐) → dean\n`;
@@ -558,8 +569,8 @@ export function getRankKeysTable() {
 
   table += `*═════════════════════════════*\n`;
   table += `💡 *ملاحظات:*\n`;
-  table += `✅ جميع الرتب تُمنح تلقائياً حسب النجوم\n`;
-  table += `✅ الرتب العليا تتطلب قراراً خاصاً\n\n`;
+  table += `✅ الترقية التلقائية بالنجوم تصل حتى رتبة أدميرال\n`;
+  table += `✅ ما فوق أدميرال يُمنح بقرار الإمبراطور ولا يُرفع تلقائياً\n\n`;
 
   return table;
 }

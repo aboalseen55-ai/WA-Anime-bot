@@ -54,8 +54,8 @@ export function getNextDailyReportDate(timeZone = DEFAULT_REPORT_TIME_ZONE) {
 }
 
 /**
- * إنشاء ديلي تقرير شامل لجميع المستخدمين
- * ويُرسل لقروب إدارة المملكة فقط
+ * إنشاء تقرير يومي شامل للمملكة
+ * ويُرسل للقروب الأساسي حتى يرى الأعضاء النشاط العام
  */
 export async function generateDailyReport(sock, kingdom = 'clover') {
   try {
@@ -65,14 +65,14 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
       return;
     }
 
-    const adminGroupJid = kingdomData.adminGroup;
-    if (!adminGroupJid) {
-      console.warn(`⚠️ لا يوجد قروب إدارة للمملكة ${kingdom}؛ لن يتم إرسال تقرير النشاط.`);
+    const mainGroupJid = kingdomData.mainGroup;
+    if (!mainGroupJid) {
+      console.warn(`⚠️ لا يوجد قروب أساسي للمملكة ${kingdom}؛ لن يتم إرسال تقرير النشاط العام.`);
       return;
     }
 
     // جلب جميع المستخدمين في المملكة
-    const users = await User.find({ kingdom_id: kingdom }).sort({ dailyMessages: -1 });
+    const users = await User.find({ kingdom_id: kingdom }).sort({ dailyMessages: -1, dailyGameAnswers: -1 });
 
     if (users.length === 0) {
       console.log(`⚠️ لا توجد مستخدمين في المملكة ${kingdom}`);
@@ -80,12 +80,12 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
     }
 
     // بناء التقرير
-    let reportMessage = `*📊 تقرير النشاط اليومي لمملكة ${kingdomData.name}*
+    let reportMessage = `*📊 تقرير اليوم لمملكة ${kingdomData.name}*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 *📅 التاريخ:* ${new Date().toLocaleDateString('ar-EG')}
 
-*👥 إحصائيات النشاط:*
+*👥 نشاط الأعضاء:*
 *━━━━━━━━━━━━━━━━━━━━*`;
 
     // أفضل 10 مستخدمين نشاطاً
@@ -98,7 +98,7 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
     } else {
       reportMessage += `
 
-*🏆 الأكثر نشاطاً:*
+*🏆 أكثر الأعضاء تفاعلاً:*
 `;
       
       topUsers.forEach((user, index) => {
@@ -107,10 +107,36 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
       });
     }
 
+    const topGamePlayers = users
+      .filter(u => (Number(u.dailyGameAnswers) || 0) > 0)
+      .sort((a, b) => {
+        const answersDiff = (Number(b.dailyGameAnswers) || 0) - (Number(a.dailyGameAnswers) || 0);
+        if (answersDiff !== 0) return answersDiff;
+        return (Number(b.dailyGameXp) || 0) - (Number(a.dailyGameXp) || 0);
+      })
+      .slice(0, 10);
+
+    if (topGamePlayers.length > 0) {
+      reportMessage += `
+
+*🎮 ترتيب الألعاب:*
+`;
+
+      topGamePlayers.forEach((user, index) => {
+        const emoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+        const answers = Number(user.dailyGameAnswers) || 0;
+        const gameXp = Number(user.dailyGameXp) || 0;
+        reportMessage += `${emoji} *${user.nickname}* - ✅ ${answers} إجابة | ✨ ${gameXp} XP\n`;
+      });
+    }
+
     // إحصائيات عامة
     const totalMessages = users.reduce((sum, u) => sum + u.dailyMessages, 0);
     const activeUsersCount = users.filter(u => u.dailyMessages > 0).length;
     const averageMessages = activeUsersCount > 0 ? Math.round(totalMessages / activeUsersCount) : 0;
+    const totalGameAnswers = users.reduce((sum, u) => sum + (Number(u.dailyGameAnswers) || 0), 0);
+    const activeGamePlayersCount = users.filter(u => (Number(u.dailyGameAnswers) || 0) > 0).length;
+    const totalDailyGameXp = users.reduce((sum, u) => sum + (Number(u.dailyGameXp) || 0), 0);
 
     reportMessage += `
 
@@ -119,13 +145,16 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
 • إجمالي الرسائل: 💬 ${totalMessages}
 • المستخدمين النشطين: 👥 ${activeUsersCount}
 • متوسط الرسائل: 📊 ${averageMessages}
+• إجابات الألعاب: ✅ ${totalGameAnswers}
+• لاعبو الألعاب: 🎮 ${activeGamePlayersCount}
+• XP الألعاب اليوم: ✨ ${totalDailyGameXp}
 
 🔄 تم تجديد العدادات لليوم الجديد!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🌟 شكراً على نشاطكم المستمر! 🌟`;
 
-    await sock.sendMessage(adminGroupJid, { text: reportMessage });
-    console.log(`✅ تم إرسال تقرير النشاط اليومي للمملكة ${kingdom} إلى قروب الإدارة`);
+    await sock.sendMessage(mainGroupJid, { text: reportMessage });
+    console.log(`✅ تم إرسال تقرير النشاط اليومي للمملكة ${kingdom} إلى القروب الأساسي`);
 
   } catch (error) {
     console.error('❌ خطأ في إنشاء التقرير اليومي:', error.message);
@@ -137,13 +166,12 @@ async function runKingdomDailyReports(sock, kingdomId) {
   if (!kingdomData) return;
   const timeZone = getKingdomReportTimeZone(kingdomData);
 
-  if (!kingdomData.adminGroup) {
-    console.warn(`⚠️ لا يوجد قروب إدارة للمملكة ${kingdomId}؛ سيتم تصفير اليوم بدون إرسال تقارير.`);
-    await resetDailyGameStats(kingdomId, timeZone);
-    return;
+  if (kingdomData.adminGroup) {
+    await sendAdminsDailyReports(sock, kingdomData.adminGroup, kingdomId, timeZone);
+  } else {
+    console.warn(`⚠️ لا يوجد قروب إدارة للمملكة ${kingdomId}؛ لن يتم إرسال تقرير الإدارة.`);
   }
 
-  await sendAdminsDailyReports(sock, kingdomData.adminGroup, kingdomId, timeZone);
   await generateDailyReport(sock, kingdomId);
   await resetDailyGameStats(kingdomId, timeZone);
 }

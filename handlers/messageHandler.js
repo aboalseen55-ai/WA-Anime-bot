@@ -2,9 +2,9 @@ import { userCommands } from "../commands/user.js";
 import { handleAdminCommands } from "../commands/adminCommands.js";
 import { showCommandsList, handleCommandsChoice } from "../commands/commandsList.js";
 import { addRecentMessage } from "../utils/messageCache.js";
-import { isSuperAdminInKingdom, isModerator, extractAndSaveUserFromMention, grantEmperorRankWithPassword, getMentionFromJID, getCleanMentionTextForUser, classifyIdentifier, startGameSession, stopGameSession, generateAdminDailyReport, getDailyGameStats, deleteUser, buildWelcomeFormMessage, buildWorkWelcomeFormMessage } from "../commands/adminSystem.js";
+import { isSuperAdminInKingdom, isModerator, extractAndSaveUserFromMention, grantEmperorRankWithPassword, getMentionFromJID, getCleanMentionTextForUser, classifyIdentifier, startGameSession, stopGameSession, generateAdminDailyReport, getDailyGameStats, deleteUser, buildWelcomeFormMessage, buildWorkWelcomeFormMessage, recordSuccessfulWelcome } from "../commands/adminSystem.js";
 import User from "../database/userModel.js";
-import { getKingdomIdFromGroupJid } from "../config.js";
+import { getKingdomFromGroupJid, getKingdomIdFromGroupJid } from "../config.js";
 import { startGuessAnime, handleGuessAnimeResponse, activeGames, showLeaderboard, stopGuessAnime } from "../games/guessAnime.js";
 import { startWordGame, checkWordGuess, activeWordGames, stopWordGame, wordGameWaiting, handleWordGameModeSelection, handleWordGamePlayersSelection } from "../games/wordtype.js";
 import { startGuessCharacter, checkCharacterGuess, activeCharacterGames, characterGameWaiting, handleGuessCharacterResponse, handleCharacterPlayersSelection, stopGuessCharacter } from "../games/guessCharacter.js";
@@ -52,6 +52,18 @@ export const awaitingWelcomeImage = {};
 
 // نظام الحالات - لتتبع الرسائل المرسلة للتشجيع على الوصول لـ 50 عضو
 const milestoneMessagesSent = new Set();
+
+async function isParticipantInGroup(sock, groupJid, participantJid) {
+  if (!groupJid || !participantJid) return false;
+
+  try {
+    const metadata = await sock.groupMetadata(groupJid);
+    return metadata.participants.some(participant => participant.id === participantJid);
+  } catch (error) {
+    console.warn(`Could not verify participant ${participantJid} in ${groupJid}:`, error.message);
+    return false;
+  }
+}
 
 async function validateReceptionNickname(sock, jid, sender, nickname, kingdom) {
   if (!nickname || nickname.length < 2) {
@@ -510,7 +522,7 @@ export async function messageHandler(sock, msg) {
       await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
       return;
     }
-    await startGameSession(sender, 'تخمين الأنمي');
+    await startGameSession(sender, 'تخمين الأنمي', kingdom);
     await startGuessAnime(sock, jid);
     return;
   }
@@ -522,7 +534,7 @@ export async function messageHandler(sock, msg) {
       await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
       return;
     }
-    await startGameSession(sender, 'كتابة الكلمات');
+    await startGameSession(sender, 'كتابة الكلمات', kingdom);
     await startWordGame(sock, jid);
     return;
   }
@@ -534,7 +546,7 @@ export async function messageHandler(sock, msg) {
       await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
       return;
     }
-    await startGameSession(sender, 'تخمين الشخصيات');
+    await startGameSession(sender, 'تخمين الشخصيات', kingdom);
     await startGuessCharacter(sock, jid, sender);
     return;
   }
@@ -546,7 +558,7 @@ export async function messageHandler(sock, msg) {
       await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
       return;
     }
-    await startGameSession(sender, 'لعبة الأعلام');
+    await startGameSession(sender, 'لعبة الأعلام', kingdom);
     await startFlagGame(sock, jid);
     return;
   }
@@ -558,7 +570,7 @@ export async function messageHandler(sock, msg) {
       await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
       return;
     }
-    await startGameSession(sender, 'ترتيب الحروف');
+    await startGameSession(sender, 'ترتيب الحروف', kingdom);
     await startUnscrambleGame(sock, jid, sender);
     return;
   }
@@ -570,7 +582,7 @@ export async function messageHandler(sock, msg) {
       await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
       return;
     }
-    await startGameSession(sender, 'تفكيك الكلمات');
+    await startGameSession(sender, 'تفكيك الكلمات', kingdom);
     await startWordSplitterGame(sock, jid, sender);
     return;
   }
@@ -592,33 +604,33 @@ export async function messageHandler(sock, msg) {
     let stoppedAny = false;
     if (activeGames[jid]) {
       await stopGuessAnime(sock, jid);
-      await stopGameSession(sender);
+      await stopGameSession(sender, kingdom);
       stoppedAny = true;
     }
     if (activeWordGames[jid]) {
       await stopWordGame(sock, jid);
-      await stopGameSession(sender);
+      await stopGameSession(sender, kingdom);
       stoppedAny = true;
     }
     if (activeCharacterGames[jid]) {
       await stopGuessCharacter(sock, jid);
-      await stopGameSession(sender);
+      await stopGameSession(sender, kingdom);
       stoppedAny = true;
     }
     if (activeUnscrambleGames[jid]) {
       await stopUnscrambleGame(sock, jid);
-      await stopGameSession(sender);
+      await stopGameSession(sender, kingdom);
       stoppedAny = true;
     }
     if (activeWordSplitterGames[jid]) {
       await stopWordSplitterGame(sock, jid);
-      await stopGameSession(sender);
+      await stopGameSession(sender, kingdom);
       stoppedAny = true;
     }
     if (activeFlagGames[jid]) {
       await sock.sendMessage(jid, { text: "🛑 تم إيقاف لعبة الأعلام!" });
       clearAnswerQueue('flagGame', jid);
-      await stopGameSession(sender);
+      await stopGameSession(sender, kingdom);
       delete activeFlagGames[jid];
       stoppedAny = true;
     }
@@ -764,6 +776,18 @@ export async function messageHandler(sock, msg) {
           }
           
           console.log(`✅ تم إرسال رسالة ترحيب للعضو ${result.nickname}`);
+          if (pendingData.moderatorJid || pendingData.adminJid) {
+            const kingdomData = getKingdomFromGroupJid(jid);
+            const mainGroupJid = pendingData.mainGroupJid || kingdomData?.mainGroup;
+            const sentToMainGroup = mainGroupJid && jid === mainGroupJid;
+            const memberExistsInMain = sentToMainGroup
+              ? await isParticipantInGroup(sock, mainGroupJid, pendingData.mentionedJid)
+              : false;
+
+            if (memberExistsInMain) {
+              await recordSuccessfulWelcome(pendingData.moderatorJid || pendingData.adminJid, kingdom);
+            }
+          }
         } else if (pendingData.action === 'promotion') {
           // تنفيذ الترقية
           const kingdom = getKingdomIdFromGroupJid(jid);
@@ -951,6 +975,7 @@ export async function messageHandler(sock, msg) {
             text: `✅ *تم إرسال رسالة الترحيب بنجاح للعضو ${welcomeImagesData.nickname} إلى المجموعة الأساسية* ✨`,
             mentions: [welcomeImagesData.moderatorJid]
           });
+          await recordSuccessfulWelcome(welcomeImagesData.moderatorJid, welcomeImagesData.kingdom);
         } catch (error) {
           console.error('❌ خطأ في إرسال الترحيب مع الصورة:', error.message);
           
@@ -966,6 +991,7 @@ export async function messageHandler(sock, msg) {
               text: `⚠️ *تم إرسال الترحيب بدون صورة للعضو ${welcomeImagesData.nickname}*\n\n📌 السبب: ${error.message}`,
               mentions: [welcomeImagesData.moderatorJid]
             });
+            await recordSuccessfulWelcome(welcomeImagesData.moderatorJid, welcomeImagesData.kingdom);
           } catch (textError) {
             await sock.sendMessage(receptionGroupJid, {
               text: `❌ *خطأ في إرسال رسالة الترحيب للعضو ${welcomeImagesData.nickname}*\n\n📌 الخطأ: ${textError.message}`,
@@ -1060,6 +1086,7 @@ export async function messageHandler(sock, msg) {
               text: `✅ *تم إرسال رسالة الترحيب بنجاح للعضو ${welcomeData.nickname} إلى المجموعة الأساسية* ✨`,
               mentions: [welcomeData.moderatorJid]
             });
+            await recordSuccessfulWelcome(welcomeData.moderatorJid, welcomeData.kingdom);
           } catch (error) {
             console.error('❌ خطأ في إرسال الترحيب:', error.message);
             await sock.sendMessage(receptionGroupJid, {
@@ -1660,27 +1687,27 @@ async function handleGameChoice(sock, jid, sender, choice, kingdom) {
 
   switch (choice.trim()) {
     case '1':
-      await startGameSession(sender, 'تخمين الأنمي');
+      await startGameSession(sender, 'تخمين الأنمي', kingdom);
       await startGuessAnime(sock, jid);
       break;
     case '2':
-      await startGameSession(sender, 'لعبة الكلمات');
+      await startGameSession(sender, 'لعبة الكلمات', kingdom);
       await startWordGame(sock, jid);
       break;
     case '3':
-      await startGameSession(sender, 'تخمين الشخصيات');
+      await startGameSession(sender, 'تخمين الشخصيات', kingdom);
       await startGuessCharacter(sock, jid, sender);
       break;
     case '4':
-      await startGameSession(sender, 'ترتيب الحروف');
+      await startGameSession(sender, 'ترتيب الحروف', kingdom);
       await startUnscrambleGame(sock, jid, sender);
       break;
     case '5':
-      await startGameSession(sender, 'تفكيك الكلمات');
+      await startGameSession(sender, 'تفكيك الكلمات', kingdom);
       await startWordSplitterGame(sock, jid, sender);
       break;
     case '6':
-      await startGameSession(sender, 'لعبة الأعلام');
+      await startGameSession(sender, 'لعبة الأعلام', kingdom);
       await startFlagGame(sock, jid);
       break;
     default:

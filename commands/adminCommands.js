@@ -54,7 +54,11 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
     // أمر إرسال تقرير إداري شامل (للأدمن الرئيسي فقط لكل مملكة)
     if (command === '/تقرير_اداري') {
-        const kingdom = getKingdomIdFromGroupJid(jid) || 'clover';
+        const kingdom = getKingdomIdFromGroupJid(jid);
+        if (!kingdom) {
+            await sock.sendMessage(jid, { text: '❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.' });
+            return true;
+        }
         const userIsSuperAdmin = await isSuperAdminInKingdom(sender, kingdom);
         if (!userIsSuperAdmin) {
             await sock.sendMessage(jid, { text: '❌ هذا الأمر متاح فقط للأدمن الرئيسي في هذه المملكة.' });
@@ -759,8 +763,9 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const rankMembers = {};
         for (const user of users) {
             const userRankStars = user.rankStarsByKingdom?.[kingdom] || 0;
-            if (userRankStars > 0) {
-                const highestRank = getHighestRank(kingdom, userRankStars);
+            const storedRank = user.kingdomRankByKingdom?.[kingdom];
+            if (storedRank || userRankStars > 0) {
+                const highestRank = storedRank || getHighestRank(kingdom, userRankStars);
                 if (highestRank) {
                     if (!rankMembers[highestRank]) {
                         rankMembers[highestRank] = [];
@@ -772,12 +777,12 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
         // عرض الأعضاء حسب الرتب
         for (const [rankKey, members] of Object.entries(rankMembers)) {
-            const rankInfo = getRankInfo(rankKey);
+            const rankInfo = getRankInfo(kingdom, rankKey);
             if (rankInfo) {
                 msg += `*${rankInfo.emoji} ${rankInfo.name}*\n`;
                 for (const member of members) {
                     // لا تعرض النجوم للرتب العليا (التي تحتاج قرار إمبراطور)
-                    const showStars = !rankInfo.specialDisplay;
+                    const showStars = !rankInfo.requiresEmperorDecision;
                     const memberStars = member.rankStarsByKingdom?.[kingdom] || 0;
                     if (showStars) {
                         msg += `  • ${member.nickname} (${memberStars}⭐)\n`;
@@ -816,8 +821,13 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/ترحيب') {
         // التحقق من أن الأمر يُستخدم فقط في مجموعة الاستقبال
         const kingdomData = getKingdomFromGroupJid(jid);
-        const receptionGroupJid = kingdomData.groupIds[1]; // مجموعة الاستقبال (الثانية)
-        const mainGroupJid = kingdomData.mainGroup; // المجموعة الأساسية
+        if (!kingdomData) {
+            await sock.sendMessage(jid, { text: '❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.' });
+            return true;
+        }
+
+        const receptionGroupJid = kingdomData.receptionGroup || kingdomData.groupIds?.[1];
+        const mainGroupJid = kingdomData.mainGroup;
         
         if (jid !== receptionGroupJid) {
             await sock.sendMessage(jid, { text: '❌ أمر الترحيب يعمل *فقط* في مجموعة الاستقبال! 🤔' });

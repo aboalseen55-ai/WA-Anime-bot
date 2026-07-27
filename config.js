@@ -63,72 +63,9 @@ export const RECEPTION_GROUP_JID = "120363424110401057@g.us"; // استبدل ب
 // ========================================
 // 🏰 نظام المملكات (Kingdoms) - Multi-Kingdom Support
 // ========================================
-export const DEFAULT_KINGDOMS = {
-  clover: {
-    id: 'clover',
-    name: '🍀 مملكة كلوفر',
-    mainGroup: "120363408312945031@g.us",  // المجموعة الرئيسية لكلوفر
-    receptionGroup: "120363424110401057@g.us", // مجموعة استقبال لكلوفر
-    workGroup: "120363425084240015@g.us", // مجموعة الوورك لإنجازات الإدارة
-    groupIds: [
-      "120363408312945031@g.us",      // المجموعة الرئيسية
-      "120363424110401057@g.us"      // مجموعة الاستقبال
-    ],
-    adminGroup: "120363425063189388@g.us",  // المجموعة الإدارية لتقارير الألعاب
-    timeZone: "Asia/Amman",
-    admins: ADMINS,
-    bankStartingBalance: 1000000,
-    mainGroupInviteLink: WELCOME_LINK,
-    announcementLink: WELCOME_LINK
-  },
-
-  // ⭐ مثال: إضافة مملكة جديدة
-  golden: {
-    id: 'golden',
-    name: '👑 مملكة الشيوخ',
-    mainGroup: "120363343443001024@g.us", // استبدل بالـ JID الفعلي للمجموعة الرئيسية
-    receptionGroup: "120363426900814166@g.us",
-    workGroup: "", // اختياري: مجموعة الوورك لإنجازات الإدارة
-    groupIds: [
-      "120363343443001024@g.us" // أضف جميع المجموعات المرتبطة بهذه المملكة هنا
-    ],
-    adminGroup: "120363409550189527@g.us", // مجموعة الأدمن لهذه المملكة
-    timeZone: "Asia/Amman",
-    admins: [...ADMINS], // يمكنك تخصيص قائمة الأدمنز هنا
-    bankStartingBalance: 500000,
-    mainGroupInviteLink: "",
-    announcementLink: ""
-  },
-
-  snow: {
-    id: 'snow',
-    name: '❄️ مملكة سنو',
-    mainGroup: "120363425993114553@g.us",
-    receptionGroup: "120363426900814166@g.us",
-    workGroup: "", // اختياري: مجموعة الوورك لإنجازات الإدارة
-    groupIds: [
-      "120363425993114553@g.us",
-      "120363426900814166@g.us",
-      "120363409550189527@g.us"
-    ],
-    adminGroup: "120363409550189527@g.us",
-    timeZone: "Asia/Amman",
-    admins: [...ADMINS],
-    bankStartingBalance: 500000,
-    mainGroupInviteLink: "",
-    announcementLink: ""
-  }
-  
-  // أضف مملكات إضافية هنا عند الحاجة:
-  // anotherKingdom: {
-  //   id: 'anotherKingdom',
-  //   name: '🏰 اسم المملكة',
-  //   mainGroup: "12036...@g.us",
-  //   groupIds: ["12036...@g.us"],
-  //   admins: [...],
-  //   bankStartingBalance: 500000
-  // }
-};
+// لا توجد ممالك افتراضية في الكود. قاعدة البيانات هي المصدر الوحيد،
+// ويتم إنشاء/تعديل/حذف الممالك من واتساب بواسطة المطور.
+export const DEFAULT_KINGDOMS = {};
 
 export const KINGDOMS = JSON.parse(JSON.stringify(DEFAULT_KINGDOMS));
 
@@ -147,11 +84,10 @@ export function getKingdomFromGroupJid(groupJid) {
       return kingdomData;
     }
   }
-  // افتراضياً، أرجع المملكة الأولى (clover) للتوافق مع البيانات القديمة
-  return KINGDOMS.clover;
+  return null;
 }
 
 // دالة للحصول على معرّف المملكة من JID
 export function getKingdomIdFromGroupJid(groupJid) {
-  return getKingdomFromGroupJid(groupJid)?.id || 'clover';
+  return getKingdomFromGroupJid(groupJid)?.id || null;
 }

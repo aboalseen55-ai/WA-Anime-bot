@@ -7,7 +7,7 @@ import User from "../database/userModel.js";
 import MafiaSession from "../database/mafiaSessionModel.js";
 import MafiaPlayer from "../database/mafiaPlayerModel.js";
 import { resolveMentionContext } from "../commands/adminSystem.js";
-import { ADMINS, DEFAULT_KINGDOMS, DEVELOPER_JID, DEVELOPER_JIDS, KINGDOMS, KINGDOM_CODE_RECIPIENT_JIDS, replaceKingdoms } from "../config.js";
+import { ADMINS, DEVELOPER_JID, DEVELOPER_JIDS, KINGDOMS, KINGDOM_CODE_RECIPIENT_JIDS, replaceKingdoms } from "../config.js";
 
 const CODE_BYTES = 6;
 
@@ -65,7 +65,6 @@ function generateCode() {
 }
 
 function kingdomDocToConfig(doc) {
-  const defaultKingdom = DEFAULT_KINGDOMS[doc.id] || {};
   return {
     id: doc.id,
     name: doc.name,
@@ -74,53 +73,19 @@ function kingdomDocToConfig(doc) {
     workGroup: doc.workGroup || "",
     groupIds: doc.groupIds || [],
     adminGroup: doc.adminGroup || "",
-    mainGroupInviteLink: doc.mainGroupInviteLink || defaultKingdom.mainGroupInviteLink || "",
-    receptionGroupInviteLink: doc.receptionGroupInviteLink || defaultKingdom.receptionGroupInviteLink || "",
-    workGroupInviteLink: doc.workGroupInviteLink || defaultKingdom.workGroupInviteLink || "",
-    adminGroupInviteLink: doc.adminGroupInviteLink || defaultKingdom.adminGroupInviteLink || "",
-    announcementLink: doc.announcementLink || defaultKingdom.announcementLink || "",
+    mainGroupInviteLink: doc.mainGroupInviteLink || "",
+    receptionGroupInviteLink: doc.receptionGroupInviteLink || "",
+    workGroupInviteLink: doc.workGroupInviteLink || "",
+    adminGroupInviteLink: doc.adminGroupInviteLink || "",
+    announcementLink: doc.announcementLink || "",
     timeZone: doc.timeZone || "",
     admins: doc.admins?.length ? doc.admins : ADMINS,
     bankStartingBalance: doc.bankStartingBalance ?? 1000000
   };
 }
 
-function defaultKingdomToDoc(kingdom) {
-  return {
-    id: kingdom.id,
-    name: kingdom.name,
-    mainGroup: kingdom.mainGroup,
-    receptionGroup: kingdom.receptionGroup || "",
-    workGroup: kingdom.workGroup || "",
-    adminGroup: kingdom.adminGroup || "",
-    mainGroupInviteLink: kingdom.mainGroupInviteLink || "",
-    receptionGroupInviteLink: kingdom.receptionGroupInviteLink || "",
-    workGroupInviteLink: kingdom.workGroupInviteLink || "",
-    adminGroupInviteLink: kingdom.adminGroupInviteLink || "",
-    announcementLink: kingdom.announcementLink || "",
-    timeZone: kingdom.timeZone || "",
-    groupIds: kingdom.groupIds?.length ? kingdom.groupIds : [kingdom.mainGroup].filter(Boolean),
-    admins: kingdom.admins?.length ? kingdom.admins : ADMINS,
-    bankStartingBalance: kingdom.bankStartingBalance ?? 1000000,
-    isActive: true,
-    createdByJid: DEVELOPER_JID,
-    createdByName: "system"
-  };
-}
-
 export async function auditKingdomAction(action, actorJid, details = {}, kingdomId = null) {
   await KingdomAuditLog.create({ action, actorJid, kingdomId, details });
-}
-
-export async function syncDefaultKingdomsToDatabase() {
-  for (const kingdom of Object.values(DEFAULT_KINGDOMS)) {
-    const doc = defaultKingdomToDoc(kingdom);
-    await Kingdom.updateOne(
-      { id: doc.id },
-      { $setOnInsert: doc },
-      { upsert: true }
-    );
-  }
 }
 
 export async function refreshKingdomCache() {
@@ -131,16 +96,11 @@ export async function refreshKingdomCache() {
     nextKingdoms[doc.id] = kingdomDocToConfig(doc);
   }
 
-  if (!Object.keys(nextKingdoms).length) {
-    Object.assign(nextKingdoms, DEFAULT_KINGDOMS);
-  }
-
   replaceKingdoms(nextKingdoms);
   return KINGDOMS;
 }
 
 export async function initializeKingdomSystem() {
-  await syncDefaultKingdomsToDatabase();
   await refreshKingdomCache();
 }
 
@@ -226,10 +186,6 @@ export async function deleteKingdomById(kingdomId, actorJid) {
     throw new Error("لم أجد هذه المملكة في قاعدة البيانات.");
   }
 
-  if (DEFAULT_KINGDOMS[kingdom.id]) {
-    throw new Error("لا يمكن حذف مملكة افتراضية من الكود. استخدم تعديل المملكة لتعطيلها بدل الحذف.");
-  }
-
   const groupIds = [
     kingdom.mainGroup,
     kingdom.receptionGroup,
@@ -300,12 +256,11 @@ export async function buildKingdomsReport(options = {}) {
   report += `━━━━━━━━━━━━━━━━━━━━\n`;
 
   for (const kingdom of kingdoms) {
-    const defaultKingdom = DEFAULT_KINGDOMS[kingdom.id] || {};
-    const mainGroupInviteLink = kingdom.mainGroupInviteLink || defaultKingdom.mainGroupInviteLink || "";
-    const receptionGroupInviteLink = kingdom.receptionGroupInviteLink || defaultKingdom.receptionGroupInviteLink || "";
-    const workGroupInviteLink = kingdom.workGroupInviteLink || defaultKingdom.workGroupInviteLink || "";
-    const adminGroupInviteLink = kingdom.adminGroupInviteLink || defaultKingdom.adminGroupInviteLink || "";
-    const announcementLink = kingdom.announcementLink || defaultKingdom.announcementLink || "";
+    const mainGroupInviteLink = kingdom.mainGroupInviteLink || "";
+    const receptionGroupInviteLink = kingdom.receptionGroupInviteLink || "";
+    const workGroupInviteLink = kingdom.workGroupInviteLink || "";
+    const adminGroupInviteLink = kingdom.adminGroupInviteLink || "";
+    const announcementLink = kingdom.announcementLink || "";
     const [usersCount, adminsCount, bank] = await Promise.all([
       User.countDocuments({ kingdom_id: kingdom.id }),
       User.countDocuments({ kingdom_id: kingdom.id, role: { $in: ["super_admin", "admin", "moderator"] } }),
