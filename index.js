@@ -3,6 +3,8 @@ import makeWASocket, {
   fetchLatestBaileysVersion
 } from "@whiskeysockets/baileys";
 
+import fs from "fs/promises";
+import path from "path";
 import qrcode from "qrcode-terminal";
 import mongoose from "mongoose";
 import User from "./database/userModel.js";
@@ -110,6 +112,8 @@ const BASE_RECONNECT_DELAY_MS = 5000;
 const MAX_RECONNECT_DELAY_MS = 60000;
 const STABLE_CONNECTION_RESET_MS = 2 * 60 * 1000;
 const NON_RECONNECTABLE_STATUS_CODES = new Set([401, 403, 405, 440]);
+const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || "auth";
+const AUTH_RESET_MARKER_FILE = ".auth-reset-token";
 
 function getDisconnectStatusCode(error) {
   return error?.output?.statusCode || error?.statusCode || error?.data?.statusCode || null;
@@ -134,6 +138,36 @@ function scheduleReconnect() {
   }, delay);
 }
 
+async function resetWhatsAppAuthIfRequested(authDir) {
+  const resetToken = (process.env.WHATSAPP_AUTH_RESET_TOKEN || "").trim();
+  if (!resetToken) return;
+
+  await fs.mkdir(authDir, { recursive: true });
+
+  const markerPath = path.join(authDir, AUTH_RESET_MARKER_FILE);
+  let previousToken = "";
+
+  try {
+    previousToken = (await fs.readFile(markerPath, "utf8")).trim();
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+
+  if (previousToken === resetToken) {
+    console.log("✅ تم تنفيذ إعادة ضبط جلسة واتساب لهذا الرمز مسبقاً.");
+    return;
+  }
+
+  const entries = await fs.readdir(authDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === AUTH_RESET_MARKER_FILE) continue;
+    await fs.rm(path.join(authDir, entry.name), { recursive: true, force: true });
+  }
+
+  await fs.writeFile(markerPath, resetToken);
+  console.log("✅ تم حذف جلسة واتساب القديمة مرة واحدة. سيطلب البوت QR جديد.");
+}
+
 async function startBot() {
   if (isStartingBot) {
     console.log("⏳ توجد محاولة اتصال قيد التنفيذ؛ تم تجاهل محاولة إضافية.");
@@ -144,8 +178,10 @@ async function startBot() {
 
   try {
 
+  await resetWhatsAppAuthIfRequested(AUTH_DIR);
+
   const { state, saveCreds } =
-    await useMultiFileAuthState("auth");
+    await useMultiFileAuthState(AUTH_DIR);
 
   const { version } =
     await fetchLatestBaileysVersion();
