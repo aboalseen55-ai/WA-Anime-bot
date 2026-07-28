@@ -1,6 +1,5 @@
 import makeWASocket, {
-  useMultiFileAuthState,
-  fetchLatestBaileysVersion
+  useMultiFileAuthState
 } from "@whiskeysockets/baileys";
 
 import fs from "fs/promises";
@@ -114,6 +113,7 @@ const STABLE_CONNECTION_RESET_MS = 2 * 60 * 1000;
 const NON_RECONNECTABLE_STATUS_CODES = new Set([401, 403, 405, 440]);
 const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || "auth";
 const AUTH_RESET_MARKER_FILE = ".auth-reset-token";
+const DEFAULT_WHATSAPP_WEB_VERSION = [2, 3000, 1037641644];
 
 function getDisconnectStatusCode(error) {
   return error?.output?.statusCode || error?.statusCode || error?.data?.statusCode || null;
@@ -136,6 +136,19 @@ function scheduleReconnect() {
     console.log("🔄 بدء إعادة الاتصال...");
     startBot();
   }, delay);
+}
+
+function getWhatsAppWebVersion() {
+  const rawVersion = (process.env.WHATSAPP_WEB_VERSION || "").trim();
+  if (!rawVersion) return DEFAULT_WHATSAPP_WEB_VERSION;
+
+  const parsed = rawVersion.split(/[.,]/).map((part) => Number(part.trim()));
+  if (parsed.length === 3 && parsed.every((part) => Number.isInteger(part) && part >= 0)) {
+    return parsed;
+  }
+
+  console.warn(`WHATSAPP_WEB_VERSION غير صالح: ${rawVersion}. سيتم استخدام النسخة الافتراضية.`);
+  return DEFAULT_WHATSAPP_WEB_VERSION;
 }
 
 async function resetWhatsAppAuthIfRequested(authDir) {
@@ -183,12 +196,14 @@ async function startBot() {
   const { state, saveCreds } =
     await useMultiFileAuthState(AUTH_DIR);
 
-  const { version } =
-    await fetchLatestBaileysVersion();
+  const version = getWhatsAppWebVersion();
+  console.log(`Using WhatsApp Web version override: ${version.join(".")}`);
 
   const sock = makeWASocket({
     version,
-    auth: state
+    auth: state,
+    printQRInTerminal: true,
+    generateHighQualityLinkPreview: false
   });
 
   activeSock = sock;
