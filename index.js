@@ -109,7 +109,7 @@ let isStartingBot = false;
 const BASE_RECONNECT_DELAY_MS = 5000;
 const MAX_RECONNECT_DELAY_MS = 60000;
 const STABLE_CONNECTION_RESET_MS = 2 * 60 * 1000;
-const NON_RECONNECTABLE_STATUS_CODES = new Set([401, 403, 440]);
+const NON_RECONNECTABLE_STATUS_CODES = new Set([401, 403, 405, 440]);
 
 function getDisconnectStatusCode(error) {
   return error?.output?.statusCode || error?.statusCode || error?.data?.statusCode || null;
@@ -223,7 +223,11 @@ async function startBot() {
         scheduleReconnect();
       } else {
         console.log("🚫 لا يمكن إعادة الاتصال (خطأ مصادقة)");
-        console.log("امسح جلسة auth من Volume ثم اربط البوت من جديد عبر QR.");
+        if (statusCode === 405) {
+          console.log("405 يعني أن واتساب رفض جلسة Baileys أثناء التسجيل. جرّب حذف auth من Volume وإعادة الربط، وإذا تكرر فالسبب غالبًا بيئة الاستضافة/IP.");
+        } else {
+          console.log("امسح جلسة auth من Volume ثم اربط البوت من جديد عبر QR.");
+        }
       }
     }
 
