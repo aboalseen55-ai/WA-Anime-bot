@@ -100,7 +100,49 @@ if (usersWithStars.length > 0) {
 // تحديث رتب المملكة تلقائياً عند بدء البوت
 await updateKingdomRanks();
 
+let activeSock = null;
+let reconnectTimer = null;
+let stableConnectionTimer = null;
+let reconnectAttempts = 0;
+let isStartingBot = false;
+
+const BASE_RECONNECT_DELAY_MS = 5000;
+const MAX_RECONNECT_DELAY_MS = 60000;
+const STABLE_CONNECTION_RESET_MS = 2 * 60 * 1000;
+const NON_RECONNECTABLE_STATUS_CODES = new Set([401, 403, 440]);
+
+function getDisconnectStatusCode(error) {
+  return error?.output?.statusCode || error?.statusCode || error?.data?.statusCode || null;
+}
+
+function shouldReconnectAfterDisconnect(error) {
+  const statusCode = getDisconnectStatusCode(error);
+  return !NON_RECONNECTABLE_STATUS_CODES.has(statusCode);
+}
+
+function scheduleReconnect() {
+  if (reconnectTimer) return;
+
+  reconnectAttempts += 1;
+  const delay = Math.min(BASE_RECONNECT_DELAY_MS * reconnectAttempts, MAX_RECONNECT_DELAY_MS);
+  console.log(`🔄 إعادة الاتصال خلال ${Math.round(delay / 1000)} ثوانٍ...`);
+
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    console.log("🔄 بدء إعادة الاتصال...");
+    startBot();
+  }, delay);
+}
+
 async function startBot() {
+  if (isStartingBot) {
+    console.log("⏳ توجد محاولة اتصال قيد التنفيذ؛ تم تجاهل محاولة إضافية.");
+    return;
+  }
+
+  isStartingBot = true;
+
+  try {
 
   const { state, saveCreds } =
     await useMultiFileAuthState("auth");
@@ -112,6 +154,9 @@ async function startBot() {
     version,
     auth: state
   });
+
+  activeSock = sock;
+  isStartingBot = false;
 
   const originalSendMessage = sock.sendMessage.bind(sock);
   sock.sendMessage = (jid, content, options) => {
@@ -128,6 +173,15 @@ async function startBot() {
     }
 
     if (connection === "open") {
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+      if (stableConnectionTimer) clearTimeout(stableConnectionTimer);
+      stableConnectionTimer = setTimeout(() => {
+        reconnectAttempts = 0;
+        stableConnectionTimer = null;
+      }, STABLE_CONNECTION_RESET_MS);
       console.log("✅ متصل بـ WhatsApp");
 
       // تحميل المشاركين الحاليين في كل مجموعة استقبال من كل مملكة لمنع إرسال ترحيب قديم
@@ -153,17 +207,23 @@ async function startBot() {
     }
 
     if (connection === "close") {
-      const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== 401; // لا تعيد الاتصال إذا كان خطأ مصادقة
-      console.log("❌ انقطع الاتصال:", lastDisconnect?.error?.message);
+      isStartingBot = false;
+      if (activeSock === sock) activeSock = null;
+      if (stableConnectionTimer) {
+        clearTimeout(stableConnectionTimer);
+        stableConnectionTimer = null;
+      }
+
+      const error = lastDisconnect?.error;
+      const statusCode = getDisconnectStatusCode(error);
+      const shouldReconnect = shouldReconnectAfterDisconnect(error);
+      console.log("❌ انقطع الاتصال:", error?.message, statusCode ? `(status ${statusCode})` : "");
 
       if (shouldReconnect) {
-        console.log("🔄 إعادة الاتصال خلال 5 ثوانٍ...");
-        setTimeout(() => {
-          console.log("🔄 بدء إعادة الاتصال...");
-          startBot(); // إعادة تشغيل البوت
-        }, 5000);
+        scheduleReconnect();
       } else {
         console.log("🚫 لا يمكن إعادة الاتصال (خطأ مصادقة)");
+        console.log("امسح جلسة auth من Volume ثم اربط البوت من جديد عبر QR.");
       }
     }
 
@@ -262,6 +322,13 @@ async function startBot() {
     }
 
   });
+
+  } catch (error) {
+    isStartingBot = false;
+    activeSock = null;
+    console.error("❌ فشل بدء اتصال واتساب:", error.message);
+    scheduleReconnect();
+  }
 
 }
 

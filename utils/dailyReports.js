@@ -5,6 +5,7 @@ import { sendAdminsDailyReports, resetDailyGameStats } from "../commands/adminSy
 const DEFAULT_REPORT_TIME_ZONE = process.env.DAILY_REPORT_TIME_ZONE || "Asia/Amman";
 const REPORT_HOUR = Number(process.env.DAILY_REPORT_HOUR ?? 0);
 const REPORT_MINUTE = Number(process.env.DAILY_REPORT_MINUTE ?? 0);
+const scheduledReportTimers = new Map();
 
 export function getKingdomReportTimeZone(kingdomData = {}) {
   return kingdomData.timeZone || kingdomData.timezone || DEFAULT_REPORT_TIME_ZONE;
@@ -182,6 +183,11 @@ async function runKingdomDailyReports(sock, kingdomId) {
  */
 export function scheduleDailyReports(sock) {
   try {
+    for (const timer of scheduledReportTimers.values()) {
+      clearTimeout(timer);
+    }
+    scheduledReportTimers.clear();
+
     function scheduleNextReport(kingdomId) {
       const kingdomData = KINGDOMS[kingdomId];
       if (!kingdomData) return;
@@ -192,12 +198,15 @@ export function scheduleDailyReports(sock) {
 
       console.log(`✅ التقرير اليومي التالي لمملكة ${kingdomId} في ${nextReport.toLocaleString('ar-EG', { timeZone })} (${timeZone})`);
 
-      setTimeout(async () => {
+      const timer = setTimeout(async () => {
         console.log(`🔔 بدء إرسال التقارير اليومية لمملكة ${kingdomId}...`);
         await runKingdomDailyReports(sock, kingdomId);
         console.log(`✅ انتهى إرسال التقارير اليومية لمملكة ${kingdomId}`);
+        scheduledReportTimers.delete(kingdomId);
         scheduleNextReport(kingdomId);
       }, timeUntilReport);
+
+      scheduledReportTimers.set(kingdomId, timer);
     }
 
     for (const kingdomId of Object.keys(KINGDOMS)) {
