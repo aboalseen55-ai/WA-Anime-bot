@@ -319,6 +319,13 @@ export const COMMANDS_REGISTRY = {
       usage: '/أوامر',
       category: 'help',
       emoji: '📖'
+    },
+    {
+      command: '/قرآن',
+      description: 'آيات وتلاوة وصور آيات',
+      usage: '/قرآن عشوائي | /قرآن الكهف | /قرآن صوت 2:255',
+      category: 'quran',
+      emoji: '۞'
     }
   ]
 };

@@ -12,6 +12,7 @@ import { KINGDOMS, getKingdomFromGroupJid } from "./config.js";
 import { getHighestRank } from "./commands/rankSystem.js";
 import { getMentionFromJID } from "./commands/adminSystem.js";
 import { scheduleDailyReports } from "./utils/dailyReports.js";
+import { scheduleDailyQuranReminders } from "./utils/quran.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 
@@ -255,6 +256,7 @@ async function startBot() {
       
       // 📊 تفعيل جدولة التقارير اليومية
       scheduleDailyReports(sock);
+      scheduleDailyQuranReminders(sock);
     }
 
     if (connection === "close") {

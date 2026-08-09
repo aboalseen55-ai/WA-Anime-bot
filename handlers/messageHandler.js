@@ -24,6 +24,7 @@ import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../util
 import { buildLevelUpMessage, trackChatActivity } from "../utils/xpSystem.js";
 import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
 import { extractReceptionOnboardingInfo, isReceptionGreetingOnly, resolveMainGroupInviteLink } from "../utils/receptionOnboarding.js";
+import { handleQuranCommand, isQuranCommand } from "../utils/quran.js";
 
 // نظام الحالات - لتتبع الأوامر المعلقة التي تحتاج تأكيد منشن
 export const pendingMentions = {};
@@ -844,6 +845,11 @@ export async function messageHandler(sock, msg) {
   if (trimmedText.startsWith("/")) {
     console.log(`📥 [CMD] ${sender} -> ${trimmedText}`);
 
+    if (isQuranCommand(trimmedText)) {
+      await handleQuranCommand(sock, jid, trimmedText);
+      return;
+    }
+
     // إذا لم يكن أمر الأوامر (تمت معالجته أعلاه)
     if (!commandsTriggers.includes(trimmedText)) {
       const handledByUser = await userCommands(sock, jid, sender, trimmedText, msg);
@@ -853,6 +859,11 @@ export async function messageHandler(sock, msg) {
         await sock.sendMessage(jid, { text: `❌ الأمر غير معروف: ${trimmedText}` });
       }
     }
+    return;
+  }
+
+  if (isQuranCommand(trimmedText)) {
+    await handleQuranCommand(sock, jid, trimmedText);
     return;
   }
 
