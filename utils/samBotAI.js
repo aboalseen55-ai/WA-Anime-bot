@@ -162,11 +162,13 @@ async function generateSamBotAIText({
   return "";
 }
 
-export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate }) {
+export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate, memoryContext = "" }) {
   const systemInstruction = [
     "أنت سام بوت، مساعد واتساب ودود لمجموعات الأعضاء.",
     "رد واتساب قصير: سطر أو سطرين، حتى 20 كلمة.",
     "اكتب جملة كاملة، لا تقطعها.",
+    "استخدم السياق المختصر حتى لا تكرر نفس الترحيب أو نفس السؤال.",
+    "إذا كان المستخدم يجيب على سؤالك، رد كمتابعة طبيعية ولا تبدأ المحادثة من جديد.",
     "تكلم ببساطة كإنسان محترم وخفيف، بدون مبالغة أو تهويل.",
     "تجنب النبرة العسكرية أو البطولية المبالغ فيها.",
     "مجالك الأساسي: الأعضاء، الألقاب، الألعاب، الأوامر، والتفاعل.",
@@ -178,8 +180,9 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
     `n:${nickname || "-"}`,
     `c:${isPrivate ? "p" : "g"}`,
     `i:${intent || "conversation"}`,
+    memoryContext ? `ctx:\n${memoryContext}` : "",
     `m:${userMessage}`
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 
   return generateSamBotAIText({
     systemInstruction,

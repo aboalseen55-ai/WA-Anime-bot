@@ -1,6 +1,12 @@
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { generateSamBotAIReply } from "./samBotAI.js";
+import {
+  buildSamBotMemoryContext,
+  getRepeatedSocialReply,
+  getSamBotMemory,
+  rememberSamBotTurn
+} from "./samBotMemory.js";
 
 const BOT_NAMES = [
   "سام بوت",
@@ -178,6 +184,10 @@ export function classifySamBotIntent(text) {
     return "wellbeing";
   }
 
+  if (/(بخير|الحمد لله|الحمدلله|تمام الحمد|كويس|منيح|بأحسن حال|بالف خير|بالف خير)/.test(normalized)) {
+    return "wellbeing_answer";
+  }
+
   if (/(شو اليوم|اي يوم|اليوم شو|what day|date today)/.test(normalized)) {
     return "smalltalk";
   }
@@ -252,6 +262,11 @@ function buildReply(intent, nickname, text) {
       `تمام، وانت؟`,
       `الحمد لله، وأنت يا ${nickname}؟`
     ],
+    wellbeing_answer: [
+      `دوم الحمد لله.`,
+      `الحمد لله، نورت.`,
+      `تمام، الله يديمها عليك.`
+    ],
     smalltalk: [
       `موجود معكم هون.`,
       `احكي، سامعك.`
@@ -284,7 +299,7 @@ function buildReply(intent, nickname, text) {
 }
 
 function shouldUseOnlineAI(intent) {
-  return !["identity", "capabilities"].includes(intent);
+  return !["identity", "capabilities", "greeting", "wellbeing", "wellbeing_answer", "ack", "thanks"].includes(intent);
 }
 
 async function getNickname(jid, sender, msg) {
@@ -316,19 +331,40 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
   }
 
   const nickname = await getNickname(jid, sender, msg);
+  const kingdom = getKingdomIdFromGroupJid(jid);
+  const memory = await getSamBotMemory({
+    groupJid: jid,
+    userJid: sender,
+    kingdomId: kingdom,
+    nickname
+  });
+  const memoryContext = buildSamBotMemoryContext(memory, nickname);
+  const repeatedReply = getRepeatedSocialReply(memory, intent, nickname);
   const aiReply = !ambientSocial && shouldUseOnlineAI(intent)
     ? await generateSamBotAIReply({
         userMessage: text,
         nickname,
         intent,
-        isPrivate: isPrivateChat(jid)
+        isPrivate: isPrivateChat(jid),
+        memoryContext
       })
     : "";
-  const reply = aiReply || buildReply(intent, nickname, text);
+  const reply = repeatedReply || aiReply || buildReply(intent, nickname, text);
 
   await sock.sendMessage(jid, {
     text: reply,
     mentions: [sender]
+  });
+
+  await rememberSamBotTurn({
+    memory,
+    groupJid: jid,
+    userJid: sender,
+    kingdomId: kingdom,
+    nickname,
+    intent,
+    userMessage: text,
+    botReply: reply
   });
 
   return true;
