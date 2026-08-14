@@ -10,8 +10,8 @@ const DEFAULT_TIME_ZONE = process.env.QURAN_REMINDER_TIMEZONE || "Asia/Amman";
 const REMINDER_HOUR = Number(process.env.QURAN_REMINDER_HOUR ?? 9);
 const REMINDER_MINUTE = Number(process.env.QURAN_REMINDER_MINUTE ?? 0);
 const REMINDER_ENABLED = String(process.env.QURAN_REMINDER_ENABLED || "true").trim().toLowerCase() !== "false";
-const REMINDER_GROUP_SCOPE = String(process.env.QURAN_REMINDER_GROUP_SCOPE || "all").trim().toLowerCase();
 const MAX_SURAH_PREVIEW_AYAHS = 5;
+const STANDALONE_GROUPS_TIMER_KEY = "__standalone_groups__";
 
 const quranReminderTimers = new Map();
 const QURAN_MODE_WORDS = new Set([
@@ -417,20 +417,38 @@ function getKingdomTimeZone(kingdomData = {}) {
   return kingdomData.timeZone || kingdomData.timezone || DEFAULT_TIME_ZONE;
 }
 
-function getReminderGroups(kingdomData = {}) {
-  if (REMINDER_GROUP_SCOPE === "main") {
-    return [kingdomData.mainGroup].filter(Boolean);
+function isGroupJid(jid) {
+  return Boolean(jid && String(jid).endsWith("@g.us"));
+}
+
+function getKingdomReminderGroup(kingdomData = {}) {
+  return isGroupJid(kingdomData.mainGroup) ? kingdomData.mainGroup : null;
+}
+
+function getKnownKingdomGroups() {
+  const groups = [];
+  for (const kingdomData of Object.values(KINGDOMS)) {
+    groups.push(
+      ...(kingdomData.groupIds || []),
+      kingdomData.mainGroup,
+      kingdomData.receptionGroup,
+      kingdomData.workGroup,
+      kingdomData.adminGroup
+    );
   }
 
-  const groups = [
-    ...(kingdomData.groupIds || []),
-    kingdomData.mainGroup,
-    kingdomData.receptionGroup,
-    kingdomData.workGroup,
-    kingdomData.adminGroup
-  ].filter((jid) => jid && String(jid).endsWith("@g.us"));
+  return new Set(groups.filter(isGroupJid));
+}
 
-  return [...new Set(groups)];
+async function getStandaloneGroups(sock) {
+  if (typeof sock.groupFetchAllParticipating !== "function") return [];
+
+  const knownKingdomGroups = getKnownKingdomGroups();
+  const participatingGroups = await sock.groupFetchAllParticipating();
+
+  return Object.keys(participatingGroups || {})
+    .filter(isGroupJid)
+    .filter((groupJid) => !knownKingdomGroups.has(groupJid));
 }
 
 function getDailyReminderText(kingdomId, dateKey) {
@@ -472,14 +490,37 @@ async function runKingdomQuranReminder(sock, kingdomId) {
 
   const timeZone = getKingdomTimeZone(kingdomData);
   const dateKey = getDateKey(new Date(), timeZone);
-  const groups = getReminderGroups(kingdomData);
+  const groupJid = getKingdomReminderGroup(kingdomData);
+
+  if (!groupJid) {
+    console.warn(`Quran reminder skipped for ${kingdomId}: no main group configured.`);
+    return;
+  }
+
+  try {
+    await sendDailyReminderToGroup(sock, groupJid, kingdomId, dateKey);
+  } catch (error) {
+    console.error(`Quran reminder failed for ${groupJid}:`, error.message);
+  }
+}
+
+async function runStandaloneGroupQuranReminders(sock) {
+  const dateKey = getDateKey(new Date(), DEFAULT_TIME_ZONE);
+  let groups = [];
+
+  try {
+    groups = await getStandaloneGroups(sock);
+  } catch (error) {
+    console.error("Quran standalone groups lookup failed:", error.message);
+    return;
+  }
 
   for (const groupJid of groups) {
     try {
-      const sent = await sendDailyReminderToGroup(sock, groupJid, kingdomId, dateKey);
+      const sent = await sendDailyReminderToGroup(sock, groupJid, `standalone:${groupJid}`, dateKey);
       if (sent) await new Promise((resolve) => setTimeout(resolve, 800));
     } catch (error) {
-      console.error(`Quran reminder failed for ${groupJid}:`, error.message);
+      console.error(`Quran reminder failed for standalone group ${groupJid}:`, error.message);
     }
   }
 }
@@ -495,26 +536,28 @@ export function scheduleDailyQuranReminders(sock) {
   }
   quranReminderTimers.clear();
 
-  function scheduleNext(kingdomId) {
-    const kingdomData = KINGDOMS[kingdomId];
-    if (!kingdomData) return;
-
-    const timeZone = getKingdomTimeZone(kingdomData);
+  function scheduleNext(timerKey, timeZone, runReminder) {
     const nextDate = getNextReminderDate(timeZone);
     const delay = Math.max(1000, nextDate.getTime() - Date.now());
 
-    console.log(`Quran reminder next run for ${kingdomId}: ${nextDate.toLocaleString("ar-EG", { timeZone })} (${timeZone})`);
+    console.log(`Quran reminder next run for ${timerKey}: ${nextDate.toLocaleString("ar-EG", { timeZone })} (${timeZone})`);
 
     const timer = setTimeout(async () => {
-      await runKingdomQuranReminder(sock, kingdomId);
-      quranReminderTimers.delete(kingdomId);
-      scheduleNext(kingdomId);
+      await runReminder();
+      quranReminderTimers.delete(timerKey);
+      scheduleNext(timerKey, timeZone, runReminder);
     }, delay);
 
-    quranReminderTimers.set(kingdomId, timer);
+    quranReminderTimers.set(timerKey, timer);
   }
 
   for (const kingdomId of Object.keys(KINGDOMS)) {
-    scheduleNext(kingdomId);
+    const kingdomData = KINGDOMS[kingdomId];
+    if (!kingdomData) continue;
+
+    const timeZone = getKingdomTimeZone(kingdomData);
+    scheduleNext(kingdomId, timeZone, () => runKingdomQuranReminder(sock, kingdomId));
   }
+
+  scheduleNext(STANDALONE_GROUPS_TIMER_KEY, DEFAULT_TIME_ZONE, () => runStandaloneGroupQuranReminders(sock));
 }
