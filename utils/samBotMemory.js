@@ -38,6 +38,7 @@ export async function getSamBotMemory({ groupJid, userJid, kingdomId, nickname }
   if (!groupJid || !userJid) return null;
 
   const set = {};
+
   if (kingdomId) set.kingdomId = kingdomId;
   if (nickname) set.nickname = nickname;
 
@@ -47,12 +48,14 @@ export async function getSamBotMemory({ groupJid, userJid, kingdomId, nickname }
       $set: set,
       $setOnInsert: {
         groupJid,
-        userJid,
-        kingdomId: kingdomId || null,
-        nickname: nickname || null
+        userJid
       }
     },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    {
+      returnDocument: "after",
+      upsert: true,
+      setDefaultsOnInsert: true
+    }
   );
 }
 
