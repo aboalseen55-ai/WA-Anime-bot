@@ -1,4 +1,5 @@
 import makeWASocket, {
+  fetchLatestBaileysVersion,
   useMultiFileAuthState
 } from "@whiskeysockets/baileys";
 
@@ -114,7 +115,8 @@ const STABLE_CONNECTION_RESET_MS = 2 * 60 * 1000;
 const NON_RECONNECTABLE_STATUS_CODES = new Set([401, 403, 405, 440]);
 const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || "auth";
 const AUTH_RESET_MARKER_FILE = ".auth-reset-token";
-const DEFAULT_WHATSAPP_WEB_VERSION = [2, 3000, 1037641644];
+const DEFAULT_WHATSAPP_WEB_VERSION = [2, 3000, 1043857760];
+const WHATSAPP_VERSION_FETCH_TIMEOUT_MS = 10000;
 
 function getDisconnectStatusCode(error) {
   return error?.output?.statusCode || error?.statusCode || error?.data?.statusCode || null;
@@ -139,17 +141,45 @@ function scheduleReconnect() {
   }, delay);
 }
 
-function getWhatsAppWebVersion() {
+function getConfiguredWhatsAppWebVersion() {
   const rawVersion = (process.env.WHATSAPP_WEB_VERSION || "").trim();
-  if (!rawVersion) return DEFAULT_WHATSAPP_WEB_VERSION;
+  if (!rawVersion) return null;
 
   const parsed = rawVersion.split(/[.,]/).map((part) => Number(part.trim()));
   if (parsed.length === 3 && parsed.every((part) => Number.isInteger(part) && part >= 0)) {
     return parsed;
   }
 
-  console.warn(`WHATSAPP_WEB_VERSION غير صالح: ${rawVersion}. سيتم استخدام النسخة الافتراضية.`);
-  return DEFAULT_WHATSAPP_WEB_VERSION;
+  console.warn(`WHATSAPP_WEB_VERSION غير صالح: ${rawVersion}. سيتم جلب أحدث نسخة تلقائياً.`);
+  return null;
+}
+
+async function getWhatsAppWebVersion() {
+  const configuredVersion = getConfiguredWhatsAppWebVersion();
+  if (configuredVersion) {
+    console.log(`Using WhatsApp Web version override: ${configuredVersion.join(".")}`);
+    return configuredVersion;
+  }
+
+  try {
+    const result = await Promise.race([
+      fetchLatestBaileysVersion(),
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("انتهت مهلة جلب نسخة WhatsApp Web")), WHATSAPP_VERSION_FETCH_TIMEOUT_MS);
+      })
+    ]);
+
+    if (result.isLatest) {
+      console.log(`✅ تم جلب أحدث نسخة WhatsApp Web تلقائياً: ${result.version.join(".")}`);
+      return result.version;
+    }
+
+    throw result.error || new Error("تعذر جلب أحدث نسخة WhatsApp Web");
+  } catch (error) {
+    console.warn(`⚠️ تعذر جلب أحدث نسخة WhatsApp Web، سيتم استخدام النسخة الاحتياطية: ${DEFAULT_WHATSAPP_WEB_VERSION.join(".")}`);
+    console.warn(`سبب التعذر: ${error.message}`);
+    return DEFAULT_WHATSAPP_WEB_VERSION;
+  }
 }
 
 async function resetWhatsAppAuthIfRequested(authDir) {
@@ -197,8 +227,7 @@ async function startBot() {
   const { state, saveCreds } =
     await useMultiFileAuthState(AUTH_DIR);
 
-  const version = getWhatsAppWebVersion();
-  console.log(`Using WhatsApp Web version override: ${version.join(".")}`);
+  const version = await getWhatsAppWebVersion();
 
   const sock = makeWASocket({
     version,
