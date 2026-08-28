@@ -138,16 +138,16 @@ export async function resolveSamBotDirectoryQuestion(sock, groupJid, text) {
   const kingdom = getKingdomFromGroupJid(groupJid);
   if (!kingdom?.id) return null;
 
-  const participantIds = await getGroupParticipantIds(sock, groupJid);
-  if (!participantIds.length) return null;
-
   const registeredUsers = await User.find(
     { kingdom_id: kingdom.id },
     { jid: 1, lid: 1, rawLid: 1, phoneNumber: 1, nickname: 1, whatsappName: 1 }
   ).lean();
-  const groupUsers = registeredUsers.filter((user) => isUserInGroup(user, participantIds));
 
   if (wantsDirectoryList(text)) {
+    const participantIds = await getGroupParticipantIds(sock, groupJid);
+    if (!participantIds.length) return null;
+    const groupUsers = registeredUsers.filter((user) => isUserInGroup(user, participantIds));
+
     if (!groupUsers.length) {
       return { text: "ما لقيت أعضاء مسجلين في هذه المجموعة بعد.", mentions: [] };
     }
@@ -168,7 +168,9 @@ export async function resolveSamBotDirectoryQuestion(sock, groupJid, text) {
   const search = extractDirectorySearch(text);
   if (!search) return null;
 
-  const matches = findMatchingUsers(groupUsers, search);
+  // Nicknames are unique inside a kingdom. Do not depend on groupMetadata or
+  // participant JID/LID mapping for an exact member lookup.
+  const matches = findMatchingUsers(registeredUsers, search);
   if (!matches.length) {
     return { text: `ما لقيت عضوًا مسجلًا باسم أو لقب “${search}” في هذه المجموعة.`, mentions: [] };
   }
