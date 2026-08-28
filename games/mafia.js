@@ -458,9 +458,9 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
     return true;
   }
 
-  if (trimmed === "/مافيا") {
+  if (["/مافيا", "مافيا", "لعبة مافيا", "لعبه مافيا", "mafia"].includes(trimmed.toLowerCase())) {
     if (!isGroupJid(jid)) {
-      await sock.sendMessage(jid, { text: "❌ أمر /مافيا يعمل داخل القروبات فقط." });
+      await sock.sendMessage(jid, { text: "❌ بدء لعبة المافيا يعمل داخل القروبات فقط." });
       return true;
     }
 
