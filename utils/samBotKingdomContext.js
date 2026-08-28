@@ -17,6 +17,14 @@ function normalizeText(value) {
     .trim();
 }
 
+function withoutBotAddressing(value) {
+  return normalizeText(value)
+    .replace(/(?:^|\s)(?:يا\s+)?سام\s*بوت(?=\s|$)/g, " ")
+    .replace(/(?:^|\s)sam\s*bot(?=\s|$)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalizeJid(value) {
   return String(value || "").split(":")[0].toLowerCase();
 }
@@ -60,7 +68,7 @@ async function getGroupParticipantIds(sock, groupJid) {
 }
 
 function isDirectoryQuestion(text) {
-  const normalized = normalizeText(text);
+  const normalized = withoutBotAddressing(text);
   if (/^(?:مين)\s+/.test(normalized)) {
     const target = normalized.replace(/^مين\s+/, "").replace(/^(?:هو|هي)\s+/, "").trim();
     if (target && !["انت", "انتي", "سام", "سام بوت", "معك", "معاكي", "هنا"].includes(target)) {
@@ -72,12 +80,12 @@ function isDirectoryQuestion(text) {
 }
 
 function wantsDirectoryList(text) {
-  const normalized = normalizeText(text);
+  const normalized = withoutBotAddressing(text);
   return /(اسماء.*(?:المجموعه|المملكه)|اعضاء.*(?:المجموعه|المملكه)|المسجلين|مين.*(?:بالمجموعه|في المجموعه|بالمملكه|في المملكه))/.test(normalized);
 }
 
 function extractDirectorySearch(text) {
-  const normalized = normalizeText(text);
+  const normalized = withoutBotAddressing(text);
   const matchers = [
     /(?:صاحب(?:ه|ة)?)\s+(?:لقب|اللقب)\s+(.+)$/,
     /(?:لقب|اللقب)\s+(.+)\s+(?:لمين|لمن|تبع مين|صاحب مين)$/,
