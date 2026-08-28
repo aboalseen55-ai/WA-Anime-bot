@@ -61,6 +61,13 @@ async function getGroupParticipantIds(sock, groupJid) {
 
 function isDirectoryQuestion(text) {
   const normalized = normalizeText(text);
+  if (/^(?:مين)\s+/.test(normalized)) {
+    const target = normalized.replace(/^مين\s+/, "").replace(/^(?:هو|هي)\s+/, "").trim();
+    if (target && !["انت", "انتي", "سام", "سام بوت", "معك", "معاكي", "هنا"].includes(target)) {
+      return true;
+    }
+  }
+
   return /(صاحب(?:ه|ة)?.*لقب|لقب.*مين|مين.*لقب|من هو|من هي|مين هو|مين هي|شو اسمه|ما اسمه|اسم.*لقب|اسماء.*(?:المجموعه|المملكه)|اعضاء.*(?:المجموعه|المملكه)|المسجلين|مين.*(?:بالمجموعه|في المجموعه|بالمملكه|في المملكه))/.test(normalized);
 }
 
