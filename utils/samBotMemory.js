@@ -94,7 +94,7 @@ export function getRepeatedSocialReply(memory, intent, nickname) {
   return "";
 }
 
-export async function rememberSamBotTurn({ memory, groupJid, userJid, kingdomId, nickname, intent, userMessage, botReply }) {
+export async function rememberSamBotTurn({ memory, groupJid, userJid, kingdomId, nickname, intent, userMessage, botReply, mentionTargetJid = null }) {
   if (!groupJid || !userJid) return null;
 
   const target = memory || await getSamBotMemory({ groupJid, userJid, kingdomId, nickname });
@@ -106,6 +106,7 @@ export async function rememberSamBotTurn({ memory, groupJid, userJid, kingdomId,
   target.lastIntent = intent || target.lastIntent || null;
   target.lastUserMessage = trimText(userMessage);
   target.lastBotReply = trimText(botReply);
+  if (mentionTargetJid) target.lastMentionTargetJid = mentionTargetJid;
   target.lastInteractionAt = new Date();
   target.summary = summarizeMemory(target, nickname || target.nickname);
 

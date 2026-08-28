@@ -1,4 +1,5 @@
 import User from "../database/userModel.js";
+import { resolveMentionContext } from "../commands/adminSystem.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { generateSamBotAIReply } from "./samBotAI.js";
 import {
@@ -306,6 +307,26 @@ function shouldUseOnlineAI(intent) {
   return !["identity", "capabilities", "greeting", "wellbeing", "wellbeing_answer", "ack", "thanks"].includes(intent);
 }
 
+function isMentionRequest(text) {
+  const normalized = normalizeText(text);
+  return /(منشن|اعمل منشن|سوي منشن|سويله منشن|سوي لها منشن|ناديه|ناديها|tag|mention)/.test(normalized);
+}
+
+function getMentionRequestTarget(sock, msg, memory) {
+  const contextInfo = getContextInfo(msg);
+  const directlyMentioned = (contextInfo?.mentionedJid || [])
+    .find((mentionedJid) => !isBotIdentifier(sock, mentionedJid));
+  if (directlyMentioned) return directlyMentioned;
+
+  const quotedSender = contextInfo?.quotedMessage && contextInfo.participant;
+  if (quotedSender && !isBotIdentifier(sock, quotedSender)) return quotedSender;
+
+  const rememberedTarget = memory?.lastMentionTargetJid;
+  if (rememberedTarget && !isBotIdentifier(sock, rememberedTarget)) return rememberedTarget;
+
+  return null;
+}
+
 async function getNickname(jid, sender, msg) {
   const kingdom = getKingdomIdFromGroupJid(jid);
   const user = await User.findOne({ jid: sender, kingdom_id: kingdom });
@@ -343,6 +364,44 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     nickname
   });
 
+  if (!ambientSocial && isMentionRequest(text)) {
+    const targetJid = getMentionRequestTarget(sock, msg, memory);
+    if (!targetJid) {
+      const clarification = "حدد العضو بمنشن مباشر أو رد على رسالته، وأنا أعمل المنشن فورًا.";
+      await sock.sendMessage(jid, { text: clarification, mentions: [sender] });
+      await rememberSamBotTurn({
+        memory,
+        groupJid: jid,
+        userJid: sender,
+        kingdomId: kingdom,
+        nickname,
+        intent: "mention_request",
+        userMessage: text,
+        botReply: clarification
+      });
+      return true;
+    }
+
+    const mentionContext = await resolveMentionContext(targetJid, kingdom);
+    const reply = `تفضل، ${mentionContext.text}`;
+    await sock.sendMessage(jid, {
+      text: reply,
+      mentions: mentionContext.mentions
+    });
+    await rememberSamBotTurn({
+      memory,
+      groupJid: jid,
+      userJid: sender,
+      kingdomId: kingdom,
+      nickname,
+      intent: "mention_request",
+      userMessage: text,
+      botReply: reply,
+      mentionTargetJid: targetJid
+    });
+    return true;
+  }
+
   const directoryReply = !ambientSocial
     ? await resolveSamBotDirectoryQuestion(sock, jid, text)
     : null;
@@ -356,7 +415,8 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
       nickname,
       intent: "member_directory",
       userMessage: text,
-      botReply: directoryReply.text
+      botReply: directoryReply.text,
+      mentionTargetJid: directoryReply.mentionTargetJid
     });
     return true;
   }

@@ -56,6 +56,11 @@ const samBotMemorySchema = new mongoose.Schema({
     type: String,
     default: ""
   },
+  // آخر عضو تم عرضه في إجابة الدليل، لاستخدام طلبات مثل "اعمل منشن لها".
+  lastMentionTargetJid: {
+    type: String,
+    default: null
+  },
   lastInteractionAt: {
     type: Date,
     default: Date.now

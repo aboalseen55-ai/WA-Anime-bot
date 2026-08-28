@@ -172,7 +172,8 @@ export async function resolveSamBotDirectoryQuestion(sock, groupJid, text) {
 
   return {
     text: `صاحب لقب *${user.nickname}* هو ${mention}${whatsappName ? `، واسمه في واتساب: *${whatsappName}*.` : "."}`,
-    mentions: mentionJid ? [mentionJid] : []
+    mentions: mentionJid ? [mentionJid] : [],
+    mentionTargetJid: mentionJid || null
   };
 }
 
