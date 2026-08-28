@@ -181,8 +181,10 @@ export async function resolveSamBotDirectoryQuestion(sock, groupJid, text) {
   }
 
   const user = matches[0];
-  const mentionJid = participantIds.find((participantId) => isUserInGroup(user, [participantId])) || user.jid;
-  const mention = getCleanMentionTextForUser({ ...user, jid: mentionJid || user.jid });
+  // Match the promotion flow exactly: use the member's stored JID as the
+  // WhatsApp mention target, never the transient participant LID.
+  const mentionJid = user.jid;
+  const mention = getCleanMentionTextForUser(user);
   const whatsappName = formatDisplayName(user);
 
   return {

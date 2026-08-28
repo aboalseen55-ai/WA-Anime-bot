@@ -494,31 +494,14 @@ function sanitizeMentionText(value) {
     return withoutTrailingNumericId || withoutLidSuffix;
 }
 
-function getReadableMentionLabel(user) {
-    const label = String(user?.whatsappName || user?.nickname || '')
-        .replace(/@/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-    return label ? `@${label}` : '';
-}
-
-function isNumericMention(value) {
-    return /^@\d{5,}$/.test(String(value || '').trim());
-}
-
 function getPromotionMentionText(user) {
     const identifier = classifyIdentifier(user.jid || user.rawLid || user.lid || user.phoneNumber || user.mention);
     const storedMention = String(user.mention || '').trim();
 
     if (storedMention) {
         const cleanStoredMention = sanitizeMentionText(storedMention);
-        if (cleanStoredMention && !isNumericMention(cleanStoredMention)) return cleanStoredMention;
+        if (cleanStoredMention) return cleanStoredMention;
     }
-
-    // Keep WhatsApp's real target in `mentions`, but show members a readable name.
-    const readableLabel = getReadableMentionLabel(user);
-    if (readableLabel) return readableLabel;
 
     if (identifier.identifierType === 'phone_jid' && user.jid) {
         return formatCleanMentionText(user.jid, identifier);
