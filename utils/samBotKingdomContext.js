@@ -61,7 +61,7 @@ async function getGroupParticipantIds(sock, groupJid) {
 
 function isDirectoryQuestion(text) {
   const normalized = normalizeText(text);
-  return /(صاحب.*لقب|لقب.*مين|مين.*لقب|من هو|من هي|مين هو|مين هي|شو اسمه|ما اسمه|اسم.*لقب|اسماء.*(?:المجموعه|المملكه)|اعضاء.*(?:المجموعه|المملكه)|المسجلين|مين.*(?:بالمجموعه|في المجموعه|بالمملكه|في المملكه))/.test(normalized);
+  return /(صاحب(?:ه|ة)?.*لقب|لقب.*مين|مين.*لقب|من هو|من هي|مين هو|مين هي|شو اسمه|ما اسمه|اسم.*لقب|اسماء.*(?:المجموعه|المملكه)|اعضاء.*(?:المجموعه|المملكه)|المسجلين|مين.*(?:بالمجموعه|في المجموعه|بالمملكه|في المملكه))/.test(normalized);
 }
 
 function wantsDirectoryList(text) {
@@ -72,7 +72,7 @@ function wantsDirectoryList(text) {
 function extractDirectorySearch(text) {
   const normalized = normalizeText(text);
   const matchers = [
-    /(?:صاحب|صاحبه)\s+(?:لقب|اللقب)\s+(.+)$/,
+    /(?:صاحب(?:ه|ة)?)\s+(?:لقب|اللقب)\s+(.+)$/,
     /(?:لقب|اللقب)\s+(.+)\s+(?:لمين|لمن|تبع مين|صاحب مين)$/,
     /(?:من هو|من هي|مين هو|مين هي)\s+(.+)$/,
     /(?:شو اسمه|ما اسمه|اسمه|اسمها)\s+(.+)$/,
