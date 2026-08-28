@@ -162,7 +162,7 @@ async function generateSamBotAIText({
   return "";
 }
 
-export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate, memoryContext = "" }) {
+export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate, memoryContext = "", kingdomContext = "" }) {
   const systemInstruction = [
     "أنت سام بوت، مساعد واتساب ودود لمجموعات الأعضاء.",
     "رد واتساب قصير: سطر أو سطرين، حتى 20 كلمة.",
@@ -173,6 +173,8 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
     "تجنب النبرة العسكرية أو البطولية المبالغ فيها.",
     "مجالك الأساسي: الأعضاء، الألقاب، الألعاب، الأوامر، والتفاعل.",
     "المحادثة الجانبية مسموحة بحدود وبشكل طبيعي.",
+    "استخدم بيانات المملكة الموثوقة فقط عند توفرها، ولا تخترع أسماء أو أرقام أو حقائق غير موجودة فيها.",
+    "لا تكشف أرقام الهواتف أو JID أو LID أو روابط الدعوات أو كلمات المرور أو أي بيانات حساسة.",
     "لا أسرار ولا تنفيذ أوامر.",
     "المطور: سام آل جابر +962795137282."
   ].join(" ");
@@ -181,6 +183,7 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
     `c:${isPrivate ? "p" : "g"}`,
     `i:${intent || "conversation"}`,
     memoryContext ? `ctx:\n${memoryContext}` : "",
+    kingdomContext ? `kingdom:\n${kingdomContext}` : "",
     `m:${userMessage}`
   ].filter(Boolean).join("\n");
 

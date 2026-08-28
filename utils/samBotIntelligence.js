@@ -7,6 +7,10 @@ import {
   getSamBotMemory,
   rememberSamBotTurn
 } from "./samBotMemory.js";
+import {
+  buildSamBotKingdomContext,
+  resolveSamBotDirectoryQuestion
+} from "./samBotKingdomContext.js";
 
 const BOT_NAMES = [
   "سام بوت",
@@ -338,7 +342,29 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     kingdomId: kingdom,
     nickname
   });
+
+  const directoryReply = !ambientSocial
+    ? await resolveSamBotDirectoryQuestion(sock, jid, text)
+    : null;
+  if (directoryReply) {
+    await sock.sendMessage(jid, directoryReply);
+    await rememberSamBotTurn({
+      memory,
+      groupJid: jid,
+      userJid: sender,
+      kingdomId: kingdom,
+      nickname,
+      intent: "member_directory",
+      userMessage: text,
+      botReply: directoryReply.text
+    });
+    return true;
+  }
+
   const memoryContext = buildSamBotMemoryContext(memory, nickname);
+  const kingdomContext = !ambientSocial
+    ? await buildSamBotKingdomContext(jid, text)
+    : "";
   const repeatedReply = getRepeatedSocialReply(memory, intent, nickname);
   const aiReply = !ambientSocial && shouldUseOnlineAI(intent)
     ? await generateSamBotAIReply({
@@ -346,7 +372,8 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
         nickname,
         intent,
         isPrivate: isPrivateChat(jid),
-        memoryContext
+        memoryContext,
+        kingdomContext
       })
     : "";
   const reply = repeatedReply || aiReply || buildReply(intent, nickname, text);
