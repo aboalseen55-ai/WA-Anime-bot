@@ -10,8 +10,12 @@ const ACCEPTED_IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 const DEFAULT_MONTHLY_LIMIT = 50;
 const DEFAULT_CACHE_DAYS = 30;
 const DEFAULT_RAPID_IMAGE_COUNT = 10;
-const MAX_IMAGE_URLS = 8;
+const MAX_IMAGE_URLS = 16;
 const MAX_IMAGES_TO_SEND = 4;
+const ANIME_QUERY_SUFFIX = 'anime character anime art -spoon -fork -knife -cutlery -utensil -kitchen -dish -plate -soap -detergent';
+const ANIME_CONTEXT_PATTERN = /(?:anime|manga|manhwa|myanimelist|anilist|anime-planet|crunchyroll|fandom|zerochan|pixiv|danbooru|gelbooru|otaku|أنمي|انمي|مانجا|شخصي(?:ة|ات))/i;
+const TRUSTED_ANIME_SOURCE_PATTERN = /(?:myanimelist\.net|anilist\.co|anime-planet\.com|fandom\.com|zerochan\.net|pixiv\.net|danbooru\.donmai\.us|gelbooru\.com|wallpapercave\.com|wallpaperflare\.com)/i;
+const IRRELEVANT_IMAGE_PATTERN = /(?:spoon|fork|knife|cutlery|utensil|kitchen|dish(?:es)?|plate|soap|detergent|clean(?:ing)?|mop|broom|faucet|sink|cookware|ملعقة|شوكة|سكين|مطبخ|صحون|صحن|جلي|منظف|ممسحة|مكنسة|حنفية)/i;
 
 function isExplicitlyDisabled(value) {
     return String(value || '').trim().toLowerCase() === 'false';
@@ -63,8 +67,9 @@ function getRapidConfig() {
 }
 
 function buildSearchQuery(nickname) {
-    const template = process.env.RAPIDAPI_IMAGE_SEARCH_QUERY_TEMPLATE || '{nickname} anime character';
-    return template.replace(/\{nickname\}/g, nickname);
+    const template = process.env.RAPIDAPI_IMAGE_SEARCH_QUERY_TEMPLATE || `{nickname} ${ANIME_QUERY_SUFFIX}`;
+    const query = template.replace(/\{nickname\}/g, nickname).trim();
+    return /(?:anime|أنمي|انمي)/i.test(query) ? query : `${query} ${ANIME_QUERY_SUFFIX}`;
 }
 
 function isImageLikeUrl(value) {
@@ -121,6 +126,68 @@ function uniqueUrls(urls) {
         seen.add(clean);
         return true;
     });
+}
+
+function uniqueImageCandidates(candidates) {
+    const seen = new Set();
+    return candidates.filter((candidate) => {
+        const url = String(candidate?.url || '').trim();
+        if (!url || seen.has(url)) return false;
+        seen.add(url);
+        return true;
+    });
+}
+
+function isAnimeImageCandidate(candidate) {
+    const url = String(candidate?.url || '').trim();
+    const context = String(candidate?.context || '');
+    const details = `${url} ${context}`;
+
+    if (!url || IRRELEVANT_IMAGE_PATTERN.test(details)) return false;
+    return ANIME_CONTEXT_PATTERN.test(details) || TRUSTED_ANIME_SOURCE_PATTERN.test(details);
+}
+
+function getAnimeImageUrls(candidates) {
+    const accepted = uniqueImageCandidates(candidates)
+        .filter(isAnimeImageCandidate)
+        .map((candidate) => candidate.url)
+        .slice(0, MAX_IMAGE_URLS);
+
+    console.log(`🧹 فلتر الأنمي قبل ${candidates.length} نتيجة وأبقى ${accepted.length} نتيجة مناسبة.`);
+    return accepted;
+}
+
+function collectImageCandidates(value, candidates = [], inheritedContext = '') {
+    if (!value || candidates.length >= MAX_IMAGE_URLS * 4) return candidates;
+
+    if (typeof value === 'string') {
+        if (isImageLikeUrl(value)) candidates.push({ url: value, context: inheritedContext });
+        return candidates;
+    }
+
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            collectImageCandidates(item, candidates, inheritedContext);
+            if (candidates.length >= MAX_IMAGE_URLS * 4) break;
+        }
+        return candidates;
+    }
+
+    if (typeof value === 'object') {
+        const context = [
+            inheritedContext,
+            ...Object.entries(value)
+                .filter(([, item]) => typeof item === 'string' && !isImageLikeUrl(item))
+                .map(([key, item]) => `${key}:${item}`)
+        ].join(' ').slice(0, 2000);
+
+        for (const item of Object.values(value)) {
+            collectImageCandidates(item, candidates, context);
+            if (candidates.length >= MAX_IMAGE_URLS * 4) break;
+        }
+    }
+
+    return candidates;
 }
 
 async function getCachedImageUrls(cacheKey) {
@@ -220,7 +287,7 @@ async function searchRapidGoogleImages(nickname) {
             timeout: 15000
         });
 
-        const urls = uniqueUrls(extractImageUrls(response.data)).slice(0, MAX_IMAGE_URLS);
+        const urls = getAnimeImageUrls(collectImageCandidates(response.data));
         await recordRapidUsage(urls.length > 0, urls.length ? '' : 'No image URLs found');
         console.log(`✅ RapidAPI returned ${urls.length} image URLs`);
         return urls;
@@ -234,7 +301,7 @@ async function searchRapidGoogleImages(nickname) {
 async function searchBingImageUrls(nickname) {
     console.log(`🔍 جاري البحث عن صور "${nickname}" في Bing Images...`);
 
-    const searchQuery = encodeURIComponent(`شخصية ${nickname}`);
+    const searchQuery = encodeURIComponent(buildSearchQuery(nickname));
     const searchUrl = `https://www.bing.com/images/search?q=${searchQuery}`;
 
     console.log('📡 إرسال طلب البحث...');
@@ -250,45 +317,44 @@ async function searchBingImageUrls(nickname) {
     console.log('📨 تم استلام النتائج، جاري استخراج الروابط...');
 
     const $ = cheerio.load(html);
-    const imageUrls = [];
+    const imageCandidates = [];
 
     $('.iusc img').each((i, elem) => {
         let src = $(elem).attr('src') || $(elem).attr('data-src') || $(elem).attr('data-delayed-src');
-        if (src && src.includes('http') && !src.includes('svg') && imageUrls.length < MAX_IMAGE_URLS) {
+        if (src && src.includes('http') && !src.includes('svg') && imageCandidates.length < MAX_IMAGE_URLS * 2) {
             src = src.replace(/w=\d+/, 'w=800').replace(/h=\d+/, 'h=800');
-            imageUrls.push(src);
+            imageCandidates.push({
+                url: src,
+                context: [$(elem).attr('alt'), $(elem).attr('title'), $(elem).closest('.iusc').attr('data-m')].filter(Boolean).join(' ')
+            });
         }
     });
 
-    if (imageUrls.length === 0) {
-        $('.iusc').each((i, elem) => {
-            const dataM = $(elem).attr('data-m');
-            if (dataM) {
-                try {
-                    const data = JSON.parse(dataM);
-                    if (data.murl && data.murl.startsWith('http')) {
-                        imageUrls.push(data.murl);
-                    }
-                } catch {
-                    // تجاهل JSON غير صالح
-                }
+    $('.iusc').each((i, elem) => {
+        const dataM = $(elem).attr('data-m');
+        if (dataM) {
+            try {
+                const data = JSON.parse(dataM);
+                collectImageCandidates(data, imageCandidates);
+            } catch {
+                // تجاهل JSON غير صالح
             }
-        });
-    }
+        }
+    });
 
-    if (imageUrls.length === 0) {
+    if (imageCandidates.length === 0) {
         const murlMatches = html.match(/"murl":"([^"]+)"/g);
         if (murlMatches) {
             for (const match of murlMatches) {
                 const url = match.match(/"murl":"([^"]+)"/)[1];
-                if (url && url.startsWith('http') && imageUrls.length < MAX_IMAGE_URLS) {
-                    imageUrls.push(url);
+                if (url && url.startsWith('http') && imageCandidates.length < MAX_IMAGE_URLS * 2) {
+                    imageCandidates.push({ url, context: buildSearchQuery(nickname) });
                 }
             }
         }
     }
 
-    return uniqueUrls(imageUrls).slice(0, MAX_IMAGE_URLS);
+    return getAnimeImageUrls(imageCandidates);
 }
 
 async function imageUrlsToJpegBuffers(imageUrls) {
@@ -349,7 +415,7 @@ export async function getCharacterImages(nickname) {
         }
 
         const cleanNickname = nickname.trim();
-        const cacheKey = normalizeCacheKey(`character:${cleanNickname}`);
+        const cacheKey = normalizeCacheKey(`anime-character-v2:${cleanNickname}`);
         const cachedUrls = await getCachedImageUrls(cacheKey);
 
         if (cachedUrls.length) {
