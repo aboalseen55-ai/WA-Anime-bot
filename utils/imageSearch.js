@@ -2,6 +2,7 @@ import axios from 'axios';
 import sharp from 'sharp';
 import * as cheerio from 'cheerio';
 import mongoose from 'mongoose';
+import { translate } from '@vitalets/google-translate-api';
 import ImageSearchCache from '../database/imageSearchCacheModel.js';
 import RapidImageSearchUsage from '../database/rapidImageSearchUsageModel.js';
 
@@ -12,6 +13,7 @@ const DEFAULT_CACHE_DAYS = 30;
 const DEFAULT_RAPID_IMAGE_COUNT = 10;
 const MAX_IMAGE_URLS = 16;
 const MAX_IMAGES_TO_SEND = 4;
+const ANILIST_API = 'https://graphql.anilist.co';
 const ANIME_QUERY_SUFFIX = 'anime character anime art -spoon -fork -knife -cutlery -utensil -kitchen -dish -plate -soap -detergent';
 const ANIME_CONTEXT_PATTERN = /(?:anime|manga|manhwa|myanimelist|anilist|anime-planet|crunchyroll|fandom|zerochan|pixiv|danbooru|gelbooru|otaku|أنمي|انمي|مانجا|شخصي(?:ة|ات))/i;
 const TRUSTED_ANIME_SOURCE_PATTERN = /(?:myanimelist\.net|anilist\.co|anime-planet\.com|fandom\.com|zerochan\.net|pixiv\.net|danbooru\.donmai\.us|gelbooru\.com|wallpapercave\.com|wallpaperflare\.com)/i;
@@ -19,6 +21,128 @@ const IRRELEVANT_IMAGE_PATTERN = /(?:spoon|fork|knife|cutlery|utensil|kitchen|di
 
 function isExplicitlyDisabled(value) {
     return String(value || '').trim().toLowerCase() === 'false';
+}
+
+function allowsUnverifiedWebFallback() {
+    return String(process.env.ANIME_WELCOME_ALLOW_WEB_FALLBACK || '').trim().toLowerCase() !== 'false';
+}
+
+async function getCharacterSearchTerms(nickname) {
+    const cleaned = String(nickname || '').replace(/\s+/g, ' ').trim();
+    if (!cleaned) return [];
+
+    const terms = [cleaned];
+    if (!/[\u0600-\u06FF]/.test(cleaned)) return terms;
+
+    try {
+        const translated = await Promise.race([
+            translate(cleaned, { to: 'en' }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Translation timeout')), 6000))
+        ]);
+        const english = String(translated?.text || '').replace(/\s+/g, ' ').trim();
+        if (english && !terms.some((term) => term.toLowerCase() === english.toLowerCase())) {
+            terms.push(english);
+        }
+    } catch (error) {
+        console.warn(`⚠️ تعذر ترجمة لقب الشخصية للبحث: ${error.message}`);
+    }
+
+    return terms;
+}
+
+async function searchAniListCharacterImages(nickname) {
+    const terms = await getCharacterSearchTerms(nickname);
+    const query = `
+query ($search: String) {
+  Character(search: $search) {
+    id
+    name {
+      full
+      native
+      alternative
+    }
+    image {
+      large
+      medium
+    }
+    media(perPage: 1) {
+      nodes {
+        type
+        isAdult
+      }
+    }
+  }
+}`;
+
+    for (const search of terms) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 12000);
+            const response = await fetch(ANILIST_API, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'User-Agent': 'SamBot/1.0'
+                },
+                body: JSON.stringify({ query, variables: { search } }),
+                signal: controller.signal
+            });
+            clearTimeout(timer);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            const character = data?.data?.Character;
+            const isSafeCharacter = character?.media?.nodes?.some((media) => (
+                (media.type === 'ANIME' || media.type === 'MANGA') && media.isAdult !== true
+            ));
+            const imageUrl = character?.image?.large || character?.image?.medium;
+
+            if (isSafeCharacter && isImageLikeUrl(imageUrl)) {
+                console.log(`✅ AniList character found for "${nickname}" using "${search}".`);
+                return [imageUrl];
+            }
+        } catch (error) {
+            console.warn(`⚠️ AniList character lookup failed for "${search}": ${error.message}`);
+        }
+    }
+
+    return [];
+}
+
+async function searchJikanCharacterImages(nickname) {
+    const terms = await getCharacterSearchTerms(nickname);
+
+    for (const search of terms) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 12000);
+            const response = await fetch(
+                `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(search)}&limit=1&order_by=favorites&sort=desc`,
+                {
+                    headers: { 'User-Agent': 'SamBot/1.0' },
+                    signal: controller.signal
+                }
+            );
+            clearTimeout(timer);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            const character = data?.data?.[0];
+            const imageUrl = character?.images?.webp?.large_image_url
+                || character?.images?.jpg?.large_image_url
+                || character?.images?.webp?.image_url
+                || character?.images?.jpg?.image_url;
+            if (isImageLikeUrl(imageUrl)) {
+                console.log(`✅ Jikan character found for "${nickname}" using "${search}".`);
+                return [imageUrl];
+            }
+        } catch (error) {
+            console.warn(`⚠️ Jikan character lookup failed for "${search}": ${error.message}`);
+        }
+    }
+
+    return [];
 }
 
 function normalizeCacheKey(value) {
@@ -144,7 +268,7 @@ function isAnimeImageCandidate(candidate) {
     const details = `${url} ${context}`;
 
     if (!url || IRRELEVANT_IMAGE_PATTERN.test(details)) return false;
-    return ANIME_CONTEXT_PATTERN.test(details) || TRUSTED_ANIME_SOURCE_PATTERN.test(details);
+    return ANIME_CONTEXT_PATTERN.test(context) || TRUSTED_ANIME_SOURCE_PATTERN.test(url);
 }
 
 function getAnimeImageUrls(candidates) {
@@ -174,10 +298,15 @@ function collectImageCandidates(value, candidates = [], inheritedContext = '') {
     }
 
     if (typeof value === 'object') {
+        const contextKeys = new Set([
+            'title', 'name', 'description', 'snippet', 'caption', 'alt',
+            'source', 'sourceName', 'contextLink', 'context_link', 'hostPageUrl',
+            'host_page_url', 'pageUrl', 'page_url', 'pageTitle', 'page_title'
+        ]);
         const context = [
             inheritedContext,
             ...Object.entries(value)
-                .filter(([, item]) => typeof item === 'string' && !isImageLikeUrl(item))
+                .filter(([key, item]) => contextKeys.has(key) && typeof item === 'string' && !isImageLikeUrl(item))
                 .map(([key, item]) => `${key}:${item}`)
         ].join(' ').slice(0, 2000);
 
@@ -348,7 +477,7 @@ async function searchBingImageUrls(nickname) {
             for (const match of murlMatches) {
                 const url = match.match(/"murl":"([^"]+)"/)[1];
                 if (url && url.startsWith('http') && imageCandidates.length < MAX_IMAGE_URLS * 2) {
-                    imageCandidates.push({ url, context: buildSearchQuery(nickname) });
+                    imageCandidates.push({ url, context: '' });
                 }
             }
         }
@@ -415,7 +544,7 @@ export async function getCharacterImages(nickname) {
         }
 
         const cleanNickname = nickname.trim();
-        const cacheKey = normalizeCacheKey(`anime-character-v2:${cleanNickname}`);
+        const cacheKey = normalizeCacheKey(`anime-character-v3:${cleanNickname}`);
         const cachedUrls = await getCachedImageUrls(cacheKey);
 
         if (cachedUrls.length) {
@@ -425,9 +554,28 @@ export async function getCharacterImages(nickname) {
             console.warn('⚠️ روابط الكاش لم تعد صالحة، سيتم البحث من جديد.');
         }
 
+        const aniListUrls = await searchAniListCharacterImages(cleanNickname);
+        if (aniListUrls.length) {
+            await saveImageUrlCache(cacheKey, cleanNickname, 'anilist-character', aniListUrls);
+            return imageUrlsToJpegBuffers(aniListUrls);
+        }
+
+        const jikanUrls = await searchJikanCharacterImages(cleanNickname);
+        if (jikanUrls.length) {
+            await saveImageUrlCache(cacheKey, cleanNickname, 'jikan-character', jikanUrls);
+            return imageUrlsToJpegBuffers(jikanUrls);
+        }
+
+        // لا نستخدم بحث الويب العام افتراضيًا: قد يعيد أشياء لا علاقة لها بالأنمي.
+        if (!allowsUnverifiedWebFallback()) {
+            console.warn(`⚠️ لم يتم العثور على شخصية أنمي مؤكدة للقب "${cleanNickname}".`);
+            return [];
+        }
+
+        console.warn('⚠️ تم تفعيل fallback الويب غير الموثق يدويًا.');
         const rapidUrls = await searchRapidGoogleImages(cleanNickname);
         if (rapidUrls.length) {
-            await saveImageUrlCache(cacheKey, cleanNickname, 'rapidapi-google-images', rapidUrls);
+            await saveImageUrlCache(cacheKey, cleanNickname, 'rapidapi-google-images-fallback', rapidUrls);
             const rapidBuffers = await imageUrlsToJpegBuffers(rapidUrls);
             if (rapidBuffers.length) return rapidBuffers;
         }
