@@ -45,6 +45,103 @@ import { showCommandsList, handleCommandsChoice } from "./commandsList.js";
 import { sendRulesMessage, sendReminderMessage, startReminderSystem } from "../utils/rulesSystem.js";
 import { getKingdomReportTimeZone, getNextDailyReportDate } from "../utils/dailyReports.js";
 import { getRecentMessages, popRecentMessages } from "../utils/messageCache.js";
+import { resolveAdvancedWelcomeSearch } from "../utils/advancedWelcomeSearch.js";
+
+async function startWelcomeImageSelection(sock, jid, welcomeData, searchOptions = {}) {
+    const { getCharacterImages } = await import('../utils/imageSearch.js');
+    const searchLabel = searchOptions.characterName && searchOptions.animeName
+        ? `${searchOptions.characterName} - ${searchOptions.animeName}`
+        : welcomeData.nickname;
+
+    await sock.sendMessage(jid, {
+        text: `⏳ جارٍ البحث عن صور أنمي لـ *${searchLabel}*...`,
+        mentions: [welcomeData.moderatorJid]
+    });
+
+    const imageBuffers = await getCharacterImages(
+        searchOptions.characterName || welcomeData.nickname,
+        { searchQuery: searchOptions.searchQuery || welcomeData.nickname }
+    );
+
+    if (imageBuffers.length > 0) {
+        for (const [index, imageBuffer] of imageBuffers.entries()) {
+            const imageNumber = index + 1;
+            await sock.sendMessage(jid, {
+                image: imageBuffer,
+                caption: `📸 *الصورة ${imageNumber} من ${imageBuffers.length}*\n\n👤 اللقب: *${welcomeData.nickname}*\n\nرد برقم الصورة لاختيارها.`
+            }).catch((error) => console.warn(`⚠️ فشل إرسال صورة الترحيب: ${error.message}`));
+        }
+
+        await sock.sendMessage(jid, { text: `🎯 اختر صورة من ${imageBuffers.length}: رد برقم الصورة.` });
+        pendingMentions[`welcome_images_${jid}_${welcomeData.userJid}`] = {
+            ...welcomeData,
+            action: 'welcome_images',
+            imageBuffers
+        };
+        return;
+    }
+
+    await sock.sendMessage(jid, {
+        text: `❌ *لم يتم العثور على صور أنمي مناسبة*\n\n👤 اللقب: ${welcomeData.nickname}\n\nرد بـ 1 للترحيب بدون صورة أو 2 للإلغاء.`
+    });
+    pendingMentions[`welcome_confirm_${jid}_${welcomeData.userJid}`] = {
+        ...welcomeData,
+        action: 'welcome_confirm',
+        imageUrl: null
+    };
+}
+
+export async function handleWelcomeModeStep(sock, jid, sender, text) {
+    const key = Object.keys(pendingMentions).find((candidate) => (
+        candidate.startsWith(`welcome_mode_${jid}_${sender}`)
+        || (candidate.startsWith(`welcome_mode_${jid}_`) && pendingMentions[candidate]?.moderatorJid === sender)
+    ));
+    if (!key) return false;
+
+    const state = pendingMentions[key];
+    const answer = String(text || '').trim();
+    if (!state) return false;
+
+    if (state.action === 'welcome_mode') {
+        if (answer === '1') {
+            delete pendingMentions[key];
+            await startWelcomeImageSelection(sock, jid, state);
+            return true;
+        }
+        if (answer === '2') {
+            state.action = 'welcome_advanced_character';
+            await sock.sendMessage(jid, { text: `اكتب اسم الشخصية للعضو *${state.nickname}*.` });
+            return true;
+        }
+        await sock.sendMessage(jid, { text: 'اختر 1 للترحيب السريع أو 2 للترحيب المتقدم.' });
+        return true;
+    }
+
+    if (state.action === 'welcome_advanced_character') {
+        if (answer.length < 2 || answer.length > 100) {
+            await sock.sendMessage(jid, { text: 'اكتب اسم شخصية واضحًا، بين حرفين و100 حرف.' });
+            return true;
+        }
+        state.characterInput = answer;
+        state.action = 'welcome_advanced_anime';
+        await sock.sendMessage(jid, { text: 'اكتب اسم الأنمي الذي تظهر فيه الشخصية.' });
+        return true;
+    }
+
+    if (state.action === 'welcome_advanced_anime') {
+        if (answer.length < 2 || answer.length > 100) {
+            await sock.sendMessage(jid, { text: 'اكتب اسم الأنمي بشكل أوضح.' });
+            return true;
+        }
+
+        delete pendingMentions[key];
+        const resolved = await resolveAdvancedWelcomeSearch(state.characterInput, answer);
+        await startWelcomeImageSelection(sock, jid, state, resolved);
+        return true;
+    }
+
+    return false;
+}
 
 export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
@@ -852,89 +949,28 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             return true;
         }
 
-        // الحصول على معلومات المرسل (الأدمن أو المشرف)
         const senderInfo = await getUserInfo(sender, kingdom);
         if (!senderInfo) {
             await sock.sendMessage(jid, { text: '❌ خطأ في الحصول على معلوماتك!' });
             return true;
         }
 
-        // استيراد البحث عن الصور والحالة المعلقة
-        const { getCharacterImages } = await import('../utils/imageSearch.js');
-        
-        // البحث عن 4 صور
-        await sock.sendMessage(jid, { 
-            text: `⏳ جارٍ البحث عن صور للعضو *${user.nickname}*...`,
+        const welcomeData = {
+            action: 'welcome_mode',
+            nickname: user.nickname,
+            userJid: user.jid,
+            mentionText: getCleanMentionTextForUser(user),
+            moderatorName: senderInfo.nickname,
+            moderatorJid: sender,
+            receptionGroupJid,
+            mainGroupJid,
+            kingdom
+        };
+        pendingMentions[`welcome_mode_${jid}_${sender}`] = welcomeData;
+        await sock.sendMessage(jid, {
+            text: `👋 *ترحيب العضو: ${user.nickname}*\n\n1️⃣ سريع — بحث تلقائي باللقب\n2️⃣ متقدم — تحدد الشخصية والأنمي`,
             mentions: [sender]
         });
-        
-        const imageBuffers = await getCharacterImages(user.nickname);
-        
-        const mentionText = getCleanMentionTextForUser(user);
-
-        if (imageBuffers.length > 0) {
-            // عرض الصور واحدة تلو الأخرى
-            console.log(`✅ تم العثور على ${imageBuffers.length} صور للعضو ${user.nickname}`);
-            
-            let imageIndex = 0;
-            
-            for (const imageBuffer of imageBuffers) {
-                imageIndex++;
-                
-                const imageMessage = `📸 *الصورة ${imageIndex} من ${imageBuffers.length}*\n\n👤 اللقب: *${user.nickname}*\n\n💡 رد بـ (${imageIndex}️⃣) لاختيار هذه الصورة\nأو انتظر الصور التالية`;
-                
-                try {
-                    await sock.sendMessage(jid, {
-                        image: imageBuffer,
-                        caption: imageMessage
-                    });
-                } catch (imageError) {
-                    console.warn(`⚠️ فشل إرسال الصورة ${imageIndex}: ${imageError.message}`);
-                }
-                
-                // إضافة تأخير بسيط بين الصور
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            
-            // عرض رسالة الاختيار النهائية
-            const selectionMessage = `🎯 *اختر صورة من ${imageBuffers.length}*\n\n💡 رد بـ رقم الصورة (1️⃣ أو 2️⃣ أو 3️⃣ أو 4️⃣) التي تفضلها`;
-            
-            await sock.sendMessage(jid, { text: selectionMessage });
-            
-            // حفظ بيانات الترحيب
-            pendingMentions[`welcome_images_${jid}_${user.jid}`] = {
-                action: 'welcome_images',
-                nickname: user.nickname,
-                userJid: user.jid,
-                mentionText: mentionText,
-                moderatorName: senderInfo.nickname,
-                moderatorJid: sender,
-                imageBuffers: imageBuffers,
-                receptionGroupJid: receptionGroupJid,
-                mainGroupJid: mainGroupJid,
-                kingdom: kingdom
-            };
-            
-            console.log(`⏳ في انتظار اختيار صورة للعضو ${user.nickname}`);
-        } else {
-            // لم يتم العثور على صور
-            const confirmationMessage = `❌ *لم يتم العثور على صور - تأكيد الترحيب*\n\n👤 *اللقب:* ${user.nickname}\n\n💡 رد بـ (1️⃣) للموافقة والترحيب بدون صورة\nأو رد بـ (2️⃣) لإلغاء`;
-
-            await sock.sendMessage(jid, { text: confirmationMessage });
-
-            pendingMentions[`welcome_confirm_${jid}_${user.jid}`] = {
-                action: 'welcome_confirm',
-                nickname: user.nickname,
-                userJid: user.jid,
-                mentionText: mentionText,
-                moderatorName: senderInfo.nickname,
-                moderatorJid: sender,
-                imageUrl: null,
-                receptionGroupJid: receptionGroupJid,
-                mainGroupJid: mainGroupJid,
-                kingdom: kingdom
-            };
-        }
         return true;
     }
 

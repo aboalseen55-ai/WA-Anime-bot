@@ -1,5 +1,5 @@
 import { userCommands } from "../commands/user.js";
-import { handleAdminCommands } from "../commands/adminCommands.js";
+import { handleAdminCommands, handleWelcomeModeStep } from "../commands/adminCommands.js";
 import { showCommandsList, handleCommandsChoice } from "../commands/commandsList.js";
 import { addRecentMessage } from "../utils/messageCache.js";
 import { isSuperAdminInKingdom, isModerator, extractAndSaveUserFromMention, grantEmperorRankWithPassword, getMentionFromJID, getCleanMentionTextForUser, classifyIdentifier, startGameSession, stopGameSession, generateAdminDailyReport, getDailyGameStats, deleteUser, buildWelcomeFormMessage, buildWorkWelcomeFormMessage, recordSuccessfulWelcome } from "../commands/adminSystem.js";
@@ -903,6 +903,10 @@ export async function messageHandler(sock, msg) {
       await sock.sendMessage(jid, { text: explanation });
       return;
     }
+  }
+
+  if (await handleWelcomeModeStep(sock, jid, sender, text)) {
+    return;
   }
 
   // معالجة اختيار صورة الترحيب (1️⃣ 2️⃣ 3️⃣ 4️⃣)

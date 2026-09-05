@@ -536,7 +536,7 @@ async function imageUrlsToJpegBuffers(imageUrls) {
  * @param {string} nickname - لقب العضو المرحب به
  * @returns {Promise<Array<Buffer>>} - مصفوفة من Buffers الصور المحولة إلى JPEG
  */
-export async function getCharacterImages(nickname) {
+export async function getCharacterImages(nickname, options = {}) {
     try {
         if (!nickname || nickname.trim() === '') {
             console.warn('⚠️ لقب العضو فارغ');
@@ -544,7 +544,8 @@ export async function getCharacterImages(nickname) {
         }
 
         const cleanNickname = nickname.trim();
-        const cacheKey = normalizeCacheKey(`anime-character-v3:${cleanNickname}`);
+        const searchQuery = String(options.searchQuery || cleanNickname).trim();
+        const cacheKey = normalizeCacheKey(`anime-character-v4:${cleanNickname}:${searchQuery}`);
         const cachedUrls = await getCachedImageUrls(cacheKey);
 
         if (cachedUrls.length) {
@@ -552,6 +553,22 @@ export async function getCharacterImages(nickname) {
             const cachedBuffers = await imageUrlsToJpegBuffers(cachedUrls);
             if (cachedBuffers.length) return cachedBuffers;
             console.warn('⚠️ روابط الكاش لم تعد صالحة، سيتم البحث من جديد.');
+        }
+
+        if (allowsUnverifiedWebFallback()) {
+            const rapidUrls = await searchRapidGoogleImages(searchQuery);
+            if (rapidUrls.length) {
+                await saveImageUrlCache(cacheKey, searchQuery, 'rapidapi-google-images', rapidUrls);
+                const rapidBuffers = await imageUrlsToJpegBuffers(rapidUrls);
+                if (rapidBuffers.length) return rapidBuffers;
+            }
+
+            const bingUrls = await searchBingImageUrls(searchQuery);
+            if (bingUrls.length) {
+                await saveImageUrlCache(cacheKey, searchQuery, 'bing-images', bingUrls);
+                const bingBuffers = await imageUrlsToJpegBuffers(bingUrls);
+                if (bingBuffers.length) return bingBuffers;
+            }
         }
 
         const aniListUrls = await searchAniListCharacterImages(cleanNickname);
@@ -566,28 +583,12 @@ export async function getCharacterImages(nickname) {
             return imageUrlsToJpegBuffers(jikanUrls);
         }
 
-        // لا نستخدم بحث الويب العام افتراضيًا: قد يعيد أشياء لا علاقة لها بالأنمي.
-        if (!allowsUnverifiedWebFallback()) {
+        if (allowsUnverifiedWebFallback()) {
+            console.warn(`⚠️ لم تعثر Google أو Bing أو قواعد الأنمي على شخصية مؤكدة للقب "${cleanNickname}".`);
+        } else {
             console.warn(`⚠️ لم يتم العثور على شخصية أنمي مؤكدة للقب "${cleanNickname}".`);
-            return [];
         }
-
-        console.warn('⚠️ تم تفعيل fallback الويب غير الموثق يدويًا.');
-        const rapidUrls = await searchRapidGoogleImages(cleanNickname);
-        if (rapidUrls.length) {
-            await saveImageUrlCache(cacheKey, cleanNickname, 'rapidapi-google-images-fallback', rapidUrls);
-            const rapidBuffers = await imageUrlsToJpegBuffers(rapidUrls);
-            if (rapidBuffers.length) return rapidBuffers;
-        }
-
-        const bingUrls = await searchBingImageUrls(cleanNickname);
-        if (!bingUrls.length) {
-            console.warn('⚠️ لم يتم العثور على روابط صور');
-            return [];
-        }
-
-        await saveImageUrlCache(cacheKey, cleanNickname, 'bing-images', bingUrls);
-        return imageUrlsToJpegBuffers(bingUrls);
+        return [];
 
     } catch (error) {
         console.error('❌ خطأ في البحث عن الصور:', error.message);
