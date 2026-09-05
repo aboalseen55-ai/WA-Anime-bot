@@ -79,6 +79,11 @@ function isDirectoryQuestion(text) {
   return /(صاحب(?:ه|ة)?.*لقب|لقب.*مين|مين.*لقب|من هو|من هي|مين هو|مين هي|شو اسمه|ما اسمه|اسم.*لقب|اسماء.*(?:المجموعه|المملكه)|اعضاء.*(?:المجموعه|المملكه)|المسجلين|مين.*(?:بالمجموعه|في المجموعه|بالمملكه|في المملكه))/.test(normalized);
 }
 
+function isExplicitDirectoryLookup(text) {
+  const normalized = withoutBotAddressing(text);
+  return /(صاحب(?:ه|ة)?.*لقب|لقب.*مين|مين.*لقب|من هو|من هي|مين هو|مين هي|شو اسمه|ما اسمه|اسم.*لقب)/.test(normalized);
+}
+
 function wantsDirectoryList(text) {
   const normalized = withoutBotAddressing(text);
   return /(اسماء.*(?:المجموعه|المملكه)|اعضاء.*(?:المجموعه|المملكه)|المسجلين|مين.*(?:بالمجموعه|في المجموعه|بالمملكه|في المملكه))/.test(normalized);
@@ -172,6 +177,9 @@ export async function resolveSamBotDirectoryQuestion(sock, groupJid, text) {
   // participant JID/LID mapping for an exact member lookup.
   const matches = findMatchingUsers(registeredUsers, search);
   if (!matches.length) {
+    // "مين <نص>" قد تكون جملة عامية موجهة للبوت، وليست طلب بحث عن عضو.
+    // لا نقطع المحادثة برد دليل الأعضاء إلا عندما يطلب المستخدم اللقب صراحة.
+    if (!isExplicitDirectoryLookup(text)) return null;
     return { text: `ما لقيت عضوًا مسجلًا باسم أو لقب “${search}” في هذه المجموعة.`, mentions: [] };
   }
 

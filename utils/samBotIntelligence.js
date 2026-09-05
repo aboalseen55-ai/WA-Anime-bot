@@ -161,6 +161,10 @@ export function classifySamBotIntent(text) {
     return "joke";
   }
 
+  if (/(مين\s+(?:اللي\s+)?(?:صمك|سكتك)|(?:صمك|سكتك)\s+مين)/.test(normalized)) {
+    return "teasing";
+  }
+
   if (/(شكرا|شكراً|تسلم|يعطيك العافيه|مشكور|ثانكس|thanks)/.test(normalized)) {
     return "thanks";
   }
@@ -238,6 +242,10 @@ function buildReply(intent, nickname, text) {
       `السرعة حلوة، بس الفهم أحلى.`,
       `مزحة خفيفة، بدون فوضى.`
     ],
+    teasing: [
+      `ولا حدا، بس بحب الأمور تكون مرتبة.`,
+      `ما حدا، أنا معكم وبسمع.`
+    ],
     thanks: [
       `العفو يا ${nickname}.`,
       `حاضر يا ${nickname}.`
@@ -304,7 +312,7 @@ function buildReply(intent, nickname, text) {
 }
 
 function shouldUseOnlineAI(intent) {
-  return !["identity", "capabilities", "greeting", "wellbeing", "wellbeing_answer", "ack", "thanks"].includes(intent);
+  return !["identity", "capabilities", "greeting", "wellbeing", "wellbeing_answer", "ack", "thanks", "teasing"].includes(intent);
 }
 
 function isMentionRequest(text) {
