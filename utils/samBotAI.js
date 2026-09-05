@@ -196,11 +196,11 @@ export async function generateSamBotAIReply({ userMessage, nickname, intent, isP
   });
 }
 
-export async function generateSamBotAIJson({ systemInstruction, prompt, maxOutputTokens = 80 }) {
+export async function generateSamBotAIJson({ systemInstruction, prompt, maxOutputTokens = 80, temperature = 0 }) {
   return generateSamBotAIText({
     systemInstruction,
     prompt,
-    temperature: 0,
+    temperature,
     maxOutputTokens
   });
 }

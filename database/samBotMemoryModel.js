@@ -61,6 +61,26 @@ const samBotMemorySchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  girlfriendMode: {
+    active: {
+      type: Boolean,
+      default: false
+    },
+    mood: {
+      type: String,
+      default: null
+    },
+    intensity: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 3
+    },
+    lastActivatedAt: {
+      type: Date,
+      default: null
+    }
+  },
   lastInteractionAt: {
     type: Date,
     default: Date.now

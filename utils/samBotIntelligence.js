@@ -12,6 +12,14 @@ import {
   buildSamBotKingdomContext,
   resolveSamBotDirectoryQuestion
 } from "./samBotKingdomContext.js";
+import {
+  buildGirlfriendModeState,
+  getRomanceModeDecision,
+  shouldSendRomanticGif,
+  shouldSendRomanticVoice
+} from "../services/romanceModeService.js";
+import { findRomanticGif, isGiphyConfigured } from "../services/giphyService.js";
+import { createRomanticVoiceNote, isElevenLabsConfigured } from "../services/elevenLabsService.js";
 
 const BOT_NAMES = [
   "سام بوت",
@@ -434,7 +442,17 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     ? await buildSamBotKingdomContext(jid, text)
     : "";
   const repeatedReply = getRepeatedSocialReply(memory, intent, nickname);
-  const aiReply = !ambientSocial && shouldUseOnlineAI(intent)
+  const romanceDecision = !ambientSocial && !repeatedReply && shouldUseOnlineAI(intent)
+    ? await getRomanceModeDecision({
+        userMessage: text,
+        nickname,
+        isPrivate: isPrivateChat(jid),
+        memory,
+        memoryContext,
+        kingdomContext
+      })
+    : null;
+  const aiReply = !ambientSocial && !romanceDecision && shouldUseOnlineAI(intent)
     ? await generateSamBotAIReply({
         userMessage: text,
         nickname,
@@ -444,12 +462,48 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
         kingdomContext
       })
     : "";
-  const reply = repeatedReply || aiReply || buildReply(intent, nickname, text);
+  const reply = repeatedReply || romanceDecision?.reply || aiReply || buildReply(intent, nickname, text);
+  const girlfriendMode = romanceDecision
+    ? buildGirlfriendModeState(romanceDecision)
+    : null;
 
-  await sock.sendMessage(jid, {
-    text: reply,
-    mentions: [sender]
-  });
+  let sentVoiceNote = false;
+  if (shouldSendRomanticVoice(romanceDecision) && isElevenLabsConfigured()) {
+    try {
+      const audioBuffer = await createRomanticVoiceNote(reply);
+      if (audioBuffer) {
+        await sock.sendMessage(jid, {
+          audio: audioBuffer,
+          mimetype: "audio/mpeg",
+          ptt: true
+        });
+        sentVoiceNote = true;
+      }
+    } catch (error) {
+      console.warn(`⚠️ Romantic voice delivery failed: ${error.message}`);
+    }
+  }
+
+  if (!sentVoiceNote) {
+    await sock.sendMessage(jid, {
+      text: reply,
+      mentions: [sender]
+    });
+  }
+
+  if (shouldSendRomanticGif(romanceDecision) && isGiphyConfigured()) {
+    try {
+      const gifUrl = await findRomanticGif(romanceDecision.media.query);
+      if (gifUrl) {
+        await sock.sendMessage(jid, {
+          video: { url: gifUrl },
+          gifPlayback: true
+        });
+      }
+    } catch (error) {
+      console.warn(`⚠️ Romantic GIF delivery failed: ${error.message}`);
+    }
+  }
 
   await rememberSamBotTurn({
     memory,
@@ -457,9 +511,10 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     userJid: sender,
     kingdomId: kingdom,
     nickname,
-    intent,
+    intent: romanceDecision?.mode === "girlfriend" ? `girlfriend_${romanceDecision.mood}` : intent,
     userMessage: text,
-    botReply: reply
+    botReply: reply,
+    girlfriendMode
   });
 
   return true;

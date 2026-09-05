@@ -29,6 +29,7 @@ function summarizeMemory(memory, nickname) {
   if (nickname) parts.push(`اسمه/لقبه: ${nickname}`);
   if (memory?.interactionCount > 0) parts.push(`تحدث مع البوت ${memory.interactionCount} مرة`);
   if (memory?.lastIntent) parts.push(`آخر نية: ${memory.lastIntent}`);
+  if (memory?.girlfriendMode?.active) parts.push(`وضع لطيف مستمر: ${memory.girlfriendMode.mood || "romantic"}`);
 
   const summary = parts.join("، ");
   return trimText(summary, SUMMARY_MAX_LENGTH);
@@ -69,6 +70,9 @@ export function buildSamBotMemoryContext(memory, nickname) {
 
   return [
     `memory: ${memory.summary || summarizeMemory(memory, nickname)}`,
+    memory.girlfriendMode?.active
+      ? `romance: active, mood=${memory.girlfriendMode.mood || "romantic"}, intensity=${Number(memory.girlfriendMode.intensity) || 1}`
+      : "romance: inactive",
     recent ? `recent:\n${recent}` : ""
   ].filter(Boolean).join("\n");
 }
@@ -94,7 +98,7 @@ export function getRepeatedSocialReply(memory, intent, nickname) {
   return "";
 }
 
-export async function rememberSamBotTurn({ memory, groupJid, userJid, kingdomId, nickname, intent, userMessage, botReply, mentionTargetJid = null }) {
+export async function rememberSamBotTurn({ memory, groupJid, userJid, kingdomId, nickname, intent, userMessage, botReply, mentionTargetJid = null, girlfriendMode = null }) {
   if (!groupJid || !userJid) return null;
 
   const target = memory || await getSamBotMemory({ groupJid, userJid, kingdomId, nickname });
@@ -107,6 +111,7 @@ export async function rememberSamBotTurn({ memory, groupJid, userJid, kingdomId,
   target.lastUserMessage = trimText(userMessage);
   target.lastBotReply = trimText(botReply);
   if (mentionTargetJid) target.lastMentionTargetJid = mentionTargetJid;
+  if (girlfriendMode) target.girlfriendMode = girlfriendMode;
   target.lastInteractionAt = new Date();
   target.summary = summarizeMemory(target, nickname || target.nickname);
 
