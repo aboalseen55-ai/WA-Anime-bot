@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const DEFAULT_MODEL = "eleven_multilingual_v2";
+const DEFAULT_OUTPUT_FORMAT = "opus_48000_32";
 
 export function isElevenLabsConfigured() {
   return Boolean(String(process.env.ELEVENLABS_API_KEY || "").trim() && String(process.env.ELEVENLABS_VOICE_ID || "").trim());
@@ -25,6 +26,9 @@ export async function createRomanticVoiceNote(text) {
         }
       },
       {
+        params: {
+          output_format: process.env.ELEVENLABS_OUTPUT_FORMAT || DEFAULT_OUTPUT_FORMAT
+        },
         responseType: "arraybuffer",
         timeout: 20000,
         headers: {
@@ -35,7 +39,12 @@ export async function createRomanticVoiceNote(text) {
       }
     );
 
-    return response.data?.byteLength ? Buffer.from(response.data) : null;
+    if (!response.data?.byteLength) return null;
+
+    return {
+      audio: Buffer.from(response.data),
+      mimetype: "audio/ogg; codecs=opus"
+    };
   } catch (error) {
     console.warn(`⚠️ ElevenLabs request failed: ${error.message}`);
     return null;

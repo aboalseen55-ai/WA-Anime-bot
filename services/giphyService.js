@@ -22,8 +22,10 @@ export async function findRomanticGif(query) {
       timeout: 12000
     });
 
+    // WhatsApp GIF playback expects a video stream. GIPHY exposes an MP4
+    // rendition for each result, which is more reliable than uploading GIF bytes.
     const options = (response.data?.data || [])
-      .map((gif) => gif.images?.fixed_height?.url || gif.images?.original?.url)
+      .map((gif) => gif.images?.fixed_height?.mp4 || gif.images?.original?.mp4)
       .filter((url) => /^https:\/\//i.test(String(url || "")));
 
     return options.length ? options[Math.floor(Math.random() * options.length)] : null;

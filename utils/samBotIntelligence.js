@@ -137,6 +137,21 @@ function isDirectedAtBot(sock, jid, msg, text) {
   return isPrivateChat(jid) || isReplyToBot(sock, msg) || mentionsBot(sock, msg) || hasBotName(text);
 }
 
+function getExplicitRomanceMediaRequest(text) {
+  const normalized = normalizeText(text);
+  const wantsGif = /\b(?:gif|giphy)\b|جيف|جف/.test(normalized);
+  const asksForVoice = /(?:ارسلي|ارسل|هات|هاتي|بدي|ابعت|ابعث|سجل|سجلي).{0,24}(?:صوت|فويس|رساله صوتيه|voice)/.test(normalized)
+    || /^(?:voice|فويس|رساله صوتيه)$/.test(normalized);
+
+  let gifQuery = "cute love reaction";
+  if (/kiss|بوس|قبله/.test(normalized)) gifQuery = "cute kiss reaction";
+  else if (/hug|حضن/.test(normalized)) gifQuery = "romantic hug reaction";
+  else if (/miss|اشتقت/.test(normalized)) gifQuery = "missing you reaction";
+  else if (/shy|خجل/.test(normalized)) gifQuery = "blushing shy reaction";
+
+  return { wantsGif, asksForVoice, gifQuery };
+}
+
 function isAmbientSocialMessage(text, intent) {
   if (!AMBIENT_SOCIAL_INTENTS.has(intent)) return false;
 
@@ -372,6 +387,7 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
   }
 
   const nickname = await getNickname(jid, sender, msg);
+  const explicitMediaRequest = getExplicitRomanceMediaRequest(text);
   const kingdom = getKingdomIdFromGroupJid(jid);
   const memory = await getSamBotMemory({
     groupJid: jid,
@@ -468,20 +484,24 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     : null;
 
   let sentVoiceNote = false;
-  if (shouldSendRomanticVoice(romanceDecision) && isElevenLabsConfigured()) {
+  const shouldSendVoice = explicitMediaRequest.asksForVoice || shouldSendRomanticVoice(romanceDecision);
+  if (shouldSendVoice && isElevenLabsConfigured()) {
     try {
-      const audioBuffer = await createRomanticVoiceNote(reply);
-      if (audioBuffer) {
+      const voiceNote = await createRomanticVoiceNote(reply);
+      if (voiceNote) {
         await sock.sendMessage(jid, {
-          audio: audioBuffer,
-          mimetype: "audio/mpeg",
+          audio: voiceNote.audio,
+          mimetype: voiceNote.mimetype,
           ptt: true
         });
         sentVoiceNote = true;
+        console.info("✅ Romantic voice note sent");
       }
     } catch (error) {
       console.warn(`⚠️ Romantic voice delivery failed: ${error.message}`);
     }
+  } else if (explicitMediaRequest.asksForVoice) {
+    console.warn("⚠️ Voice note requested but ElevenLabs is not configured");
   }
 
   if (!sentVoiceNote) {
@@ -491,18 +511,25 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     });
   }
 
-  if (shouldSendRomanticGif(romanceDecision) && isGiphyConfigured()) {
+  const shouldSendGif = explicitMediaRequest.wantsGif || shouldSendRomanticGif(romanceDecision);
+  if (shouldSendGif && isGiphyConfigured()) {
     try {
-      const gifUrl = await findRomanticGif(romanceDecision.media.query);
+      const gifUrl = await findRomanticGif(explicitMediaRequest.wantsGif
+        ? explicitMediaRequest.gifQuery
+        : romanceDecision.media.query);
       if (gifUrl) {
         await sock.sendMessage(jid, {
           video: { url: gifUrl },
-          gifPlayback: true
+          gifPlayback: true,
+          mimetype: "video/mp4"
         });
+        console.info("✅ Romantic GIF sent");
       }
     } catch (error) {
       console.warn(`⚠️ Romantic GIF delivery failed: ${error.message}`);
     }
+  } else if (explicitMediaRequest.wantsGif) {
+    console.warn("⚠️ GIF requested but GIPHY is not configured");
   }
 
   await rememberSamBotTurn({
