@@ -25,6 +25,7 @@ import { buildLevelUpMessage, trackChatActivity } from "../utils/xpSystem.js";
 import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
 import { extractReceptionOnboardingInfo, isReceptionGreetingOnly, resolveMainGroupInviteLink } from "../utils/receptionOnboarding.js";
 import { handleQuranCommand, isQuranCommand } from "../utils/quran.js";
+import { handleDashboardCommand } from "../services/dashboardRuntime.js";
 
 // نظام الحالات - لتتبع الأوامر المعلقة التي تحتاج تأكيد منشن
 export const pendingMentions = {};
@@ -859,6 +860,11 @@ export async function messageHandler(sock, msg) {
         await sock.sendMessage(jid, { text: `❌ الأمر غير معروف: ${trimmedText}` });
       }
     }
+    return;
+  }
+
+  // Dashboard commands run after the built-in menu entrypoints.
+  if (await handleDashboardCommand(sock, jid, sender, trimmedText, msg)) {
     return;
   }
 

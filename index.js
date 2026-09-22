@@ -16,6 +16,7 @@ import { scheduleDailyReports } from "./utils/dailyReports.js";
 import { scheduleDailyQuranReminders } from "./utils/quran.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
+import { startDashboardServer } from "./services/dashboardServer.js";
 
 // Connect to MongoDB with better error handling
 try {
@@ -108,6 +109,7 @@ let reconnectTimer = null;
 let stableConnectionTimer = null;
 let reconnectAttempts = 0;
 let isStartingBot = false;
+let whatsappConnectionState = "closed";
 
 const BASE_RECONNECT_DELAY_MS = 5000;
 const MAX_RECONNECT_DELAY_MS = 60000;
@@ -117,6 +119,13 @@ const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || "auth";
 const AUTH_RESET_MARKER_FILE = ".auth-reset-token";
 const DEFAULT_WHATSAPP_WEB_VERSION = [2, 3000, 1043857760];
 const WHATSAPP_VERSION_FETCH_TIMEOUT_MS = 10000;
+
+startDashboardServer({
+  getBotStatus: () => ({
+    connected: whatsappConnectionState === "open" && Boolean(activeSock),
+    connection: whatsappConnectionState
+  })
+});
 
 function getDisconnectStatusCode(error) {
   return error?.output?.statusCode || error?.statusCode || error?.data?.statusCode || null;
@@ -246,6 +255,8 @@ async function startBot() {
 
   sock.ev.on("connection.update", async ({ qr, connection, lastDisconnect }) => {
 
+    if (connection) whatsappConnectionState = connection;
+
     if (qr) {
       console.log("\n📱 امسح QR من واتساب:\n");
       qrcode.generate(qr, {
@@ -291,6 +302,7 @@ async function startBot() {
     if (connection === "close") {
       isStartingBot = false;
       if (activeSock === sock) activeSock = null;
+      whatsappConnectionState = "close";
       if (stableConnectionTimer) {
         clearTimeout(stableConnectionTimer);
         stableConnectionTimer = null;
@@ -412,6 +424,7 @@ async function startBot() {
   } catch (error) {
     isStartingBot = false;
     activeSock = null;
+    whatsappConnectionState = "close";
     console.error("❌ فشل بدء اتصال واتساب:", error.message);
     scheduleReconnect();
   }
