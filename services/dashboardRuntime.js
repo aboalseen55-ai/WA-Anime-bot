@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getUrlInfo, generateWAMessage, proto } from '@whiskeysockets/baileys';
 import { publicHttpsAgent } from './dashboardApiSafety.js';
 import { isReservedCommand } from './dashboardData.js';
 import DashboardCommand from "../database/dashboardCommandModel.js";
@@ -77,6 +78,28 @@ export async function runConfiguredApi(api, variables) {
   } finally { agent.destroy(); }
 }
 
+export async function youtubeReplyPreview(reply, data, fetchThumbnail = async url => {
+  const agent = await publicHttpsAgent(url);
+  try {
+    const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 5000,
+      maxRedirects: 0, proxy: false, httpsAgent: agent, maxContentLength: 512 * 1024 });
+    const bytes = Buffer.from(response.data);
+    return bytes[0] === 0xff && bytes[1] === 0xd8 ? bytes : undefined;
+  } finally { agent.destroy(); }
+}) {
+  const id = /https:\/\/www\.youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})(?=$|[\s&#])/.exec(reply)?.[1];
+  const video = id && Array.isArray(data?.videos) && data.videos.find(item => item.video_id === id);
+  if (!video) return undefined;
+  const url = `https://www.youtube.com/watch?v=${id}`;
+  const preview = { 'canonical-url': url, 'matched-text': url,
+    title: String(video.title || 'YouTube').slice(0, 250),
+    description: [video.author, video.video_length].filter(Boolean).join(' | ').slice(0, 300) };
+  // A failed thumbnail must not prevent delivery of the search result.
+  try { preview.jpegThumbnail = await fetchThumbnail(`https://i.ytimg.com/vi/${id}/hqdefault.jpg`); }
+  catch { /* Keep the title and link when the image is unavailable. */ }
+  return preview;
+}
+
 export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   if (!String(text || "").startsWith("/")) return false;
   const trigger = String(text).trim().split(/\s+/)[0].toLowerCase();
@@ -112,10 +135,27 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
       if (!/^https:\/\//i.test(String(mediaUrl || ''))) throw new Error('نتيجة الوسائط ليست رابط HTTPS');
       const mediaType = apiResult.responseType.replace('_url','');
       await sock.sendMessage(jid, { [mediaType]: { url: mediaUrl }, ...(mediaType === 'audio' ? { mimetype: 'audio/mpeg', ptt: true } : { caption: reply || undefined }) });
-    } else if (apiResult?.responseType !== "text") {
+    } else if (apiResult && apiResult.responseType !== "text") {
       const payload = apiResult.data;
       await sock.sendMessage(jid, { [apiResult.responseType]: Buffer.isBuffer(payload) ? payload : Buffer.from(payload), caption: reply || undefined });
-    } else await sock.sendMessage(jid, { text: reply });
+    } else {
+      const videoUrl = /https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}(?=$|[\s&#])/.exec(reply)?.[0];
+      if (videoUrl && sock.relayMessage && sock.user?.id) {
+        let linkPreview;
+        try {
+          linkPreview = await getUrlInfo(videoUrl, {
+            thumbnailWidth: 192, fetchOpts: { timeout: 5000 },
+            uploadImage: sock.waUploadToServer
+          });
+        } catch { /* Search metadata remains available if the page cannot be fetched. */ }
+        linkPreview ||= await youtubeReplyPreview(reply, rawData);
+        if (linkPreview) {
+          const message = await generateWAMessage(jid, { text: reply, linkPreview }, { userJid: sock.user.id });
+          message.message.extendedTextMessage.previewType = proto.Message.ExtendedTextMessage.PreviewType.VIDEO;
+          await sock.relayMessage(jid, message.message, { messageId: message.key.id });
+        } else await sock.sendMessage(jid, { text: reply });
+      } else await sock.sendMessage(jid, { text: reply });
+    }
   } catch (error) {
     console.warn(`⚠️ Dashboard command ${command.trigger} failed: ${error.message}`);
     await sock.sendMessage(jid, { text: "تعذر تنفيذ الأمر الآن." });

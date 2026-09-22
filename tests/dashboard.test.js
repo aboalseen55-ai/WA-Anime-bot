@@ -13,6 +13,19 @@ import Audit from '../database/kingdomAuditLogModel.js';
 import Kingdom from '../database/kingdomModel.js';
 import User from '../database/userModel.js';
 import { decryptDashboardValue } from '../services/dashboardCrypto.js';
+import { handleDashboardCommand } from '../services/dashboardRuntime.js';
+
+test('custom text commands without a service send the personalized reply', async t => {
+  t.mock.method(Command, 'findOne', () => ({ populate: async () => ({
+    trigger: '/custom_text_test', permission: 'everyone', apiId: null,
+    responseTemplate: 'Hello {name}', responsePath: ''
+  }) }));
+  const sent = [];
+  const handled = await handleDashboardCommand({ sendMessage: async (jid, content) => sent.push({ jid, content }) },
+    '123@s.whatsapp.net', '123@s.whatsapp.net', '/custom_text_test', { pushName: 'Sam' });
+  assert.equal(handled, true);
+  assert.deepEqual(sent, [{ jid: '123@s.whatsapp.net', content: { text: 'Hello Sam' } }]);
+});
 
 const chain = value => { const result={lean:async()=>value};for(const key of ['sort','limit','select','skip'])result[key]=()=>result;return result; };
 
