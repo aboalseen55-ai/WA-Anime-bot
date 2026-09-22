@@ -99,7 +99,13 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
       if (route === 'apis/test' && req.method === 'POST') {
         if (!isDashboardEncryptionConfigured()) throw new Error('مفتاح تشفير الخدمات غير مضبوط');
         const body = await readJson(req);
-        const api = validateApi({ ...body, name: String(body.name || 'اختبار'), enabled: true });
+        const saved = body.apiId && /^[a-f0-9]{24}$/i.test(String(body.apiId)) ? await DashboardApi.findById(body.apiId).lean() : null;
+        const input = { ...(saved || {}), ...body, name: String(body.name || saved?.name || 'اختبار'), enabled: true };
+        if (!Object.hasOwn(body, 'headers') && saved?.encryptedHeaders) input.encryptedHeaders = saved.encryptedHeaders;
+        if (!Object.hasOwn(body, 'body') && saved?.encryptedBody) input.encryptedBody = saved.encryptedBody;
+        const api = validateApi(input);
+        if (input.encryptedHeaders && !api.encryptedHeaders) api.encryptedHeaders = input.encryptedHeaders;
+        if (input.encryptedBody && !api.encryptedBody) api.encryptedBody = input.encryptedBody;
         const result = await runConfiguredApi(api, { query: String(body.testQuery || 'test'), args: String(body.testQuery || 'test').split(/\s+/).filter(Boolean) });
         const raw = ['text', 'image_url', 'video_url', 'audio_url'].includes(result.responseType) ? result.data : null;
         const selected = body.testPath ? readDashboardPath(raw, String(body.testPath)) : raw;
@@ -149,7 +155,8 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
       return json(res,404,{error:'غير موجود'});
     } catch(error) {
       if(error.name!=='Error') console.warn('Dashboard request failed:',error.name);
-      json(res,400,{error:error.code===11000?'الاسم أو الأمر مستخدم بالفعل':error.name==='Error'?error.message:'تعذر حفظ البيانات؛ تحقق من الحقول وحاول مجددًا'});
+      const isApiTest = req.url?.includes('/dashboard/api/apis/test');
+      json(res,400,{error:error.code===11000?'الاسم أو الأمر مستخدم بالفعل':(isApiTest ? (error.response?.status ? `فشل الطلب من الخدمة (HTTP ${error.response.status})` : error.message || 'فشل اختبار الخدمة') : error.name==='Error'?error.message:'تعذر حفظ البيانات؛ تحقق من الحقول وحاول مجددًا')});
     }
   };
 }
