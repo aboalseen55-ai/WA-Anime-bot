@@ -8,6 +8,7 @@ import { encryptDashboardValue, isDashboardEncryptionConfigured } from './dashbo
 import { dashboardRead, dashboardWrite, isReservedCommand, audit } from './dashboardData.js';
 import { TEMPLATE_DEFINITIONS, validateTemplate, refreshDashboardTemplates } from './dashboardTemplates.js';
 import { validateEndpoint } from './dashboardApiSafety.js';
+import { runConfiguredApi, readDashboardPath } from './dashboardRuntime.js';
 
 const assets = new Map([
   ['/dashboard', ['../dashboard/index.html', 'text/html']],
@@ -94,6 +95,20 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
         json(res,202,{ok:true,message:'سيُعاد تشغيل البوت الآن'});
         setTimeout(() => process.exit(0), 250);
         return;
+      }
+      if (route === 'apis/test' && req.method === 'POST') {
+        if (!isDashboardEncryptionConfigured()) throw new Error('مفتاح تشفير الخدمات غير مضبوط');
+        const body = await readJson(req);
+        const api = validateApi({ ...body, name: String(body.name || 'اختبار'), enabled: true });
+        const result = await runConfiguredApi(api, { query: String(body.testQuery || 'test'), args: String(body.testQuery || 'test').split(/\s+/).filter(Boolean) });
+        const raw = ['text', 'image_url', 'video_url', 'audio_url'].includes(result.responseType) ? result.data : null;
+        const selected = body.testPath ? readDashboardPath(raw, String(body.testPath)) : raw;
+        const preview = Buffer.isBuffer(result.data)
+          ? { kind: 'binary', bytes: result.data.length }
+          : (typeof selected === 'string' || typeof selected === 'number' || typeof selected === 'boolean' || selected == null
+            ? selected
+            : JSON.parse(JSON.stringify(selected).slice(0, 6000)));
+        return json(res, 200, { ok: true, responseType: result.responseType, preview, path: String(body.testPath || '') });
       }
       if (req.method === 'GET') {
         if (route === 'groups') return json(res,200,{groups:getGroups?await getGroups():[]});

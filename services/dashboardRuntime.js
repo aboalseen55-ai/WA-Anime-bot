@@ -16,7 +16,7 @@ function isDeveloper(jid) {
   return DEVELOPER_JIDS.some((developer) => normalizeJid(developer).split("@")[0] === user);
 }
 
-function readPath(value, path) {
+export function readDashboardPath(value, path) {
   if (!path) return value;
   if (path.split('.').some(key => ['__proto__', 'prototype', 'constructor'].includes(key))) throw new Error('مسار غير صالح');
   return path.split(".").filter(Boolean).reduce((current, key) => current?.[key], value);
@@ -44,7 +44,7 @@ function interpolate(value, variables) {
   return value;
 }
 
-async function runConfiguredApi(api, variables) {
+export async function runConfiguredApi(api, variables) {
   if (!api?.enabled) throw new Error("واجهة API غير مفعلة");
   const endpoint = new URL(interpolate(api.endpoint, variables));
   if (api.queryTemplate) for (const [key, value] of new URLSearchParams(interpolate(api.queryTemplate, variables))) endpoint.searchParams.set(key, value);
@@ -93,7 +93,7 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   try {
     const apiResult = command.apiId ? await runConfiguredApi(command.apiId, { query, args }) : null;
     const rawData = ["text", "image_url", "video_url", "audio_url"].includes(apiResult?.responseType) ? apiResult.data : null;
-    const apiValue = readPath(rawData, command.responsePath);
+    const apiValue = readDashboardPath(rawData, command.responsePath);
     const reply = applyTemplate(command.responseTemplate || "تم التنفيذ.", {
       sender,
       pushName: msg.pushName,
