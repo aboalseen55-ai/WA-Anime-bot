@@ -5,6 +5,8 @@ import mongoose from 'mongoose';
 import { translate } from '@vitalets/google-translate-api';
 import ImageSearchCache from '../database/imageSearchCacheModel.js';
 import RapidImageSearchUsage from '../database/rapidImageSearchUsageModel.js';
+import DashboardApi from '../database/dashboardApiModel.js';
+import { decryptDashboardValue } from '../services/dashboardCrypto.js';
 
 // الصيغ المقبولة للصور
 const ACCEPTED_IMAGE_FORMATS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
@@ -427,6 +429,35 @@ async function searchRapidGoogleImages(nickname) {
     }
 }
 
+export function realTimeAnimeThumbnails(data) {
+    if (!Array.isArray(data?.data)) return [];
+    return getAnimeImageUrls(data.data.map(item => ({
+        url: typeof item.thumbnail_url === 'string' && item.thumbnail_url.startsWith('https://') ? item.thumbnail_url : '',
+        context: [item.title, item.source, item.source_url].filter(Boolean).join(' ')
+    })));
+}
+
+async function searchRealTimeImages(nickname) {
+    try {
+        if (mongoose.connection.readyState !== 1) return [];
+        const service = await DashboardApi.findOne({
+            enabled: true,
+            endpoint: /^https:\/\/real-time-image-search\.p\.rapidapi\.com(?:\/|$)/i
+        }).lean();
+        if (!service) return [];
+        const headers = decryptDashboardValue(service.encryptedHeaders) || {};
+        const response = await axios.get('https://real-time-image-search.p.rapidapi.com/search', {
+            headers, timeout: 22000, maxRedirects: 0, maxContentLength: 1024 * 1024,
+            params: { query: buildSearchQuery(nickname), limit: 10, size: 'large',
+                type: 'any', file_type: 'jpg', safe_search: 'on', region: 'us' }
+        });
+        return realTimeAnimeThumbnails(response.data);
+    } catch (error) {
+        console.warn('Real-time welcome image search failed; using fallback:', error.code || error.name);
+        return [];
+    }
+}
+
 async function searchBingImageUrls(nickname) {
     console.log(`🔍 جاري البحث عن صور "${nickname}" في Bing Images...`);
 
@@ -545,7 +576,7 @@ export async function getCharacterImages(nickname, options = {}) {
 
         const cleanNickname = nickname.trim();
         const searchQuery = String(options.searchQuery || cleanNickname).trim();
-        const cacheKey = normalizeCacheKey(`anime-character-v4:${cleanNickname}:${searchQuery}`);
+        const cacheKey = normalizeCacheKey(`anime-character-v5:${cleanNickname}:${searchQuery}`);
         const cachedUrls = await getCachedImageUrls(cacheKey);
 
         if (cachedUrls.length) {
@@ -556,6 +587,14 @@ export async function getCharacterImages(nickname, options = {}) {
         }
 
         if (allowsUnverifiedWebFallback()) {
+            const primaryUrls = await searchRealTimeImages(searchQuery);
+            if (primaryUrls.length) {
+                const primaryBuffers = await imageUrlsToJpegBuffers(primaryUrls);
+                if (primaryBuffers.length) {
+                    await saveImageUrlCache(cacheKey, searchQuery, 'real-time-image-search', primaryUrls);
+                    return primaryBuffers;
+                }
+            }
             const rapidUrls = await searchRapidGoogleImages(searchQuery);
             if (rapidUrls.length) {
                 await saveImageUrlCache(cacheKey, searchQuery, 'rapidapi-google-images', rapidUrls);
