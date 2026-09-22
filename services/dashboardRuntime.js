@@ -28,6 +28,12 @@ function stringifyApiResult(value) {
   return JSON.stringify(value).slice(0, 2500);
 }
 
+function normalizeMediaUrl(value) {
+  const text = String(value || '').trim();
+  const markdown = text.match(/^\[https?:\/\/[^\]]+\]\((https?:\/\/[^)]+)\)$/i);
+  return markdown?.[1] || text;
+}
+
 function applyTemplate(template, { sender, pushName, apiValue, query, args }) {
   return String(template || "")
     .replaceAll("{name}", pushName || "صديقي")
@@ -102,7 +108,7 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
       args
     });
     if (["image_url", "video_url", "audio_url"].includes(apiResult?.responseType)) {
-      const mediaUrl = typeof apiResult.data === 'string' ? apiResult.data : apiValue;
+      const mediaUrl = normalizeMediaUrl(typeof apiResult.data === 'string' ? apiResult.data : apiValue);
       if (!/^https:\/\//i.test(String(mediaUrl || ''))) throw new Error('نتيجة الوسائط ليست رابط HTTPS');
       const mediaType = apiResult.responseType.replace('_url','');
       await sock.sendMessage(jid, { [mediaType]: { url: mediaUrl }, ...(mediaType === 'audio' ? { mimetype: 'audio/mpeg', ptt: true } : { caption: reply || undefined }) });
