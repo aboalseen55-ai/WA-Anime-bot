@@ -38,7 +38,8 @@ test('custom commands cannot shadow originals or access prototypes',()=>{
   assert.equal(validateCommand({trigger:'/new_custom_test',title:'x',permission:'developer'}).permission,'developer');
 });
 test('API edits preserve omitted secrets and reject private destinations',()=>{
-  const result=validateApi({name:'demo',endpoint:'https://example.com/',method:'GET'});
+  const result=validateApi({name:'demo',endpoint:'https://example.com/',method:'GET',responseType:'video_url',queryTemplate:'q={query}'});
+  assert.equal(result.responseType,'video_url');assert.equal(result.queryTemplate,'q={query}');
   assert.ok(!Object.hasOwn(result,'encryptedHeaders'));assert.ok(!Object.hasOwn(result,'encryptedBody'));
   for(const ip of ['127.0.0.1','10.0.0.1','169.254.169.254','192.168.1.1','::1','::ffff:127.0.0.1','fc00::1'])assert.equal(isPublicAddress(ip),false,ip);
   assert.equal(isPublicAddress('8.8.8.8'),true);

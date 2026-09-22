@@ -28,19 +28,29 @@ function stringifyApiResult(value) {
   return JSON.stringify(value).slice(0, 2500);
 }
 
-function applyTemplate(template, { sender, pushName, apiValue }) {
+function applyTemplate(template, { sender, pushName, apiValue, query, args }) {
   return String(template || "")
     .replaceAll("{name}", pushName || "صديقي")
     .replaceAll("{jid}", sender || "")
+    .replaceAll("{query}", query || "")
+    .replaceAll("{args}", args || "")
     .replaceAll("{api}", stringifyApiResult(apiValue));
 }
 
-async function runConfiguredApi(api) {
+function interpolate(value, variables) {
+  if (typeof value === "string") return value.replace(/\{(query|args|arg(\d+))\}/g, (_, key, index) => key === "query" || key === "args" ? variables[key] || "" : variables.args?.[Number(index) - 1] || "");
+  if (Array.isArray(value)) return value.map(item => interpolate(item, variables));
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, interpolate(item, variables)]));
+  return value;
+}
+
+async function runConfiguredApi(api, variables) {
   if (!api?.enabled) throw new Error("واجهة API غير مفعلة");
-  const endpoint = new URL(api.endpoint);
+  const endpoint = new URL(interpolate(api.endpoint, variables));
+  if (api.queryTemplate) for (const [key, value] of new URLSearchParams(interpolate(api.queryTemplate, variables))) endpoint.searchParams.set(key, value);
   if (endpoint.protocol !== "https:") throw new Error("يسمح فقط بروابط HTTPS");
   const headers = decryptDashboardValue(api.encryptedHeaders) || {};
-  const data = decryptDashboardValue(api.encryptedBody) || undefined;
+  const data = interpolate(decryptDashboardValue(api.encryptedBody) || undefined, variables);
   const agent = await publicHttpsAgent(endpoint.toString());
   try {
   const response = await axios({
@@ -54,15 +64,18 @@ async function runConfiguredApi(api) {
     httpsAgent: agent,
     maxContentLength: 1024 * 1024,
     maxBodyLength: 120000,
+    responseType: ["text", "image_url", "video_url", "audio_url"].includes(api.responseType) ? "json" : "arraybuffer",
     validateStatus: (status) => status >= 200 && status < 300
   });
-  return response.data;
+  return { data: response.data, responseType: api.responseType };
   } finally { agent.destroy(); }
 }
 
 export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   if (!String(text || "").startsWith("/")) return false;
   const trigger = String(text).trim().split(/\s+/)[0].toLowerCase();
+  const args = String(text).trim().split(/\s+/).slice(1);
+  const query = args.join(" ");
   if (isReservedCommand(trigger)) return false;
   const command = await DashboardCommand.findOne({ trigger, enabled: true }).populate("apiId");
   if (!command) return false;
@@ -78,14 +91,25 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   }
 
   try {
-    const apiData = command.apiId ? await runConfiguredApi(command.apiId) : null;
-    const apiValue = readPath(apiData, command.responsePath);
+    const apiResult = command.apiId ? await runConfiguredApi(command.apiId, { query, args }) : null;
+    const rawData = ["text", "image_url", "video_url", "audio_url"].includes(apiResult?.responseType) ? apiResult.data : null;
+    const apiValue = readPath(rawData, command.responsePath);
     const reply = applyTemplate(command.responseTemplate || "تم التنفيذ.", {
       sender,
       pushName: msg.pushName,
-      apiValue
+      apiValue,
+      query,
+      args
     });
-    await sock.sendMessage(jid, { text: reply });
+    if (["image_url", "video_url", "audio_url"].includes(apiResult?.responseType)) {
+      const mediaUrl = typeof apiResult.data === 'string' ? apiResult.data : apiValue;
+      if (!/^https:\/\//i.test(String(mediaUrl || ''))) throw new Error('نتيجة الوسائط ليست رابط HTTPS');
+      const mediaType = apiResult.responseType.replace('_url','');
+      await sock.sendMessage(jid, { [mediaType]: { url: mediaUrl }, ...(mediaType === 'audio' ? { mimetype: 'audio/mpeg', ptt: true } : { caption: reply || undefined }) });
+    } else if (apiResult?.responseType !== "text") {
+      const payload = apiResult.data;
+      await sock.sendMessage(jid, { [apiResult.responseType]: Buffer.isBuffer(payload) ? payload : Buffer.from(payload), caption: reply || undefined });
+    } else await sock.sendMessage(jid, { text: reply });
   } catch (error) {
     console.warn(`⚠️ Dashboard command ${command.trigger} failed: ${error.message}`);
     await sock.sendMessage(jid, { text: "تعذر تنفيذ الأمر الآن." });

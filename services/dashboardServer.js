@@ -44,7 +44,8 @@ export function validateApi(input) {
   const name = String(input.name || '').trim();
   if (!name || name.length > 80) throw new Error('اسم الخدمة مطلوب وبحد أقصى 80 حرف');
   if (!['GET','POST'].includes(input.method)) throw new Error('طريقة الطلب غير صالحة');
-  const result = { name, endpoint, method: input.method, timeoutMs: Math.max(1000, Math.min(30000, Number(input.timeoutMs) || 12000)), enabled: input.enabled !== false };
+  const result = { name, endpoint, queryTemplate: String(input.queryTemplate || '').trim(), method: input.method, responseType: input.responseType || 'text', timeoutMs: Math.max(1000, Math.min(30000, Number(input.timeoutMs) || 12000)), enabled: input.enabled !== false };
+  if (!['text','image','image_url','video','video_url','audio','audio_url'].includes(result.responseType)) throw new Error('نوع النتيجة غير صالح');
   for (const [field, destination] of [['headers','encryptedHeaders'],['body','encryptedBody']]) {
     if (Object.hasOwn(input, field)) {
       if (!input[field] || typeof input[field] !== 'object' || Array.isArray(input[field])) throw new Error('الحقول المتقدمة يجب أن تكون JSON object');
