@@ -90,6 +90,11 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
       if (!session) return json(res,401,{error:'يلزم تسجيل الدخول'});
       if (req.method !== 'GET' && req.headers['x-dashboard-csrf'] !== session.csrf) return json(res,403,{error:'انتهت صلاحية الطلب؛ حدّث الصفحة'});
       if (route === 'logout' && req.method === 'POST') { sessions.delete(id); res.setHeader('Set-Cookie','sam_dashboard_session=; Path=/dashboard; HttpOnly; Secure; SameSite=Strict; Max-Age=0'); return json(res,200,{ok:true}); }
+      if (route === 'restart' && req.method === 'POST') {
+        json(res,202,{ok:true,message:'سيُعاد تشغيل البوت الآن'});
+        setTimeout(() => process.exit(0), 250);
+        return;
+      }
       if (req.method === 'GET') {
         if (route === 'groups') return json(res,200,{groups:getGroups?await getGroups():[]});
         if (route === 'state') {

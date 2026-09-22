@@ -165,6 +165,7 @@ function navigate(next){section=Object.hasOwn(labels,next)?next:'overview';page=
 Object.entries(labels).forEach(([key,label])=>{const link=e('a',undefined,'nav-link');link.href='#'+key;link.dataset.section=key;link.append(icon(icons[key]),e('span',label));link.addEventListener('click',event=>{event.preventDefault();navigate(key)});$('navigation').append(link)});
 $('loginForm').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;$('loginNotice').textContent='';try{csrf=(await request('login','POST',{password:$('password').value})).csrf;await bootstrap();}catch(error){$('loginNotice').textContent=error.message;}finally{submit.disabled=false;}});
 $('logout').addEventListener('click',()=>request('logout','POST').finally(()=>location.reload()));
+$('restart').addEventListener('click',async()=>{if(!confirm('سيتم قطع اتصال واتساب لحظيًا وإعادة تشغيل البوت. هل تريد المتابعة؟'))return;try{await request('restart','POST');toast('بدأت إعادة التشغيل؛ انتظر عودة البوت.');}catch(error){showError(error);}});
 $('refresh').addEventListener('click',()=>{templates=[];bootstrap().catch(showError)});
 $('scope').addEventListener('change',()=>{page=1;load().catch(showError)});
 $('closeEditor').addEventListener('click',()=>$('editor').close());$('cancelEditor').addEventListener('click',()=>$('editor').close());

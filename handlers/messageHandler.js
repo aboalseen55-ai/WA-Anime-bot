@@ -847,6 +847,11 @@ export async function messageHandler(sock, msg) {
   if (trimmedText.startsWith("/")) {
     console.log(`📥 [CMD] ${sender} -> ${trimmedText}`);
 
+    // Dashboard commands must run before the built-in unknown-command fallback.
+    if (await handleDashboardCommand(sock, jid, sender, trimmedText, msg)) {
+      return;
+    }
+
     if (isQuranCommand(trimmedText)) {
       await handleQuranCommand(sock, jid, trimmedText);
       return;
@@ -861,11 +866,6 @@ export async function messageHandler(sock, msg) {
         await sock.sendMessage(jid, { text: dashboardReply('reply_e760c62a7333ac5c')`❌ الأمر غير معروف: ${trimmedText}` });
       }
     }
-    return;
-  }
-
-  // Dashboard commands run after the built-in menu entrypoints.
-  if (await handleDashboardCommand(sock, jid, sender, trimmedText, msg)) {
     return;
   }
 
