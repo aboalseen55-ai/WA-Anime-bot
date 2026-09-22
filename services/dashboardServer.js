@@ -3,6 +3,7 @@ import crypto from "crypto";
 import DashboardCommand from "../database/dashboardCommandModel.js";
 import DashboardApi from "../database/dashboardApiModel.js";
 import { encryptDashboardValue, isDashboardEncryptionConfigured } from "./dashboardCrypto.js";
+import { DASHBOARD_THEME } from "./dashboardTheme.js";
 
 const sessions = new Map();
 const loginAttempts = new Map();
@@ -113,7 +114,16 @@ export function startDashboardServer({ getBotStatus }) {
     if (!getBotStatus().connected) { json(response, 503, { error: "البوت غير متصل بواتساب، اللوحة غير متاحة حالياً." }); return; }
     if (!password) { json(response, 503, { error: "DASHBOARD_ADMIN_PASSWORD غير مضبوط." }); return; }
     try {
-      if (url.pathname === "/dashboard" && request.method === "GET") { response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" }); response.end(dashboardHtml()); return; }
+      if (url.pathname === "/dashboard" && request.method === "GET") {
+        const bootstrap = "document.getElementById('loginButton').addEventListener('click', login); document.getElementById('password').addEventListener('keydown', event => { if (event.key === 'Enter') login(); });";
+        const page = dashboardHtml()
+          .replace('<button onclick="login()">', '<button id="loginButton" type="button">')
+          .replace("</style>", `${DASHBOARD_THEME}</style>`)
+          .replace("</script>", `${bootstrap}</script>`);
+        response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        response.end(page);
+        return;
+      }
       if (url.pathname === "/dashboard/api/login" && request.method === "POST") {
         const ip = getClientIp(request); const attempts = loginAttempts.get(ip) || { count: 0, startedAt: Date.now() };
         if (Date.now() - attempts.startedAt > LOGIN_WINDOW_MS) { attempts.count = 0; attempts.startedAt = Date.now(); }
