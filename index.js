@@ -133,6 +133,14 @@ startDashboardServer({
       scheduleDailyReports(activeSock);
       scheduleDailyQuranReminders(activeSock);
     }
+  },
+  onRestart: async () => {
+    if (activeSock?.ws?.close) {
+      console.log('🔄 إعادة تهيئة اتصال واتساب من لوحة التحكم...');
+      activeSock.ws.close();
+    } else {
+      startBot();
+    }
   }
 });
 

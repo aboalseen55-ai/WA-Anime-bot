@@ -56,7 +56,7 @@ export function validateApi(input) {
   return result;
 }
 
-export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChange, password = process.env.DASHBOARD_ADMIN_PASSWORD || '' }) {
+export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChange, onRestart, password = process.env.DASHBOARD_ADMIN_PASSWORD || '' }) {
   const sessions = new Map(), attempts = new Map();
   return async (req, res) => {
     res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('X-Frame-Options','DENY'); res.setHeader('Referrer-Policy','no-referrer');
@@ -93,7 +93,9 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
       if (route === 'logout' && req.method === 'POST') { sessions.delete(id); res.setHeader('Set-Cookie','sam_dashboard_session=; Path=/dashboard; HttpOnly; Secure; SameSite=Strict; Max-Age=0'); return json(res,200,{ok:true}); }
       if (route === 'restart' && req.method === 'POST') {
         json(res,202,{ok:true,message:'سيُعاد تشغيل البوت الآن'});
-        setTimeout(() => process.exit(0), 250);
+        setTimeout(async () => {
+          try { await onRestart?.(); } catch (error) { console.warn('Dashboard restart failed:', error.message); }
+        }, 250);
         return;
       }
       if (route === 'apis/test' && req.method === 'POST') {
