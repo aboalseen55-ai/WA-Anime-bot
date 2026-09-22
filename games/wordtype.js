@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import { getWords } from "../utils/wordList.js";
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
@@ -38,13 +39,13 @@ async function startNewRound(sock, jid) {
   }
 
   await sock.sendMessage(jid, {
-    text: `📝 الجولة ${game.round}\nاكتب الكلمة التالية بشكل صحيح: *${randomWord}*\nلديك 3 محاولات.`,
+    text: dashboardReply('reply_be60995ea2ceb39c')`📝 الجولة ${game.round}\nاكتب الكلمة التالية بشكل صحيح: *${randomWord}*\nلديك 3 محاولات.`,
   });
 }
 
 // دالة لعرض شرح اللعبة
 async function showGameExplanation(sock, jid) {
-  const explanation = `
+  const explanation = dashboardReply('reply_de89c93a1374b143')`
 ╔════════════════════════════════════╗
 ║  📝 شرح لعبة كتابة الكلمات          ║
 ╚════════════════════════════════════╝
@@ -95,20 +96,20 @@ async function showGameExplanation(sock, jid) {
 
 export async function startWordGame(sock, jid) {
   if (wordGameWaiting[jid] || activeWordGames[jid]) {
-    await sock.sendMessage(jid, { text: "🎮 هناك لعبة تعمل حالياً!" });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_7dc4c909432b3ab7')(["🎮 هناك لعبة تعمل حالياً!"]) });
     return;
   }
 
   // إرسال خيارات النمط
   await sock.sendMessage(jid, {
-    text: `🎮 اختر نوع لعبة كتابة الكلمات:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.\n📌 لإيقاف اللعبة استخدم الأمر /وقف` 
+    text: dashboardReply('reply_2d7b543ae487f97c')`🎮 اختر نوع لعبة كتابة الكلمات:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.\n📌 لإيقاف اللعبة استخدم الأمر /وقف`
   });
 
   // وضع حالة انتظار اختيار النمط
   wordGameWaiting[jid] = {
     state: 'waiting_for_mode',
     timeout: setTimeout(async () => {
-      await sock.sendMessage(jid, { text: "⏱ انتهى وقت اختيار النمط!" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_702c6b9a97a81691')(["⏱ انتهى وقت اختيار النمط!"]) });
       delete wordGameWaiting[jid];
     }, 30000)
   };
@@ -126,7 +127,7 @@ export async function handleWordGameModeSelection(sock, jid, sender, text) {
   if (!userIsModerator) {
     clearTimeout(waiting.timeout);
     delete wordGameWaiting[jid];
-    await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_ffc4c7b1a2358f9a')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
     return;
   }
 
@@ -141,14 +142,14 @@ export async function handleWordGameModeSelection(sock, jid, sender, text) {
   } else if (choice === '2') {
     // بين شخصين
     await sock.sendMessage(jid, {
-      text: `👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):`
+      text: dashboardReply('reply_7ec1b43bc29dcdab')`👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):`
     });
 
     wordGameWaiting[jid] = {
       sender: sender,
       mode: 'two_players',
       timeout: setTimeout(async () => {
-        await sock.sendMessage(jid, { text: "⏱ انتهى وقت اختيار المشاركين!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_70483532c8260a3f')(["⏱ انتهى وقت اختيار المشاركين!"]) });
         delete wordGameWaiting[jid];
       }, 30000)
     };
@@ -158,7 +159,7 @@ export async function handleWordGameModeSelection(sock, jid, sender, text) {
     // إعادة عرض القائمة للبداية من جديد
     await startWordGame(sock, jid);
   } else {
-    await sock.sendMessage(jid, { text: "❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_8f557cc52dc6c71e')(["❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط."]) });
   }
 }
 
@@ -174,7 +175,7 @@ export async function handleWordGamePlayersSelection(sock, jid, sender, text) {
   if (!userIsModerator) {
     clearTimeout(waiting.timeout);
     delete wordGameWaiting[jid];
-    await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_ffc4c7b1a2358f9a')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
     return;
   }
 
@@ -184,20 +185,20 @@ export async function handleWordGamePlayersSelection(sock, jid, sender, text) {
     // اختيار اللاعب الأول
     const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' } });
     if (!user) {
-      await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_a0e3c9c10d1d510c')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
       return;
     }
     waiting.player1 = user.jid;
-    await sock.sendMessage(jid, { text: '👤 أرسل اسم اللاعب الثاني (اللقب):' });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_5c93b6aee2221f82')(['👤 أرسل اسم اللاعب الثاني (اللقب):']) });
   } else {
     // اختيار اللاعب الثاني
     const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' } });
     if (!user) {
-      await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_a0e3c9c10d1d510c')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
       return;
     }
     if (user.jid === waiting.player1) {
-      await sock.sendMessage(jid, { text: '❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_ad0f073855e7e473')(['❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:']) });
       return;
     }
     const players = [waiting.player1, user.jid];
@@ -236,7 +237,7 @@ async function startActualWordGame(sock, jid, players) {
     : '\n👥 جميع الأعضاء مدعوون للمشاركة';
   
   await sock.sendMessage(jid, {
-    text: `🎮 بدأت لعبة كتابة الكلمات${players ? ' (ثنائي)' : ' (جماعي)'}!\n📝 الجولة 1\nاكتب الكلمة التالية بشكل صحيح: *${randomWord}*\nلديك 3 محاولات لكل جولة.${playerText}\nأرسل /ترك أو /وقف لإيقاف اللعبة.`
+    text: dashboardReply('reply_990a0d46574a839a')`🎮 بدأت لعبة كتابة الكلمات${players ? ' (ثنائي)' : ' (جماعي)'}!\n📝 الجولة 1\nاكتب الكلمة التالية بشكل صحيح: *${randomWord}*\nلديك 3 محاولات لكل جولة.${playerText}\nأرسل /ترك أو /وقف لإيقاف اللعبة.`
   });
 }
 
@@ -299,16 +300,16 @@ export async function checkWordGuess(sock, jid, sender, guess) {
       const xpResult = awardGameXp(userByJid, 1);
       await userByJid.save();
       await sock.sendMessage(jid, {
-        text: `✅ أحسنت يا ${playerNickname}! الكلمة الصحيحة هي: *${game.word}*\n💰 +1 نقطة\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}\nمجموع نقاطك: 💰${userByJid.points}\n\n⏭️ جولة جديدة قادمة...`,
+        text: dashboardReply('reply_ede6794b07534f5d')`✅ أحسنت يا ${playerNickname}! الكلمة الصحيحة هي: *${game.word}*\n💰 +1 نقطة\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}\nمجموع نقاطك: 💰${userByJid.points}\n\n⏭️ جولة جديدة قادمة...`,
       });
     } else {
       await sock.sendMessage(jid, {
-        text: `🎉 أحسنت يا ${playerNickname}! الكلمة الصحيحة هي: *${game.word}*\n⚠️ لكن لا يمكن احتساب النقطة لأنك غير مسجل.\n\n⏭️ جولة جديدة قادمة...`,
+        text: dashboardReply('reply_e49b41c1b4443b1b')`🎉 أحسنت يا ${playerNickname}! الكلمة الصحيحة هي: *${game.word}*\n⚠️ لكن لا يمكن احتساب النقطة لأنك غير مسجل.\n\n⏭️ جولة جديدة قادمة...`,
       });
     }
 
     // بدء جولة جديدة بعد 5 ثواني على الأقل
-    await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 5 ثواني..." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_bb56b408ad457777')(["⏭️ جولة جديدة قادمة بعد 5 ثواني..."]) });
     setTimeout(() => startNewRound(sock, jid), 5000);
     return;
   }
@@ -326,19 +327,19 @@ export async function checkWordGuess(sock, jid, sender, guess) {
       if (otherAttempts > 0 && !game.playerAnswered[otherPlayer]) {
         // اللاعب الآخر لديه محاولات متبقية
         await sock.sendMessage(jid, {
-          text: `❌ إجابة خاطئة يا ${playerNickname}! انتهت محاولاتك.\n\n🔄 يمكن للاعب الآخر أن يكمل مع ${otherAttempts} محاولات.`,
+          text: dashboardReply('reply_99c513b3976467b8')`❌ إجابة خاطئة يا ${playerNickname}! انتهت محاولاتك.\n\n🔄 يمكن للاعب الآخر أن يكمل مع ${otherAttempts} محاولات.`,
         });
       } else {
         // كلا اللاعبين انتهت محاولاتهم
         await sock.sendMessage(jid, {
-          text: `❌ انتهت المحاولات للجميع! الكلمة الصحيحة كانت: *${game.word}*\n\n⏭️ جولة جديدة قادمة...`,
+          text: dashboardReply('reply_23bab405d47a5c69')`❌ انتهت المحاولات للجميع! الكلمة الصحيحة كانت: *${game.word}*\n\n⏭️ جولة جديدة قادمة...`,
         });
         setTimeout(() => startNewRound(sock, jid), 5000); // تأخير 5 ثواني على الأقل
       }
     } else {
       // لا تزال لديه محاولات
       await sock.sendMessage(jid, {
-        text: `❌ إجابة خاطئة يا ${playerNickname}. تبقى لديك ${game.playerAttempts[sender]} محاولة.\nحاول مرة أخرى: *${game.word}*`,
+        text: dashboardReply('reply_d73a5f43dd04c067')`❌ إجابة خاطئة يا ${playerNickname}. تبقى لديك ${game.playerAttempts[sender]} محاولة.\nحاول مرة أخرى: *${game.word}*`,
       });
     }
   } else if (game.mode === 'group') {
@@ -354,19 +355,19 @@ export async function checkWordGuess(sock, jid, sender, guess) {
       if (remainingPlayers.length > 0) {
         // هناك لاعبون آخرون لديهم محاولات متبقية
         await sock.sendMessage(jid, {
-          text: `❌ إجابة خاطئة يا ${playerNickname}! انتهت محاولاتك.\n\n🔄 لاعبون آخرون يمكنهم المتابعة...`,
+          text: dashboardReply('reply_1c1efc523a32d46a')`❌ إجابة خاطئة يا ${playerNickname}! انتهت محاولاتك.\n\n🔄 لاعبون آخرون يمكنهم المتابعة...`,
         });
       } else {
         // جميع اللاعبين انتهت محاولاتهم
         await sock.sendMessage(jid, {
-          text: `❌ انتهت المحاولات للجميع! الكلمة الصحيحة كانت: *${game.word}*\n\n⏭️ جولة جديدة قادمة...`,
+          text: dashboardReply('reply_23bab405d47a5c69')`❌ انتهت المحاولات للجميع! الكلمة الصحيحة كانت: *${game.word}*\n\n⏭️ جولة جديدة قادمة...`,
         });
         setTimeout(() => startNewRound(sock, jid), 2000);
       }
     } else {
       // لا تزال لديه محاولات
       await sock.sendMessage(jid, {
-        text: `❌ إجابة خاطئة يا ${playerNickname}. تبقى لديك ${game.allPlayersAttempts[sender]} محاولة.\nحاول مرة أخرى: *${game.word}*`,
+        text: dashboardReply('reply_0fd64c68314333e8')`❌ إجابة خاطئة يا ${playerNickname}. تبقى لديك ${game.allPlayersAttempts[sender]} محاولة.\nحاول مرة أخرى: *${game.word}*`,
       });
     }
   }
@@ -376,7 +377,7 @@ export async function stopWordGame(sock, jid) {
   if (activeWordGames[jid]) {
     const game = activeWordGames[jid];
     await sock.sendMessage(jid, {
-      text: `🛑 تم إيقاف لعبة كتابة الكلمات!\n📊 انتهت اللعبة في الجولة ${game.round}\n\nاستخدم /كلمات لبدء لعبة جديدة.`
+      text: dashboardReply('reply_cb2fd33198da0f30')`🛑 تم إيقاف لعبة كتابة الكلمات!\n📊 انتهت اللعبة في الجولة ${game.round}\n\nاستخدم /كلمات لبدء لعبة جديدة.`
     });
     delete activeWordGames[jid];
   }

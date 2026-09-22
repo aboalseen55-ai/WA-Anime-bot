@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import axios from 'axios';
 import User from "../database/userModel.js";
 import { getAllRanksDisplay, getHighestRank, getRankInfo, getRankKeysTable } from "../commands/rankSystem.js";
@@ -54,7 +55,7 @@ async function startWelcomeImageSelection(sock, jid, welcomeData, searchOptions 
         : welcomeData.nickname;
 
     await sock.sendMessage(jid, {
-        text: `⏳ جارٍ البحث عن صور أنمي لـ *${searchLabel}*...`,
+        text: dashboardReply('reply_ef90c404b1307d55')`⏳ جارٍ البحث عن صور أنمي لـ *${searchLabel}*...`,
         mentions: [welcomeData.moderatorJid]
     });
 
@@ -72,7 +73,7 @@ async function startWelcomeImageSelection(sock, jid, welcomeData, searchOptions 
             }).catch((error) => console.warn(`⚠️ فشل إرسال صورة الترحيب: ${error.message}`));
         }
 
-        await sock.sendMessage(jid, { text: `🎯 اختر صورة من ${imageBuffers.length}: رد برقم الصورة.` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_e9181e32342dbd35')`🎯 اختر صورة من ${imageBuffers.length}: رد برقم الصورة.` });
         pendingMentions[`welcome_images_${jid}_${welcomeData.userJid}`] = {
             ...welcomeData,
             action: 'welcome_images',
@@ -82,7 +83,7 @@ async function startWelcomeImageSelection(sock, jid, welcomeData, searchOptions 
     }
 
     await sock.sendMessage(jid, {
-        text: `❌ *لم يتم العثور على صور أنمي مناسبة*\n\n👤 اللقب: ${welcomeData.nickname}\n\nرد بـ 1 للترحيب بدون صورة أو 2 للإلغاء.`
+        text: dashboardReply('reply_eac04ddb2086860d')`❌ *لم يتم العثور على صور أنمي مناسبة*\n\n👤 اللقب: ${welcomeData.nickname}\n\nرد بـ 1 للترحيب بدون صورة أو 2 للإلغاء.`
     });
     pendingMentions[`welcome_confirm_${jid}_${welcomeData.userJid}`] = {
         ...welcomeData,
@@ -110,27 +111,27 @@ export async function handleWelcomeModeStep(sock, jid, sender, text) {
         }
         if (answer === '2') {
             state.action = 'welcome_advanced_character';
-            await sock.sendMessage(jid, { text: `اكتب اسم الشخصية للعضو *${state.nickname}*.` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_3e60af889d6537e6')`اكتب اسم الشخصية للعضو *${state.nickname}*.` });
             return true;
         }
-        await sock.sendMessage(jid, { text: 'اختر 1 للترحيب السريع أو 2 للترحيب المتقدم.' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_8ba62cb9561ff1cb')(['اختر 1 للترحيب السريع أو 2 للترحيب المتقدم.']) });
         return true;
     }
 
     if (state.action === 'welcome_advanced_character') {
         if (answer.length < 2 || answer.length > 100) {
-            await sock.sendMessage(jid, { text: 'اكتب اسم شخصية واضحًا، بين حرفين و100 حرف.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_3e20622551f4d07d')(['اكتب اسم شخصية واضحًا، بين حرفين و100 حرف.']) });
             return true;
         }
         state.characterInput = answer;
         state.action = 'welcome_advanced_anime';
-        await sock.sendMessage(jid, { text: 'اكتب اسم الأنمي الذي تظهر فيه الشخصية.' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_1148e1245646d96d')(['اكتب اسم الأنمي الذي تظهر فيه الشخصية.']) });
         return true;
     }
 
     if (state.action === 'welcome_advanced_anime') {
         if (answer.length < 2 || answer.length > 100) {
-            await sock.sendMessage(jid, { text: 'اكتب اسم الأنمي بشكل أوضح.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_854399586c917da7')(['اكتب اسم الأنمي بشكل أوضح.']) });
             return true;
         }
 
@@ -153,18 +154,18 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/تقرير_اداري') {
         const kingdom = getKingdomIdFromGroupJid(jid);
         if (!kingdom) {
-            await sock.sendMessage(jid, { text: '❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_18cd5dd7994baf41')(['❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.']) });
             return true;
         }
         const userIsSuperAdmin = await isSuperAdminInKingdom(sender, kingdom);
         if (!userIsSuperAdmin) {
-            await sock.sendMessage(jid, { text: '❌ هذا الأمر متاح فقط للأدمن الرئيسي في هذه المملكة.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_50004d757234e192')(['❌ هذا الأمر متاح فقط للأدمن الرئيسي في هذه المملكة.']) });
             return true;
         }
         const kingdomData = KINGDOMS[kingdom];
         const adminGroupJid = kingdomData?.adminGroup;
         if (!adminGroupJid) {
-            await sock.sendMessage(jid, { text: '❌ لا يوجد قروب إدارة لهذه المملكة، لذلك لن يتم إرسال التقرير.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_9a3a72ef3a9d6317')(['❌ لا يوجد قروب إدارة لهذه المملكة، لذلك لن يتم إرسال التقرير.']) });
             return true;
         }
 
@@ -174,10 +175,10 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         // إرسال تقرير التفاعل اليومي (نفس منطق /التفاعل)
         const users = await User.find({ kingdom_id: kingdom, dailyMessages: { $gte: 1 } }).sort({ dailyMessages: -1 });
         if (!users.length) {
-            await sock.sendMessage(adminGroupJid, { text: 'لا يوجد أعضاء لديهم تفاعل اليوم.' });
+            await sock.sendMessage(adminGroupJid, { text: dashboardReply('reply_95c2fafbb311ec14')(['لا يوجد أعضاء لديهم تفاعل اليوم.']) });
         } else {
-            let report = '\u200F📊 *تفاعل الأعضاء اليومي*\n';
-            report += '--------------------------\n';
+            let report = dashboardReply('reply_111672459858f21d')(['\u200F📊 *تفاعل الأعضاء اليومي*\n']);
+            report += dashboardReply('reply_a8a5cc93eeba4c50')(['--------------------------\n']);
             const emojis = ['🥇', '🥈', '🥉'];
             users.forEach((user, idx) => {
                 let line = '';
@@ -187,7 +188,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                 line += `${user.nickname}: ${user.dailyMessages}`;
                 report += line + '\n';
                 if (idx < 2 && idx < users.length - 1) {
-                    report += '_________________\n';
+                    report += dashboardReply('reply_f34432b690b0c5b4')(['_________________\n']);
                 }
             });
             await sock.sendMessage(adminGroupJid, { text: report });
@@ -197,7 +198,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const nowStr = now.toLocaleString('ar-EG', { timeZone });
         const nextReportStr = nextReport.toLocaleString('ar-EG', { timeZone });
         await sock.sendMessage(jid, {
-            text: `✅ تم إرسال التقارير الإدارية لقروب إدارة المملكة.\n\n🕒 وقت المملكة الآن: ${nowStr}\n🌐 التوقيت: ${timeZone}\n📅 موعد التقرير اليومي التالي: ${nextReportStr}`
+            text: dashboardReply('reply_3d5bbdd0b5318f72')`✅ تم إرسال التقارير الإدارية لقروب إدارة المملكة.\n\n🕒 وقت المملكة الآن: ${nowStr}\n🌐 التوقيت: ${timeZone}\n📅 موعد التقرير اليومي التالي: ${nextReportStr}`
         });
         return true;
     }
@@ -216,13 +217,13 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/التفاعل') {
         // فقط الأدمن الأساسي أو المشرف أو الأدمن الرئيسي
         if (!userIsModerator && !userIsAdmin && !userIsSuperAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الأساسي أو المشرف يمكنهم عرض تفاعل الأعضاء!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_9d8c6f2e3354fb01')(['❌ فقط الأدمن الأساسي أو المشرف يمكنهم عرض تفاعل الأعضاء!']) });
             return true;
         }
         // جلب جميع الأعضاء في المملكة الحالية
         const users = await User.find({ kingdom_id: kingdom, dailyMessages: { $gte: 1 } }).sort({ dailyMessages: -1 });
         if (!users.length) {
-            await sock.sendMessage(jid, { text: 'لا يوجد أعضاء لديهم تفاعل اليوم.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_95c2fafbb311ec14')(['لا يوجد أعضاء لديهم تفاعل اليوم.']) });
             return true;
         }
         
@@ -232,10 +233,10 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             totalInteractions += user.dailyMessages;
         });
         
-        let report = '\u200F📊 *تفاعل الأعضاء اليومي*\n';
-        report += '--------------------------\n';
-        report += `📈 *التفاعل الإجمالي:* ${totalInteractions}\n`;
-        report += '--------------------------\n';
+        let report = dashboardReply('reply_111672459858f21d')(['\u200F📊 *تفاعل الأعضاء اليومي*\n']);
+        report += dashboardReply('reply_a8a5cc93eeba4c50')(['--------------------------\n']);
+        report += dashboardReply('reply_04a8cbd1144b9960')`📈 *التفاعل الإجمالي:* ${totalInteractions}\n`;
+        report += dashboardReply('reply_a8a5cc93eeba4c50')(['--------------------------\n']);
         const emojis = ['🥇', '🥈', '🥉'];
         
         users.forEach((user, idx) => {
@@ -247,7 +248,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             report += line + '\n';
             // إضافة فاصل بين المراكز
             if (idx < 2 && idx < users.length - 1) {
-                report += '_________________\n';
+                report += dashboardReply('reply_f34432b690b0c5b4')(['_________________\n']);
             }
         });
 
@@ -259,14 +260,14 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/يوم_جديد') {
         // يسمح فقط للأدمن الأساسي أو الأدمن الرئيسي
         if (!userIsAdmin && !userIsSuperAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الأساسي أو الأدمن الرئيسي يمكنهم تنفيذ هذا الأمر.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_f1c405c7e7449acf')(['❌ فقط الأدمن الأساسي أو الأدمن الرئيسي يمكنهم تنفيذ هذا الأمر.']) });
             return true;
         }
 
         await User.updateMany({}, { dailyMessages: 0 });
         await resetDailyGameStats();
 
-        await sock.sendMessage(jid, { text: '✅ تم تصفير التفاعل اليومي وسجلات الألعاب لجميع المستخدمين (أمر طارئ).' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_32e89df332010124')(['✅ تم تصفير التفاعل اليومي وسجلات الألعاب لجميع المستخدمين (أمر طارئ).']) });
         return true;
     }
 
@@ -274,12 +275,12 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/ترقية') {
         // الأدمن الأساسي والأدمن الرئيسي يستطيعون الترقية
         if (!userIsAdmin && !userIsSuperAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الأساسي يستطيع ترقية الأعضاء!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_fcc8a6a4a7bc3f03')(['❌ فقط الأدمن الأساسي يستطيع ترقية الأعضاء!']) });
             return true;
         }
 
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /ترقية <اللقب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_e47147b262ab39d7')(['❌ استخدام: /ترقية <اللقب>']) });
             return true;
         }
 
@@ -287,7 +288,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const user = await findUserByNickname(searchTerm, kingdom);
 
         if (!user) {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${searchTerm}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_7d4de7fcae9f5d88')`❌ لم يتم العثور على لاعب باسم "${searchTerm}"!` });
             return true;
         }
 
@@ -307,7 +308,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
             // طلب المنشن
             await sock.sendMessage(jid, { 
-                text: `✋ الرجاء عمل منشن (@) للاعب *${user.nickname}* لتسجيل رقمه وإتمام الترقية.\n\n💡 ضع "رد" على الرسالة واكتب اسم اللاعب أو رقمه واضغط منشن.` 
+                text: dashboardReply('reply_8f44d050cd81f0f5')`✋ الرجاء عمل منشن (@) للاعب *${user.nickname}* لتسجيل رقمه وإتمام الترقية.\n\n💡 ضع "رد" على الرسالة واكتب اسم اللاعب أو رقمه واضغط منشن.`
             });
         }
         return true;
@@ -316,12 +317,12 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/خفض') {
         // فقط super_admin يستطيع خفض الأدمنين الأساسيين والمشرفين
         if (!userIsSuperAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع خفض الأدمنين الأساسيين والمشرفين!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_cd158b67ddbb934c')(['❌ فقط الأدمن الرئيسي يستطيع خفض الأدمنين الأساسيين والمشرفين!']) });
             return true;
         }
 
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /خفض <اللقب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_f8e6354cf644858c')(['❌ استخدام: /خفض <اللقب>']) });
             return true;
         }
 
@@ -331,19 +332,19 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await demoteModerator(sock, jid, user.nickname, sender, kingdom);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${searchTerm}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_7d4de7fcae9f5d88')`❌ لم يتم العثور على لاعب باسم "${searchTerm}"!` });
         }
         return true;
     }
 
     if (command === '/نقاط') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_28d33a1a49b83718')(['❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!']) });
             return true;
         }
 
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /نقاط <اللقب> <العدد>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_2e40306b6de80c32')(['❌ استخدام: /نقاط <اللقب> <العدد>']) });
             return true;
         }
 
@@ -351,7 +352,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const amount = parseInt(parts[2]);
 
         if (isNaN(amount)) {
-            await sock.sendMessage(jid, { text: '❌ العدد يجب أن يكون رقماً!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_67f29b70e772f1a9')(['❌ العدد يجب أن يكون رقماً!']) });
             return true;
         }
 
@@ -359,19 +360,19 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await addPoints(sock, jid, user.nickname, amount, sender, kingdom);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
         }
         return true;
     }
 
     if (command === '/عملات') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_28d33a1a49b83718')(['❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!']) });
             return true;
         }
 
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /عملات <اللقب> <العدد>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_1666c256942d1c12')(['❌ استخدام: /عملات <اللقب> <العدد>']) });
             return true;
         }
 
@@ -379,7 +380,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const amount = parseInt(parts[2]);
 
         if (isNaN(amount)) {
-            await sock.sendMessage(jid, { text: '❌ العدد يجب أن يكون رقماً!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_67f29b70e772f1a9')(['❌ العدد يجب أن يكون رقماً!']) });
             return true;
         }
 
@@ -387,19 +388,19 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await addCoins(sock, jid, user.nickname, amount, sender, kingdom);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
         }
         return true;
     }
 
     if (command === '/نجوم' || command === '/إضافة_نجوم') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_28d33a1a49b83718')(['❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!']) });
             return true;
         }
 
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /نجوم <اللقب> <العدد>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_3cd3a2959a49971d')(['❌ استخدام: /نجوم <اللقب> <العدد>']) });
             return true;
         }
 
@@ -407,7 +408,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const amount = parseInt(parts[2]);
 
         if (isNaN(amount)) {
-            await sock.sendMessage(jid, { text: '❌ العدد يجب أن يكون رقماً!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_67f29b70e772f1a9')(['❌ العدد يجب أن يكون رقماً!']) });
             return true;
         }
 
@@ -415,19 +416,19 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await addRankStars(sock, jid, user.nickname, amount, sender, kingdom);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
         }
         return true;
     }
 
     if (command === '/إزالة_نجوم') {
         if (!userIsModerator) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة نجوم الرتبة!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_369251df510f153a')(['❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة نجوم الرتبة!']) });
             return true;
         }
 
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /إزالة_نجوم <اللقب> <العدد>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_111f0a7ab112c702')(['❌ استخدام: /إزالة_نجوم <اللقب> <العدد>']) });
             return true;
         }
 
@@ -435,7 +436,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const amount = parseInt(parts[2]);
 
         if (isNaN(amount) || amount <= 0) {
-            await sock.sendMessage(jid, { text: '❌ العدد يجب أن يكون رقماً موجباً!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_9437dd9da35becf9')(['❌ العدد يجب أن يكون رقماً موجباً!']) });
             return true;
         }
 
@@ -443,7 +444,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await removeRankStars(sock, jid, user.nickname, amount, sender);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
         }
         return true;
     }
@@ -451,7 +452,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     // أمر منح الرتب التي تحتاج قرار الإمبراطور
     if (command === '/منح_رتبة_إمبراطور') {
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /منح_رتبة_إمبراطور <اللقب> <مفتاح_الرتبة>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_f399ac2ff98182bb')(['❌ استخدام: /منح_رتبة_إمبراطور <اللقب> <مفتاح_الرتبة>']) });
             return true;
         }
 
@@ -460,7 +461,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
         const user = await findUserByNickname(nickname, kingdom);
         if (!user) {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
             return true;
         }
 
@@ -471,12 +472,12 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     // أوامر الأدمن والمشرفين لإزالة النقاط والعملات
     if (command === '/إزالة_نقاط') {
         if (!userIsModerator) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة النقاط!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_505ffda78d85d3c2')(['❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة النقاط!']) });
             return true;
         }
 
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /إزالة_نقاط <اللقب> <العدد>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_d431aef2905ba5a2')(['❌ استخدام: /إزالة_نقاط <اللقب> <العدد>']) });
             return true;
         }
 
@@ -484,7 +485,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const amount = parseInt(parts[2]);
 
         if (isNaN(amount) || amount <= 0) {
-            await sock.sendMessage(jid, { text: '❌ العدد يجب أن يكون رقماً موجباً!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_9437dd9da35becf9')(['❌ العدد يجب أن يكون رقماً موجباً!']) });
             return true;
         }
 
@@ -492,19 +493,19 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await removePoints(sock, jid, user.nickname, amount, sender);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
         }
         return true;
     }
 
     if (command === '/إزالة_عملات') {
         if (!userIsModerator) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة العملات!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_91321c8e87aadb27')(['❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة العملات!']) });
             return true;
         }
 
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /إزالة_عملات <اللقب> <العدد>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_8fc2ee50feb98f05')(['❌ استخدام: /إزالة_عملات <اللقب> <العدد>']) });
             return true;
         }
 
@@ -512,7 +513,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const amount = parseInt(parts[2]);
 
         if (isNaN(amount) || amount <= 0) {
-            await sock.sendMessage(jid, { text: '❌ العدد يجب أن يكون رقماً موجباً!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_9437dd9da35becf9')(['❌ العدد يجب أن يكون رقماً موجباً!']) });
             return true;
         }
 
@@ -520,7 +521,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await removeCoins(sock, jid, user.nickname, amount, sender);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
         }
         return true;
     }
@@ -528,12 +529,12 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     // أوامر الأدمن والمشرفين
     if (command === '/طرد') {
         if (!userIsModerator) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون طرد الأعضاء!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c9dea760af7677db')(['❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون طرد الأعضاء!']) });
             return true;
         }
 
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /طرد <اللقب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_2f7cc89ab7b88d42')(['❌ استخدام: /طرد <اللقب>']) });
             return true;
         }
 
@@ -543,19 +544,19 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await kickMember(sock, jid, user.nickname, sender, kingdom);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
         }
         return true;
     }
 
     if (command === '/حظر') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع حظر الأعضاء!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_aff590dcae12f7a8')(['❌ فقط الأدمن الرئيسي يستطيع حظر الأعضاء!']) });
             return true;
         }
 
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /حظر <اللقب> <السبب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_97ab87b818555a77')(['❌ استخدام: /حظر <اللقب> <السبب>']) });
             return true;
         }
 
@@ -566,19 +567,19 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await banMember(sock, jid, user.nickname, reason, sender, kingdom);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
         }
         return true;
     }
 
     if (command === '/فكحظر') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع إزالة الحظر!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_66ef068433c6c115')(['❌ فقط الأدمن الرئيسي يستطيع إزالة الحظر!']) });
             return true;
         }
 
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /فكحظر <اللقب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_f570f1e092ab3560')(['❌ استخدام: /فكحظر <اللقب>']) });
             return true;
         }
 
@@ -588,19 +589,19 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         if (user) {
             await unbanMember(sock, jid, user.nickname, sender, kingdom);
         } else {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
         }
         return true;
     }
 
     if (command === '/حذف') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع حذف بيانات المستخدمين!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_453ffd1c0313902c')(['❌ فقط الأدمن الرئيسي يستطيع حذف بيانات المستخدمين!']) });
             return true;
         }
 
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /حذف <اللقب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_db1aa305663c1b8d')(['❌ استخدام: /حذف <اللقب>']) });
             return true;
         }
 
@@ -611,7 +612,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
     if (command === '/حذف_بدون_لقب') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_28d33a1a49b83718')(['❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!']) });
             return true;
         }
 
@@ -621,7 +622,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
     if (command === '/تأكيد_حذف_بدون_لقب') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_28d33a1a49b83718')(['❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!']) });
             return true;
         }
 
@@ -633,7 +634,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
     if (command === '/ملف') {
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /ملف <اللقب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_b9b41ef055846b3f')(['❌ استخدام: /ملف <اللقب>']) });
             return true;
         }
 
@@ -641,7 +642,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const user = await findUserByNickname(nickname, kingdom);
 
         if (!user) {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
             return true;
         }
 
@@ -652,7 +653,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
         if (isAdminUser) {
             // عرض قائمة الخيارات للأداريين
-            const profileMenu = `👤 *ملف ${user.nickname}*
+            const profileMenu = dashboardReply('reply_6b1754bb32d3f0f8')`👤 *ملف ${user.nickname}*
 
 اختر ما تريد عرضه:
 
@@ -681,7 +682,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/تغيير') {
         // الأدمن والأدمن الرئيسي والمشرفين يستطيعون تغيير ألقاب الأعضاء
         if (!userIsAdmin && !userIsSuperAdmin && !userIsModerator) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون تغيير الألقاب!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_1c4b89b975223845')(['❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون تغيير الألقاب!']) });
             return true;
         }
 
@@ -689,7 +690,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const alaaIndex = parts.findIndex(p => p.toLowerCase() === 'الى');
         
         if (alaaIndex === -1 || alaaIndex < 2 || alaaIndex === parts.length - 1) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /تغيير <اللقب الحالي> الى <اللقب الجديد>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_6742beebb7db9ca5')(['❌ استخدام: /تغيير <اللقب الحالي> الى <اللقب الجديد>']) });
             return true;
         }
 
@@ -697,7 +698,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const newNickname = parts.slice(alaaIndex + 1).join(' ');
 
         if (!currentNickname.trim() || !newNickname.trim()) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /تغيير <اللقب الحالي> الى <اللقب الجديد>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_6742beebb7db9ca5')(['❌ استخدام: /تغيير <اللقب الحالي> الى <اللقب الجديد>']) });
             return true;
         }
 
@@ -708,7 +709,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/اسحب_اللقب') {
         // طلب منشن للعضو المراد استرجاع أو إنشاء لقبه
         await sock.sendMessage(jid, { 
-            text: `✋ الرجاء عمل منشن (@) للعضو الذي تريد استرجاع لقبه.\n\n💡 ضع "رد" على الرسالة واكتب اسم العضو أو رقمه واضغط منشن.` 
+            text: dashboardReply('reply_dd45a8513b0071cc')`✋ الرجاء عمل منشن (@) للعضو الذي تريد استرجاع لقبه.\n\n💡 ضع "رد" على الرسالة واكتب اسم العضو أو رقمه واضغط منشن.`
         });
 
         // حفظ الحالة المعلقة
@@ -726,7 +727,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
     if (command === '/قائمة') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن يستطيع عرض القائمة الكاملة!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_af73916bfe025a78')(['❌ فقط الأدمن يستطيع عرض القائمة الكاملة!']) });
             return true;
         }
         await showCompleteList(sock, jid, kingdom);
@@ -735,7 +736,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
     if (command === '/أعضاء') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن يستطيع عرض قائمة الأعضاء!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_98b28fbb88f99ed2')(['❌ فقط الأدمن يستطيع عرض قائمة الأعضاء!']) });
             return true;
         }
         await showMembersList(sock, jid, kingdom);
@@ -744,7 +745,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
     if (command === '/الكل' || command === '/جميع') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن يستطيع عرض جميع المستخدمين!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_f7ed391fc8900346')(['❌ فقط الأدمن يستطيع عرض جميع المستخدمين!']) });
             return true;
         }
         await showAllUsers(sock, jid, kingdom);
@@ -754,7 +755,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     // أوامر الأدمن فقط
     if (command === '/بنك_إحصائيات') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_28d33a1a49b83718')(['❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!']) });
             return true;
         }
         await showBankStats(sock, jid, kingdom);
@@ -764,7 +765,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/تعيين_أدمن') {
         // يمكن لأي شخص تعيين أدمن رئيسي إذا كان لديه كلمة المرور الصحيحة
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /تعيين_أدمن <اللقب> <كلمة_المرور>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_23883bfde33bea8f')(['❌ استخدام: /تعيين_أدمن <اللقب> <كلمة_المرور>']) });
             return true;
         }
 
@@ -772,26 +773,26 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const password = parts[2];
 
         if (!ADMIN_PASSWORD_CONFIGURED) {
-            await sock.sendMessage(jid, { text: '❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_d6b1ca919485ca57')(['❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.']) });
             return true;
         }
 
         // التحقق من كلمة المرور
         if (password !== ADMIN_PASSWORD) {
-            await sock.sendMessage(jid, { text: '❌ كلمة المرور غير صحيحة!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_8c88350c12f79579')(['❌ كلمة المرور غير صحيحة!']) });
             return true;
         }
 
         // البحث عن المستخدم
         const user = await User.findOne({ nickname: { $regex: nickname, $options: 'i' } });
         if (!user) {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
             return true;
         }
 
         // التحقق من أنه ليس أدمن بالفعل
         if (user.role === 'super_admin') {
-            await sock.sendMessage(jid, { text: `⚠️ ${user.nickname} هو بالفعل أدمن رئيسي!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_32255d9c8e8b0a16')`⚠️ ${user.nickname} هو بالفعل أدمن رئيسي!` });
             return true;
         }
 
@@ -799,7 +800,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         user.role = 'super_admin';
         await user.save();
 
-        await sock.sendMessage(jid, { text: `✅ تم تعيين ${user.nickname} كأدمن رئيسي!` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_3c58e4da0f51d066')`✅ تم تعيين ${user.nickname} كأدمن رئيسي!` });
         console.log(`   ✅ تم تعيين ${user.nickname} كـ super_admin`);
         return true;
     }
@@ -807,32 +808,32 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/حذف_أدمن_نفسي') {
         // فقط super_admin يستطيع حذف نفسه من قاعدة البيانات بالكامل
         if (!userIsSuperAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_28d33a1a49b83718')(['❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!']) });
             return true;
         }
 
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /حذف_أدمن_نفسي <كلمة_المرور>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_4b8acf9724b3a20a')(['❌ استخدام: /حذف_أدمن_نفسي <كلمة_المرور>']) });
             return true;
         }
 
         const password = parts[1];
 
         if (!ADMIN_PASSWORD_CONFIGURED) {
-            await sock.sendMessage(jid, { text: '❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_d6b1ca919485ca57')(['❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.']) });
             return true;
         }
 
         // التحقق من كلمة المرور
         if (password !== ADMIN_PASSWORD) {
-            await sock.sendMessage(jid, { text: '❌ كلمة المرور غير صحيحة!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_8c88350c12f79579')(['❌ كلمة المرور غير صحيحة!']) });
             return true;
         }
 
         // البحث عن المستخدم الحالي
         const currentUser = await User.findOne({ jid: sender });
         if (!currentUser) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على ملفك!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_dc18d0b04dade621')(['❌ لم يتم العثور على ملفك!']) });
             return true;
         }
 
@@ -841,7 +842,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         // حذف المستخدم من قاعدة البيانات بالكامل
         await User.deleteOne({ jid: sender });
 
-        await sock.sendMessage(jid, { text: `✅ تم حذف بيانات الأدمن "${userName}" بالكامل من النظام!` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_eb12dba7469edc3a')`✅ تم حذف بيانات الأدمن "${userName}" بالكامل من النظام!` });
         console.log(`   🗑️ تم حذف ${userName} (${sender}) من قاعدة البيانات`);
         return true;
     }
@@ -854,7 +855,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/الرتب') {
         const users = await User.find({ kingdom_id: kingdom }).sort({ [`rankStarsByKingdom.${kingdom}`]: -1 });
         let msg = getAllRanksDisplay(kingdom);
-        msg += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+        msg += dashboardReply('reply_fb743cfed08a0636')`━━━━━━━━━━━━━━━━━━━━\n\n`;
 
         // تجميع الأعضاء حسب الرتب
         const rankMembers = {};
@@ -876,15 +877,15 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         for (const [rankKey, members] of Object.entries(rankMembers)) {
             const rankInfo = getRankInfo(kingdom, rankKey);
             if (rankInfo) {
-                msg += `*${rankInfo.emoji} ${rankInfo.name}*\n`;
+                msg += dashboardReply('reply_901b6ca6da19932b')`*${rankInfo.emoji} ${rankInfo.name}*\n`;
                 for (const member of members) {
                     // لا تعرض النجوم للرتب العليا (التي تحتاج قرار إمبراطور)
                     const showStars = !rankInfo.requiresEmperorDecision;
                     const memberStars = member.rankStarsByKingdom?.[kingdom] || 0;
                     if (showStars) {
-                        msg += `  • ${member.nickname} (${memberStars}⭐)\n`;
+                        msg += dashboardReply('reply_43efddee2330b086')`  • ${member.nickname} (${memberStars}⭐)\n`;
                     } else {
-                        msg += `  • ${member.nickname}\n`;
+                        msg += dashboardReply('reply_4760548a4fdab337')`  • ${member.nickname}\n`;
                     }
                 }
                 msg += `\n`;
@@ -919,7 +920,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         // التحقق من أن الأمر يُستخدم فقط في مجموعة الاستقبال
         const kingdomData = getKingdomFromGroupJid(jid);
         if (!kingdomData) {
-            await sock.sendMessage(jid, { text: '❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_18cd5dd7994baf41')(['❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.']) });
             return true;
         }
 
@@ -927,17 +928,17 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const mainGroupJid = kingdomData.mainGroup;
         
         if (jid !== receptionGroupJid) {
-            await sock.sendMessage(jid, { text: '❌ أمر الترحيب يعمل *فقط* في مجموعة الاستقبال! 🤔' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_eccad0c0f5da734a')(['❌ أمر الترحيب يعمل *فقط* في مجموعة الاستقبال! 🤔']) });
             return true;
         }
 
         if (!userIsModerator) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنز والمشرفين يستطيعون إرسال رسالة الترحيب!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_92b10acea48cd58b')(['❌ فقط الأدمنز والمشرفين يستطيعون إرسال رسالة الترحيب!']) });
             return true;
         }
 
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /ترحيب <اللقب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_041428e979e24b0d')(['❌ استخدام: /ترحيب <اللقب>']) });
             return true;
         }
 
@@ -945,13 +946,13 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const user = await findUserByNickname(targetNickname, kingdom);
 
         if (!user) {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على عضو باسم "${targetNickname}" في هذه المملكة!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_adc626f36783ef3a')`❌ لم يتم العثور على عضو باسم "${targetNickname}" في هذه المملكة!` });
             return true;
         }
 
         const senderInfo = await getUserInfo(sender, kingdom);
         if (!senderInfo) {
-            await sock.sendMessage(jid, { text: '❌ خطأ في الحصول على معلوماتك!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_45cc074cc7677aa3')(['❌ خطأ في الحصول على معلوماتك!']) });
             return true;
         }
 
@@ -968,7 +969,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         };
         pendingMentions[`welcome_mode_${jid}_${sender}`] = welcomeData;
         await sock.sendMessage(jid, {
-            text: `👋 *ترحيب العضو: ${user.nickname}*\n\n1️⃣ سريع — بحث تلقائي باللقب\n2️⃣ متقدم — تحدد الشخصية والأنمي`,
+            text: dashboardReply('reply_1f19ca990102a465')`👋 *ترحيب العضو: ${user.nickname}*\n\n1️⃣ سريع — بحث تلقائي باللقب\n2️⃣ متقدم — تحدد الشخصية والأنمي`,
             mentions: [sender]
         });
         return true;
@@ -976,12 +977,12 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
     if (command === '/إرسال_رسالة') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع إرسال رسائل إلى مجموعات أخرى!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_4f9d79844c80b089')(['❌ فقط الأدمن الرئيسي يستطيع إرسال رسائل إلى مجموعات أخرى!']) });
             return true;
         }
 
         if (parts.length < 3) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /إرسال_رسالة <JID المجموعة> <نص الرسالة>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_9eac88a7fcec3b00')(['❌ استخدام: /إرسال_رسالة <JID المجموعة> <نص الرسالة>']) });
             return true;
         }
 
@@ -990,21 +991,21 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
         try {
             await sock.sendMessage(targetJid, { text: messageText });
-            await sock.sendMessage(jid, { text: `✅ تم إرسال الرسالة إلى المجموعة بنجاح.` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_4f4cfaab8d52fb1c')`✅ تم إرسال الرسالة إلى المجموعة بنجاح.` });
         } catch (error) {
-            await sock.sendMessage(jid, { text: `❌ خطأ في إرسال الرسالة: ${error.message}` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_caa9d9ad4861133d')`❌ خطأ في إرسال الرسالة: ${error.message}` });
         }
         return true;
     }
 
     if (command === '/منح_إمبراطور') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع منح رتبة الإمبراطور!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_40d440bfb136ff35')(['❌ فقط الأدمن الرئيسي يستطيع منح رتبة الإمبراطور!']) });
             return true;
         }
 
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /منح_إمبراطور <اللقب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_de909179a53769d9')(['❌ استخدام: /منح_إمبراطور <اللقب>']) });
             return true;
         }
 
@@ -1015,27 +1016,27 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
     if (command === '/أضف_أدمن') {
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /أضف_أدمن <كلمة_المرور>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_a62f10765a983019')(['❌ استخدام: /أضف_أدمن <كلمة_المرور>']) });
             return true;
         }
 
         const password = parts[1];
 
         if (!ADMIN_PASSWORD_CONFIGURED) {
-            await sock.sendMessage(jid, { text: '❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_d6b1ca919485ca57')(['❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.']) });
             return true;
         }
 
         // التحقق من كلمة المرور
         if (password !== ADMIN_PASSWORD) {
-            await sock.sendMessage(jid, { text: '❌ كلمة المرور غير صحيحة!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_8c88350c12f79579')(['❌ كلمة المرور غير صحيحة!']) });
             return true;
         }
 
         // البحث عن المستخدم الحالي
         const currentUser = await User.findOne({ jid: sender });
         if (!currentUser) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على ملفك في قاعدة البيانات!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_78f8b32474be7d5c')(['❌ لم يتم العثور على ملفك في قاعدة البيانات!']) });
             return true;
         }
 
@@ -1043,37 +1044,37 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         currentUser.role = 'admin';
         await currentUser.save();
 
-        await sock.sendMessage(jid, { text: `✅ تم ترقيتك إلى أدمن بنجاح! 🎉\n\nيمكنك الآن استخدام جميع أوامر الإدارة.` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_ff2151b1496595af')`✅ تم ترقيتك إلى أدمن بنجاح! 🎉\n\nيمكنك الآن استخدام جميع أوامر الإدارة.` });
         console.log(`   🛡️ تم ترقية ${currentUser.nickname} (${sender}) إلى أدمن`);
         return true;
     }
 
     if (command === '/jid') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع الحصول على JID المجموعة!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_6f2f8b641f096b86')(['❌ فقط الأدمن الرئيسي يستطيع الحصول على JID المجموعة!']) });
             return true;
         }
 
         // التحقق من أن الأمر في مجموعة
         if (!jid.endsWith('@g.us')) {
-            await sock.sendMessage(jid, { text: '❌ هذا الأمر يعمل فقط في المجموعات!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_a903b5bbe48c9a62')(['❌ هذا الأمر يعمل فقط في المجموعات!']) });
             return true;
         }
 
         // إرسال JID المجموعة إلى الخاص للأدمن
-        await sock.sendMessage(sender, { text: `📋 JID المجموعة الحالية:\n\n\`${jid}\`` });
-        await sock.sendMessage(jid, { text: '✅ تم إرسال JID المجموعة إلى الخاص.' });
+        await sock.sendMessage(sender, { text: dashboardReply('reply_2b03889e7770ce54')`📋 JID المجموعة الحالية:\n\n\`${jid}\`` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_2ad18296da1d4b69')(['✅ تم إرسال JID المجموعة إلى الخاص.']) });
         return true;
     }
     if (command === '/رسالة_تحفيزية') {
         if (!userIsAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمن الرئيسي يستطيع إرسال رسائل تحفيزية فورية!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_ab46e2d1a02ff74e')(['❌ فقط الأدمن الرئيسي يستطيع إرسال رسائل تحفيزية فورية!']) });
             return true;
         }
 
         // التحقق من أن الأمر في مجموعة
         if (!jid.endsWith('@g.us')) {
-            await sock.sendMessage(jid, { text: '❌ هذا الأمر يعمل فقط في المجموعات!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_a903b5bbe48c9a62')(['❌ هذا الأمر يعمل فقط في المجموعات!']) });
             return true;
         }
 
@@ -1082,7 +1083,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const kingdomData = KINGDOMS[kingdom];
 
         if (!kingdomData) {
-            await sock.sendMessage(jid, { text: '❌ خطأ في تحديد المملكة!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_3971da22ad398462')(['❌ خطأ في تحديد المملكة!']) });
             return true;
         }
 
@@ -1107,7 +1108,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                         targetJid = kingdomData.groupIds[1]; // القروب الثاني في المصفوفة
                         targetName = 'قروب الاستقبال';
                     } else {
-                        await sock.sendMessage(jid, { text: '❌ لم يتم العثور على قروب الاستقبال!' });
+                        await sock.sendMessage(jid, { text: dashboardReply('reply_0797cb99533bd077')(['❌ لم يتم العثور على قروب الاستقبال!']) });
                         return true;
                     }
                     break;
@@ -1119,7 +1120,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                         targetJid = kingdomData.groupIds[2]; // القروب الثالث في المصفوفة
                         targetName = 'القروب الإضافي';
                     } else {
-                        await sock.sendMessage(jid, { text: '❌ لم يتم العثور على قروب إضافي!' });
+                        await sock.sendMessage(jid, { text: dashboardReply('reply_0d33aafa37733709')(['❌ لم يتم العثور على قروب إضافي!']) });
                         return true;
                     }
                     break;
@@ -1131,7 +1132,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                         targetJid = kingdomData.adminGroup;
                         targetName = 'قروب الأدمن';
                     } else {
-                        await sock.sendMessage(jid, { text: '❌ لم يتم تحديد قروب أدمن لهذه المملكة!' });
+                        await sock.sendMessage(jid, { text: dashboardReply('reply_1914caee57442ff6')(['❌ لم يتم تحديد قروب أدمن لهذه المملكة!']) });
                         return true;
                     }
                     break;
@@ -1139,7 +1140,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                 case 'الكل':
                 case 'all':
                     // إرسال لجميع القروبات في المملكة
-                    const motivationalMessageAll = `✨ *رسالة تحفيزية*
+                    const motivationalMessageAll = dashboardReply('reply_67a94a56dae46c35')`✨ *رسالة تحفيزية*
 
 تفاعلكم جميل وواضح.
 استمروا بالمشاركة والدعوة بهدوء.
@@ -1156,18 +1157,18 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                         }
                     }
 
-                    await sock.sendMessage(jid, { text: `✅ تم إرسال رسالة تحفيزية فورية إلى ${successCount} قروب من أصل ${kingdomData.groupIds.length} قروب!` });
+                    await sock.sendMessage(jid, { text: dashboardReply('reply_5ffa5602d36741f7')`✅ تم إرسال رسالة تحفيزية فورية إلى ${successCount} قروب من أصل ${kingdomData.groupIds.length} قروب!` });
                     console.log(`✅ تم إرسال رسالة تحفيزية فورية لجميع قروبات مملكة ${kingdom}`);
                     return true;
 
                 default:
-                    await sock.sendMessage(jid, { text: '❌ استخدام: /رسالة_تحفيزية [أساسي|استقبال|إضافي|أدمن|الكل]\n\n💡 الأنواع المتاحة:\n• أساسي - القروب الرئيسي\n• استقبال - قروب الاستقبال\n• إضافي - القروب الإضافي\n• أدمن - قروب الأدمن\n• الكل - جميع القروبات' });
+                    await sock.sendMessage(jid, { text: dashboardReply('reply_6697de0ec33170e3')(['❌ استخدام: /رسالة_تحفيزية [أساسي|استقبال|إضافي|أدمن|الكل]\n\n💡 الأنواع المتاحة:\n• أساسي - القروب الرئيسي\n• استقبال - قروب الاستقبال\n• إضافي - القروب الإضافي\n• أدمن - قروب الأدمن\n• الكل - جميع القروبات']) });
                     return true;
             }
         }
 
         // إنشاء رسالة تحفيزية فورية جميلة
-        const motivationalMessage = `✨ *رسالة تحفيزية*
+        const motivationalMessage = dashboardReply('reply_67a94a56dae46c35')`✨ *رسالة تحفيزية*
 
 تفاعلكم جميل وواضح.
 استمروا بالمشاركة والدعوة بهدوء.
@@ -1176,17 +1177,17 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
         try {
             await sock.sendMessage(targetJid, { text: motivationalMessage });
-            await sock.sendMessage(jid, { text: `✅ تم إرسال رسالة تحفيزية فورية إلى ${targetName} بنجاح!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_27b72d5c5e829274')`✅ تم إرسال رسالة تحفيزية فورية إلى ${targetName} بنجاح!` });
             console.log(`✅ تم إرسال رسالة تحفيزية فورية إلى ${targetName} لمملكة ${kingdom}`);
         } catch (error) {
-            await sock.sendMessage(jid, { text: `❌ خطأ في إرسال الرسالة: ${error.message}` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_caa9d9ad4861133d')`❌ خطأ في إرسال الرسالة: ${error.message}` });
         }
         return true;
     }
 
     if (command === '/اسحب_اللقب' || command === '/استخرج_لقب') {
         if (!userIsModerator) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنز والمشرفين يستطيعون استخراج الألقاب!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_a0af414fe548e97b')(['❌ فقط الأدمنز والمشرفين يستطيعون استخراج الألقاب!']) });
             return true;
         }
 
@@ -1206,7 +1207,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         }
 
         if (!mentionedJid) {
-            await sock.sendMessage(jid, { text: '❌ الرجاء عمل منشن (@) للاعب الذي تريد معرفة لقبه!\n\nاستخدام: رد على رسالة واكتب /اسحب_اللقب مع عمل منشن للاعب' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_be00339b5644e1d5')(['❌ الرجاء عمل منشن (@) للاعب الذي تريد معرفة لقبه!\n\nاستخدام: رد على رسالة واكتب /اسحب_اللقب مع عمل منشن للاعب']) });
             return true;
         }
 
@@ -1216,24 +1217,24 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             let responseText = ``;
 
             if (result.isNewUser) {
-                responseText = `\n👤 *مستخدم جديد*\n`;
-                responseText += `📱 الرقم: ${result.phoneNumber}\n`;
-                responseText += `🏷️ اللقب المعين: ${result.nickname} (اللقب الافتراضي)\n`;
-                responseText += `\n✅ تم إنشاء ملف جديد للاعب!`;
+                responseText = dashboardReply('reply_e875dd72c3e8d99c')`\n👤 *مستخدم جديد*\n`;
+                responseText += dashboardReply('reply_eb4af8fc4afc55b7')`📱 الرقم: ${result.phoneNumber}\n`;
+                responseText += dashboardReply('reply_07e7e39b254b48d6')`🏷️ اللقب المعين: ${result.nickname} (اللقب الافتراضي)\n`;
+                responseText += dashboardReply('reply_fe4d8952e55a8273')`\n✅ تم إنشاء ملف جديد للاعب!`;
             } else {
-                responseText = `\n👤 *اللاعب*\n`;
-                responseText += `🏷️ اللقب: ${result.nickname}`;
+                responseText = dashboardReply('reply_b31b4f9fb2d653e1')`\n👤 *اللاعب*\n`;
+                responseText += dashboardReply('reply_7bf4b1c4f794a28c')`🏷️ اللقب: ${result.nickname}`;
                 
                 if (result.isDefaultNickname) {
-                    responseText += ` (⚠️ اللقب الافتراضي - لم يقم اللاعب بتغييره)`;
+                    responseText += dashboardReply('reply_61e7e966e1792fa1')` (⚠️ اللقب الافتراضي - لم يقم اللاعب بتغييره)`;
                 }
                 
                 responseText += `\n`;
                 
                 if (result.user) {
-                    responseText += `\n📊 معلومات إضافية:\n`;
-                    responseText += `💰 النقاط: ${result.user.points || 0}\n`;
-                    responseText += `🎮 العملات: ${result.user.coins || 0}\n`;
+                    responseText += dashboardReply('reply_ae96ff249b6454ad')`\n📊 معلومات إضافية:\n`;
+                    responseText += dashboardReply('reply_745ecfa46ebab380')`💰 النقاط: ${result.user.points || 0}\n`;
+                    responseText += dashboardReply('reply_8223d9246f25ff04')`🎮 العملات: ${result.user.coins || 0}\n`;
                     
                     const userRankStars = result.user.rankStarsByKingdom?.[kingdom] || 0;
                     if (userRankStars > 0) {
@@ -1241,7 +1242,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                         if (highestRank) {
                             const rankInfo = getRankInfo(kingdom, highestRank);
                             if (rankInfo) {
-                                responseText += `⭐ الرتبة: ${rankInfo.emoji} ${rankInfo.name} (${userRankStars}⭐)\n`;
+                                responseText += dashboardReply('reply_7f3ac533bbb87a94')`⭐ الرتبة: ${rankInfo.emoji} ${rankInfo.name} (${userRankStars}⭐)\n`;
                             }
                         }
                     }
@@ -1250,7 +1251,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
                     if (userKingdomRank) {
                         const kingdomRankInfo = getRankInfo(kingdom, userKingdomRank);
                         if (kingdomRankInfo) {
-                            responseText += `👑 رتبة المملكة: ${kingdomRankInfo.emoji} ${kingdomRankInfo.name}\n`;
+                            responseText += dashboardReply('reply_58592c0668946359')`👑 رتبة المملكة: ${kingdomRankInfo.emoji} ${kingdomRankInfo.name}\n`;
                         }
                     }
                 }
@@ -1259,7 +1260,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             await sock.sendMessage(jid, { text: responseText });
         } catch (error) {
             console.error('خطأ في استخراج اللقب:', error);
-            await sock.sendMessage(jid, { text: `❌ خطأ في استخراج اللقب: ${error.message}` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_8df15bae4a517af4')`❌ خطأ في استخراج اللقب: ${error.message}` });
         }
         return true;
     }
@@ -1274,12 +1275,12 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const user = await User.findOne({ jid: sender, kingdom_id: kingdom });
 
         if (!user) {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على ملفك الشخصي!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_ce7466fa0b2541e8')`❌ لم يتم العثور على ملفك الشخصي!` });
             return true;
         }
 
         // عرض قائمة الخيارات للأداريين
-        const profileMenu = `👤 *ملفك الشخصي*
+        const profileMenu = dashboardReply('reply_10748d687225d3a3')`👤 *ملفك الشخصي*
 
 اختر ما تريد عرضه:
 
@@ -1305,7 +1306,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     if (command === '/تبليغ') {
         // يمكن لأي عضو إرسال تبليغ
         await sock.sendMessage(jid, { 
-            text: `📢 *نموذج التبليغ عن الإساءة* 📢
+            text: dashboardReply('reply_c58f4d68d06259a6')`📢 *نموذج التبليغ عن الإساءة* 📢
 
 الرجاء عمل منشن (@) للشخص المسيء:
 
@@ -1335,19 +1336,19 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     // أمر إرسال رسالة التذكير (للأدمن فقط)
     if (command === '/تذكير') {
         if (!userIsAdmin && !userIsSuperAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنز يستطيعون إرسال الرسائل التذكيرية!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_5c695a5cfe4615eb')(['❌ فقط الأدمنز يستطيعون إرسال الرسائل التذكيرية!']) });
             return true;
         }
 
         await sendReminderMessage(sock, jid);
-        await sock.sendMessage(jid, { text: '✅ تم إرسال رسالة التذكير للمجموعة' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_bdecf0d80bec294d')(['✅ تم إرسال رسالة التذكير للمجموعة']) });
         return true;
     }
 
     // أمر تفعيل التذكيرات الدورية (للأدمن فقط)
     if (command === '/تذكيرات_تلقائية') {
         if (!userIsAdmin && !userIsSuperAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنز يستطيعون تفعيل التذكيرات الدورية!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_a22275854152094a')(['❌ فقط الأدمنز يستطيعون تفعيل التذكيرات الدورية!']) });
             return true;
         }
 
@@ -1356,7 +1357,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
             const parsedHours = parseInt(parts[1]);
             if (isNaN(parsedHours) || parsedHours < 1) {
                 await sock.sendMessage(jid, { 
-                    text: '❌ استخدام: /تذكيرات_تلقائية <عدد_الساعات>\n\n💡 مثال: /تذكيرات_تلقائية 12' 
+                    text: dashboardReply('reply_280e8778293d6e11')(['❌ استخدام: /تذكيرات_تلقائية <عدد_الساعات>\n\n💡 مثال: /تذكيرات_تلقائية 12'])
                 });
                 return true;
             }
@@ -1365,7 +1366,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
         startReminderSystem(sock, jid, intervalHours);
         await sock.sendMessage(jid, { 
-            text: `✅ تم تفعيل التذكيرات الدورية\n📅 ستُرسل رسالة تذكيرية كل ${intervalHours} ساعة` 
+            text: dashboardReply('reply_1d1432818fa975c6')`✅ تم تفعيل التذكيرات الدورية\n📅 ستُرسل رسالة تذكيرية كل ${intervalHours} ساعة`
         });
         return true;
     }
@@ -1373,7 +1374,7 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     // أمر حذف الرسائل (للمشرفين والأدمنز)
     if (command === '/احذف') {
         if (!userIsModerator) {
-            await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمنز يستطيعون حذف الرسائل!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_3a143e3392d3a1ad')(['❌ فقط المشرفون والأدمنز يستطيعون حذف الرسائل!']) });
             return true;
         }
 
@@ -1400,13 +1401,13 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
 
         // في الحالة الافتراضية نعتمد على الرد لتحديد الرسالة للحذف
         if (!msg.message.extendedTextMessage || !msg.message.extendedTextMessage.contextInfo) {
-            await sock.sendMessage(jid, { text: '❌ يجب أن تكون هذه الرسالة رد على الرسالة التي تريد حذفها!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_9bdaeb928fd3e0c8')(['❌ يجب أن تكون هذه الرسالة رد على الرسالة التي تريد حذفها!']) });
             return true;
         }
 
         const contextInfo = msg.message.extendedTextMessage.contextInfo;
         if (!contextInfo.quotedMessage) {
-            await sock.sendMessage(jid, { text: '❌ يجب أن تكون هذه الرسالة رد على الرسالة التي تريد حذفها!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_9bdaeb928fd3e0c8')(['❌ يجب أن تكون هذه الرسالة رد على الرسالة التي تريد حذفها!']) });
             return true;
         }
 
@@ -1432,12 +1433,12 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
     // أمر الترقية الفعلية (للأدمنز)
     if (command === '/اشراف') {
         if (!userIsAdmin && !userIsSuperAdmin) {
-            await sock.sendMessage(jid, { text: '❌ فقط الأدمنز يستطيعون ترقية الأعضاء فعلياً!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_a38bb58a612f5396')(['❌ فقط الأدمنز يستطيعون ترقية الأعضاء فعلياً!']) });
             return true;
         }
 
         if (parts.length < 2) {
-            await sock.sendMessage(jid, { text: '❌ استخدام: /اشراف <اللقب>' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_6b86c5b043f8cda8')(['❌ استخدام: /اشراف <اللقب>']) });
             return true;
         }
 
@@ -1445,17 +1446,17 @@ export async function handleAdminCommands(sock, jid, message, sender, msg) {
         const user = await findUserByNickname(nickname, kingdom);
 
         if (!user) {
-            await sock.sendMessage(jid, { text: `❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_c890aff4b7af93d6')`❌ لم يتم العثور على لاعب باسم "${nickname}"!` });
             return true;
         }
 
         try {
             // ترقية فعلية في المجموعة
             await sock.groupParticipantsUpdate(jid, [{ action: 'promote', participants: [user.jid] }]);
-            await sock.sendMessage(jid, { text: `🔰 تم ترقية ${user.nickname} إلى مشرف فعلياً في المجموعة!` });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_26ef37fed6bdf7b5')`🔰 تم ترقية ${user.nickname} إلى مشرف فعلياً في المجموعة!` });
         } catch (error) {
             console.error('خطأ في الترقية الفعلية:', error);
-            await sock.sendMessage(jid, { text: '❌ فشل في ترقية العضو!' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_f5d06507ffb22723')(['❌ فشل في ترقية العضو!']) });
         }
         return true;
     }

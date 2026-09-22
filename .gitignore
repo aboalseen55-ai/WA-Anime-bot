@@ -4,3 +4,4 @@ auth/
 logs/
 temp_*
 *.log
+.npm-cache/

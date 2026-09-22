@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101716"><title>Sam Bot | لوحة الإدارة</title><link rel="stylesheet" href="/dashboard/style.css"><script defer src="/dashboard/icons.js"></script><script defer src="/dashboard/app.js"></script></head>
+<body>
+<section id="login" class="login-shell">
+  <div class="login-brand"><span class="brand-mark"><i data-lucide="bot"></i></span><span>Sam Bot <small>CONTROL CENTER</small></span></div>
+  <form id="loginForm"><p class="eyebrow">مساحتك الخاصة</p><h1>أهلًا بعودتك</h1><label for="password">كلمة المرور</label><input id="password" name="password" type="password" autocomplete="current-password" required><p id="loginNotice" role="alert"></p><button type="submit" class="primary full">دخول لوحة الإدارة<i data-lucide="arrow-left"></i></button></form>
+  <p class="login-foot"><i data-lucide="shield-check"></i>وصول خاص بالمطور</p>
+</section>
+<div id="app" hidden>
+  <aside class="sidebar"><a class="brand" href="#overview"><span class="brand-mark"><i data-lucide="bot"></i></span><span>Sam Bot<small>لوحة الإدارة</small></span></a><p class="nav-caption">مساحة العمل</p><nav id="navigation" aria-label="أقسام الإدارة"></nav><div class="sidebar-bottom"><span class="online-dot"></span>متصل بواتساب<button id="logout" class="icon-button" title="تسجيل الخروج" aria-label="تسجيل الخروج"><i data-lucide="log-out"></i></button></div></aside>
+  <div class="workspace"><header class="topbar"><div><span class="eyebrow">SAM BOT / الإدارة</span><h1 id="pageTitle">نظرة عامة</h1></div><div class="top-actions"><label class="sr-only" for="scope">المملكة</label><select id="scope"><option value="">جميع الممالك</option></select><button id="refresh" class="icon-button" title="تحديث البيانات" aria-label="تحديث البيانات"><i data-lucide="refresh-cw"></i></button></div></header>
+  <main id="content" tabindex="-1"></main><footer>Sam Bot Control <span id="updated"></span></footer></div>
+</div>
+<div id="toast" role="status" hidden></div>
+<dialog id="editor" aria-labelledby="editorTitle"><form id="editorForm"><div class="dialog-heading"><h2 id="editorTitle"></h2><button type="button" id="closeEditor" class="icon-button" aria-label="إغلاق" title="إغلاق"><i data-lucide="x"></i></button></div><div id="editorFields"></div><p id="editorError" role="alert"></p><div class="dialog-actions"><button id="saveEditor" class="primary" type="submit"><i data-lucide="save"></i>حفظ التغييرات</button><button id="cancelEditor" type="button" class="secondary">إلغاء</button></div></form></dialog>
+</body></html>

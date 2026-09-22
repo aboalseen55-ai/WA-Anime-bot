@@ -1,4 +1,6 @@
 import axios from "axios";
+import { publicHttpsAgent } from './dashboardApiSafety.js';
+import { isReservedCommand } from './dashboardData.js';
 import DashboardCommand from "../database/dashboardCommandModel.js";
 import DashboardApi from "../database/dashboardApiModel.js";
 import { decryptDashboardValue } from "./dashboardCrypto.js";
@@ -16,6 +18,7 @@ function isDeveloper(jid) {
 
 function readPath(value, path) {
   if (!path) return value;
+  if (path.split('.').some(key => ['__proto__', 'prototype', 'constructor'].includes(key))) throw new Error('مسار غير صالح');
   return path.split(".").filter(Boolean).reduce((current, key) => current?.[key], value);
 }
 
@@ -38,6 +41,8 @@ async function runConfiguredApi(api) {
   if (endpoint.protocol !== "https:") throw new Error("يسمح فقط بروابط HTTPS");
   const headers = decryptDashboardValue(api.encryptedHeaders) || {};
   const data = decryptDashboardValue(api.encryptedBody) || undefined;
+  const agent = await publicHttpsAgent(endpoint.toString());
+  try {
   const response = await axios({
     method: api.method,
     url: endpoint.toString(),
@@ -45,14 +50,20 @@ async function runConfiguredApi(api) {
     data,
     timeout: api.timeoutMs,
     maxRedirects: 0,
+    proxy: false,
+    httpsAgent: agent,
+    maxContentLength: 1024 * 1024,
+    maxBodyLength: 120000,
     validateStatus: (status) => status >= 200 && status < 300
   });
   return response.data;
+  } finally { agent.destroy(); }
 }
 
 export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   if (!String(text || "").startsWith("/")) return false;
   const trigger = String(text).trim().split(/\s+/)[0].toLowerCase();
+  if (isReservedCommand(trigger)) return false;
   const command = await DashboardCommand.findOne({ trigger, enabled: true }).populate("apiId");
   if (!command) return false;
 

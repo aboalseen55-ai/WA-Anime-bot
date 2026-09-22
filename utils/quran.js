@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import QuranReminderLog from "../database/quranReminderLogModel.js";
 import { KINGDOMS } from "../config.js";
 
@@ -381,7 +382,7 @@ export async function handleQuranCommand(sock, jid, text) {
 
     if (request.type === "surah_audio") {
       const surah = await getSurah(request.surah);
-      await sock.sendMessage(jid, { text: `۞ *تلاوة سورة ${surah.name}* ۞\nالقارئ: مشاري العفاسي` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_db63850e3200ddff')`۞ *تلاوة سورة ${surah.name}* ۞\nالقارئ: مشاري العفاسي` });
       await sock.sendMessage(jid, {
         audio: { url: getSurahAudioUrl(request.surah) },
         mimetype: "audio/mpeg",
@@ -401,13 +402,13 @@ export async function handleQuranCommand(sock, jid, text) {
     }
 
     await sock.sendMessage(jid, {
-      text: `لم أفهم طلب القرآن.\nجرّب مثلًا: /قرآن الكهف أو /قرآن 2:255`
+      text: dashboardReply('reply_5d3b4583b93f4d0f')`لم أفهم طلب القرآن.\nجرّب مثلًا: /قرآن الكهف أو /قرآن 2:255`
     });
     return true;
   } catch (error) {
     console.error("Quran command error:", error.message);
     await sock.sendMessage(jid, {
-      text: "تعذر جلب طلب القرآن الآن. جرّب بعد قليل."
+      text: dashboardReply('reply_e3c92f8a42ca9ea5')(["تعذر جلب طلب القرآن الآن. جرّب بعد قليل."])
     });
     return true;
   }

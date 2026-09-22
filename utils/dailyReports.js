@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import User from "../database/userModel.js";
 import { KINGDOMS } from "../config.js";
 import { sendAdminsDailyReports, resetDailyGameStats } from "../commands/adminSystem.js";
@@ -81,7 +82,7 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
     }
 
     // بناء التقرير
-    let reportMessage = `*📊 تقرير اليوم لمملكة ${kingdomData.name}*
+    let reportMessage = dashboardReply('reply_c7c6bcc0fd25eb9f')`*📊 تقرير اليوم لمملكة ${kingdomData.name}*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 *📅 التاريخ:* ${new Date().toLocaleDateString('ar-EG')}
@@ -93,18 +94,18 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
     const topUsers = users.filter(u => u.dailyMessages > 0).slice(0, 10);
     
     if (topUsers.length === 0) {
-      reportMessage += `
+      reportMessage += dashboardReply('reply_874741fb2e911b1b')`
 
 ⚠️ لم يكن هناك نشاط اليوم`;
     } else {
-      reportMessage += `
+      reportMessage += dashboardReply('reply_20add2d15044d0f0')`
 
 *🏆 أكثر الأعضاء تفاعلاً:*
 `;
       
       topUsers.forEach((user, index) => {
         const emoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-        reportMessage += `${emoji} *${user.nickname}* - 💬 ${user.dailyMessages} رسالة\n`;
+        reportMessage += dashboardReply('reply_5962d9c707326ffd')`${emoji} *${user.nickname}* - 💬 ${user.dailyMessages} رسالة\n`;
       });
     }
 
@@ -118,7 +119,7 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
       .slice(0, 10);
 
     if (topGamePlayers.length > 0) {
-      reportMessage += `
+      reportMessage += dashboardReply('reply_c90e0266140b82eb')`
 
 *🎮 ترتيب الألعاب:*
 `;
@@ -127,7 +128,7 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
         const emoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
         const answers = Number(user.dailyGameAnswers) || 0;
         const gameXp = Number(user.dailyGameXp) || 0;
-        reportMessage += `${emoji} *${user.nickname}* - ✅ ${answers} إجابة | ✨ ${gameXp} XP\n`;
+        reportMessage += dashboardReply('reply_b6234dbca499686d')`${emoji} *${user.nickname}* - ✅ ${answers} إجابة | ✨ ${gameXp} XP\n`;
       });
     }
 
@@ -139,7 +140,7 @@ export async function generateDailyReport(sock, kingdom = 'clover') {
     const activeGamePlayersCount = users.filter(u => (Number(u.dailyGameAnswers) || 0) > 0).length;
     const totalDailyGameXp = users.reduce((sum, u) => sum + (Number(u.dailyGameXp) || 0), 0);
 
-    reportMessage += `
+    reportMessage += dashboardReply('reply_0b39c9e637d504a3')`
 
 *📈 الإحصائيات العامة:*
 ━━━━━━━━━━━━━━━━━━━━

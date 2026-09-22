@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { enqueueAnswer, processAnswerQueue, clearAnswerQueue } from "../utils/answerQueue.js";
@@ -76,25 +77,25 @@ export async function startUnscrambleGame(sock, jid, sender) {
     // التحقق من صلاحية المرسل (مشرف أو مالك)
     const isAdmin = await checkAdmin(sock, jid, sender);
     if (!isAdmin) {
-        await sock.sendMessage(jid, { text: "❌ هذا الأمر متاح للمشرفين فقط!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_36255bd969909dd4')(["❌ هذا الأمر متاح للمشرفين فقط!"]) });
         return;
     }
 
     if (activeUnscrambleGames[jid]) {
-        await sock.sendMessage(jid, { text: "🎮 هناك لعبة تعمل حالياً!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_aa59cbfd2f1fa4e5')(["🎮 هناك لعبة تعمل حالياً!"]) });
         return;
     }
 
     // إرسال خيارات اللعبة
     await sock.sendMessage(jid, {
-        text: `🎮 اختر نوع لعبة ترتيب الحروف:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.`
+        text: dashboardReply('reply_f13665fb047d634e')`🎮 اختر نوع لعبة ترتيب الحروف:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.`
     });
 
     // وضع حالة الانتظار
     unscrambleGameWaiting[jid] = {
         sender: sender,
         timeout: setTimeout(async () => {
-            await sock.sendMessage(jid, { text: "⏱ انتهى وقت الاختيار!" });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_7f5fb5141232d1d9')(["⏱ انتهى وقت الاختيار!"]) });
             delete unscrambleGameWaiting[jid];
         }, 30000) // 30 ثانية للاختيار
     };
@@ -113,7 +114,7 @@ export async function handleUnscrambleResponse(sock, jid, sender, text) {
     if (!userIsModerator) {
         clearTimeout(waiting.timeout);
         delete unscrambleGameWaiting[jid];
-        await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_b468c4f044538730')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
         return;
     }
 
@@ -128,14 +129,14 @@ export async function handleUnscrambleResponse(sock, jid, sender, text) {
     } else if (choice === '2') {
         // وضع شخصين محددين
         await sock.sendMessage(jid, {
-            text: `👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):`
+            text: dashboardReply('reply_616a0d6449d0c703')`👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):`
         });
 
         unscrambleGameWaiting[jid] = {
             sender: sender,
             mode: 'two_players',
             timeout: setTimeout(async () => {
-                await sock.sendMessage(jid, { text: "⏱ انتهى وقت اختيار المشاركين!" });
+                await sock.sendMessage(jid, { text: dashboardReply('reply_71da78476dc7b804')(["⏱ انتهى وقت اختيار المشاركين!"]) });
                 delete unscrambleGameWaiting[jid];
             }, 30000)
         };
@@ -145,7 +146,7 @@ export async function handleUnscrambleResponse(sock, jid, sender, text) {
         delete unscrambleGameWaiting[jid];
         await startUnscrambleGame(sock, jid, sender);
     } else {
-        await sock.sendMessage(jid, { text: '❌ اختر 1 أو 2 أو 3 فقط!' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_d140252a66280121')(['❌ اختر 1 أو 2 أو 3 فقط!']) });
     }
 }
 
@@ -162,7 +163,7 @@ export async function handleUnscramblePlayersSelection(sock, jid, sender, text) 
     if (!userIsModerator) {
         clearTimeout(waiting.timeout);
         delete unscrambleGameWaiting[jid];
-        await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_b468c4f044538730')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
         return;
     }
 
@@ -172,20 +173,20 @@ export async function handleUnscramblePlayersSelection(sock, jid, sender, text) 
         // اختيار اللاعب الأول
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' } });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_dcc81fd2abe58914')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return;
         }
         waiting.player1 = user; // تخزين بيانات المستخدم الكاملة
-        await sock.sendMessage(jid, { text: '👤 أرسل اسم اللاعب الثاني (اللقب):' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_027b6c6a0a21b1dd')(['👤 أرسل اسم اللاعب الثاني (اللقب):']) });
     } else {
         // اختيار اللاعب الثاني
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' } });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_dcc81fd2abe58914')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return;
         }
         if (user.jid === waiting.player1.jid) {
-            await sock.sendMessage(jid, { text: '❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_93b98fe48cc3418a')(['❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:']) });
             return;
         }
         const players = [waiting.player1, user]; // تخزين بيانات المستخدمين الكاملة
@@ -196,7 +197,7 @@ export async function handleUnscramblePlayersSelection(sock, jid, sender, text) 
 
 // دالة لعرض شرح اللعبة
 async function showUnscrambleExplanation(sock, jid) {
-    const explanation = `
+    const explanation = dashboardReply('reply_7a8c39d3c32201cf')`
 ╔════════════════════════════════════╗
 ║  � شرح لعبة تفكيك الحروف          ║
 ╚════════════════════════════════════╝
@@ -299,7 +300,7 @@ async function startActualUnscrambleGame(sock, jid, players) {
         if (game && !game.hintSent) {
             game.hintSent = true;
             await sock.sendMessage(jid, {
-                text: `💡 تلميح: أول حرف هو "${word[0]}" وآخر حرف هو "${word[word.length - 1]}"`
+                text: dashboardReply('reply_7753812c7f6b163c')`💡 تلميح: أول حرف هو "${word[0]}" وآخر حرف هو "${word[word.length - 1]}"`
             });
         }
     }, HINT_TIME);
@@ -309,11 +310,11 @@ async function startActualUnscrambleGame(sock, jid, players) {
         const game = activeUnscrambleGames[jid];
         if (game && !game.answered) {
             await sock.sendMessage(jid, {
-                text: `⏱ انتهى الوقت!\n✅ الكلمة الصحيحة: **${word}**`
+                text: dashboardReply('reply_17f2ed5b4cd26a10')`⏱ انتهى الوقت!\n✅ الكلمة الصحيحة: **${word}**`
             });
             clearTimeout(game.hintTimeout);
             // إخطار بالجولة القادمة
-            await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة..." });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_d2d8b2c25ed3c7d8')(["⏭️ جولة جديدة قادمة..."]) });
             
             const playersList = game.players;
             
@@ -393,7 +394,7 @@ export async function checkUnscrambleGuess(sock, jid, sender, text) {
                     const xpResult = awardGameXp(player, 1);
                     await player.save();
 
-                    const winMessage = `🎉 **برافو ${player.nickname}!**
+                    const winMessage = dashboardReply('reply_cd209c199eb719f5')`🎉 **برافو ${player.nickname}!**
 ━━━━━━━━━━━━━━━━━━━
 ✅ الإجابة صحيحة!
 🔤 الحروف المفصولة: ${correctWithSpaces}
@@ -423,7 +424,7 @@ export async function checkUnscrambleGuess(sock, jid, sender, text) {
                 players: playersList
             };
 
-            await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 3 ثواني..." });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_ac999f78173e8572')(["⏭️ جولة جديدة قادمة بعد 3 ثواني..."]) });
             
             setTimeout(() => {
                 if (activeUnscrambleGames[jid] && activeUnscrambleGames[jid].state === 'interim') {
@@ -442,9 +443,9 @@ export async function stopUnscrambleGame(sock, jid) {
         clearTimeout(activeUnscrambleGames[jid].hintTimeout);
         clearAnswerQueue('unscramble', jid);
         delete activeUnscrambleGames[jid];
-        await sock.sendMessage(jid, { text: "🛑 تم إيقاف لعبة ترتيب الحروف!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_5e1dad6699b8c107')(["🛑 تم إيقاف لعبة ترتيب الحروف!"]) });
     } else {
-        await sock.sendMessage(jid, { text: "❌ لا توجد لعبة ترتيب الحروف تعمل حالياً!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_9e9a5537d4076690')(["❌ لا توجد لعبة ترتيب الحروف تعمل حالياً!"]) });
     }
 }
 

@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 // utils/healthCheck.js
 import mongoose from 'mongoose';
 import User from '../database/userModel.js';
@@ -53,7 +54,7 @@ export async function sendDailyHealthReport(sock, adminJids) {
   try {
     const health = await healthCheck(sock);
 
-    const report = `📊 تقرير الصحة اليومي:
+    const report = dashboardReply('reply_34f03ed6be974a5d')`📊 تقرير الصحة اليومي:
 
 🟢 الحالة: ${health.status === 'healthy' ? 'ممتازة' : 'تحتاج انتباه'}
 

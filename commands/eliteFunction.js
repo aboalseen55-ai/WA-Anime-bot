@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import User from "../database/userModel.js";
 import { getHighestRank, displayRank, kingdomRanks } from "./rankSystem.js";
 
@@ -31,33 +32,33 @@ export async function showElite(sock, jid, kingdom) {
 
     if (eliteUsers.length === 0) {
       await sock.sendMessage(jid, { 
-        text: '❌ لا توجد نخبة في هذه المملكة حتى الآن!' 
+        text: dashboardReply('reply_90f1bc29b133f9bd')(['❌ لا توجد نخبة في هذه المملكة حتى الآن!'])
       });
       return;
     }
 
     // بناء رسالة النخبة
-    let report = `👑 *نخبة المملكة* 👑\n`;
-    report += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    let report = dashboardReply('reply_fba9e96a13e498c3')`👑 *نخبة المملكة* 👑\n`;
+    report += dashboardReply('reply_1e759a5d04d918d6')`━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     eliteUsers.forEach((user, index) => {
       const rank = user.kingdomRankByKingdom[kingdom];
       const rankDisplay = displayRank(kingdom, rank);
-      report += `${user.nickname}: ${rankDisplay}\n`;
+      report += dashboardReply('reply_79b7ec542ed4d68e')`${user.nickname}: ${rankDisplay}\n`;
       
       if (index < eliteUsers.length - 1) {
-        report += `━━━━━━━━━━━━━━━━━━━━━\n`;
+        report += dashboardReply('reply_8714f27dde14a3b3')`━━━━━━━━━━━━━━━━━━━━━\n`;
       }
     });
 
-    report += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
-    report += `📊 إجمالي النخبة: ${eliteUsers.length}`;
+    report += dashboardReply('reply_5c93e9cf06272cb0')`\n━━━━━━━━━━━━━━━━━━━━━\n`;
+    report += dashboardReply('reply_8c99a94cccd2576f')`📊 إجمالي النخبة: ${eliteUsers.length}`;
 
     await sock.sendMessage(jid, { text: report });
   } catch (error) {
     console.error('خطأ في عرض النخبة:', error);
     await sock.sendMessage(jid, { 
-      text: '❌ حدث خطأ في عرض النخبة!' 
+      text: dashboardReply('reply_995098e91c301286')(['❌ حدث خطأ في عرض النخبة!'])
     });
   }
 }

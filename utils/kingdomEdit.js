@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import Kingdom from "../database/kingdomModel.js";
 import { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED, DEVELOPER_JID } from "../config.js";
 import { resolveMentionContext } from "../commands/adminSystem.js";
@@ -532,22 +533,22 @@ export async function handleStartKingdomEdit(sock, jid, sender, trimmedText) {
   if (!EDIT_COMMANDS.has(command)) return false;
 
   if (!isPrivateChat(jid)) {
-    await sock.sendMessage(jid, { text: "🔐 للتعديل بأمان، أرسل أمر /تعديل_مملكة في خاص البوت فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_b25db578ab1980eb')(["🔐 للتعديل بأمان، أرسل أمر /تعديل_مملكة في خاص البوت فقط."]) });
     return true;
   }
 
   if (!isDeveloper(sender)) {
-    await sock.sendMessage(jid, { text: "❌ تعديل المملكة وروابط الفورمات خاص بالمطور فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_e60715f41cc6965c')(["❌ تعديل المملكة وروابط الفورمات خاص بالمطور فقط."]) });
     return true;
   }
 
   if (!ADMIN_PASSWORD_CONFIGURED) {
-    await sock.sendMessage(jid, { text: "❌ ADMIN_PASSWORD غير مضبوط في Railway variables." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_42cae74baa02940b')(["❌ ADMIN_PASSWORD غير مضبوط في Railway variables."]) });
     return true;
   }
 
   editSessions.set(sender, { stage: "password", startedAt: Date.now() });
-  await sock.sendMessage(jid, { text: "🔐 أرسل كلمة مرور الأدمن لبدء تعديل المملكة.\nللإلغاء اكتب: إلغاء" });
+  await sock.sendMessage(jid, { text: dashboardReply('reply_3ad01094f466acbe')(["🔐 أرسل كلمة مرور الأدمن لبدء تعديل المملكة.\nللإلغاء اكتب: إلغاء"]) });
   return true;
 }
 
@@ -556,7 +557,7 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
   if (!session) return false;
 
   if (!isPrivateChat(jid)) {
-    await sock.sendMessage(jid, { text: "🔐 أكمل تعديل المملكة في الخاص فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_35cc91a01df7ec34')(["🔐 أكمل تعديل المملكة في الخاص فقط."]) });
     return true;
   }
 
@@ -565,14 +566,14 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
 
   if (CANCEL_PATTERN.test(trimmed)) {
     editSessions.delete(sender);
-    await sock.sendMessage(jid, { text: "✅ تم إلغاء تعديل المملكة." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_08cd94d18c2b7647')(["✅ تم إلغاء تعديل المملكة."]) });
     return true;
   }
 
   if (session.stage === "password") {
     if (trimmed !== ADMIN_PASSWORD) {
       editSessions.delete(sender);
-      await sock.sendMessage(jid, { text: "❌ كلمة المرور غير صحيحة. تم إلغاء العملية." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_b5a2c9c4c100fa88')(["❌ كلمة المرور غير صحيحة. تم إلغاء العملية."]) });
       return true;
     }
 
@@ -580,7 +581,7 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
     session.stage = "kingdom";
     editSessions.set(sender, session);
     await sock.sendMessage(jid, {
-      text: `✅ تم قبول كلمة المرور.\n\nأرسل معرف المملكة أو اسمها:\n${formatKingdomList(kingdoms)}`
+      text: dashboardReply('reply_93ff3fbbdd5cc6d4')`✅ تم قبول كلمة المرور.\n\nأرسل معرف المملكة أو اسمها:\n${formatKingdomList(kingdoms)}`
     });
     return true;
   }
@@ -588,13 +589,13 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
   if (session.stage === "kingdom") {
     const kingdoms = await findKingdomMatches(trimmed);
     if (!kingdoms.length) {
-      await sock.sendMessage(jid, { text: "❌ لم أجد هذه المملكة. أرسل المعرف مثل clover أو الاسم كما يظهر في التقرير." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_5d44d51aae1ff9c9')(["❌ لم أجد هذه المملكة. أرسل المعرف مثل clover أو الاسم كما يظهر في التقرير."]) });
       return true;
     }
 
     if (kingdoms.length > 1) {
       await sock.sendMessage(jid, {
-        text: `وجدت أكثر من مملكة بهذا الاسم. أرسل المعرف المطلوب:\n${formatKingdomList(kingdoms)}`
+        text: dashboardReply('reply_d650ccd4792adca1')`وجدت أكثر من مملكة بهذا الاسم. أرسل المعرف المطلوب:\n${formatKingdomList(kingdoms)}`
       });
       return true;
     }
@@ -612,14 +613,14 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
   if (session.stage === "field") {
     const field = findField(trimmed);
     if (!field) {
-      await sock.sendMessage(jid, { text: "❌ اختر رقمًا من 1 إلى 14 أو اسم الحقل." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_0c2dd11f456d1c63')(["❌ اختر رقمًا من 1 إلى 14 أو اسم الحقل."]) });
       return true;
     }
 
     const kingdom = await Kingdom.findById(session.kingdomMongoId).lean();
     if (!kingdom) {
       editSessions.delete(sender);
-      await sock.sendMessage(jid, { text: "❌ لم أعد أجد هذه المملكة. أعد المحاولة." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_19fa68f95d5fc373')(["❌ لم أعد أجد هذه المملكة. أعد المحاولة."]) });
       return true;
     }
 
@@ -644,19 +645,19 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
       session.stage = "groupCount";
       session.groupSetup = {};
       editSessions.set(sender, session);
-      await sock.sendMessage(jid, { text: `${field.prompt}\n\nالقيمة الحالية:\n${formatValue(session.oldValue)}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_c45dbe602aea988d')`${field.prompt}\n\nالقيمة الحالية:\n${formatValue(session.oldValue)}` });
       return true;
     }
 
     editSessions.set(sender, session);
-    await sock.sendMessage(jid, { text: `${field.prompt}\n\nالقيمة الحالية:\n${formatValue(session.oldValue)}` });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_c45dbe602aea988d')`${field.prompt}\n\nالقيمة الحالية:\n${formatValue(session.oldValue)}` });
     return true;
   }
 
   if (session.stage === "groupCount") {
     const count = parseGroupCount(trimmed);
     if (!Number.isInteger(count) || count < 1 || count > 10) {
-      await sock.sendMessage(jid, { text: "❌ عدد القروبات يجب أن يكون من 1 إلى 10." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_e603f059b2ea9be0')(["❌ عدد القروبات يجب أن يكون من 1 إلى 10."]) });
       return true;
     }
 
@@ -670,7 +671,7 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
   if (session.stage === "groupRoles") {
     const validation = parseGroupRoles(trimmed, session.groupSetup?.count || 0);
     if (!validation.ok) {
-      await sock.sendMessage(jid, { text: `${validation.message}\n\n${buildGroupRolesPrompt(session.groupSetup?.count || 0)}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_0f9b01a026fc1746')`${validation.message}\n\n${buildGroupRolesPrompt(session.groupSetup?.count || 0)}` });
       return true;
     }
 
@@ -694,24 +695,24 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
 
     const groupJid = normalizeGroupJid(trimmed);
     if (!isGroupJid(groupJid)) {
-      await sock.sendMessage(jid, { text: `❌ JID القروب غير صحيح. يجب أن ينتهي بـ @g.us\n\n${role.prompt}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_73f89db1598517e0')`❌ JID القروب غير صحيح. يجب أن ينتهي بـ @g.us\n\n${role.prompt}` });
       return true;
     }
 
     if (getGroupSetupJids(session.groupSetup).includes(groupJid)) {
-      await sock.sendMessage(jid, { text: `❌ هذا الـ JID مكرر داخل نفس المملكة.\n\n${role.prompt}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_5eb2ae67a0c2eda7')`❌ هذا الـ JID مكرر داخل نفس المملكة.\n\n${role.prompt}` });
       return true;
     }
 
     const ownership = await assertGroupOwnershipAvailable([groupJid], session.kingdomMongoId);
     if (!ownership.ok) {
-      await sock.sendMessage(jid, { text: `${ownership.message}\n\n${role.prompt}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_197f6537b3d7365c')`${ownership.message}\n\n${role.prompt}` });
       return true;
     }
 
     const access = await validateGroupAccess(sock, [groupJid]);
     if (!access.ok) {
-      await sock.sendMessage(jid, { text: `${access.message}\n\n${role.prompt}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_22c0cf511aff266a')`${access.message}\n\n${role.prompt}` });
       return true;
     }
 
@@ -725,7 +726,7 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
     if (session.groupSetup.currentIndex < session.groupSetup.roles.length) {
       const nextRole = getCurrentGroupRole(session);
       editSessions.set(sender, session);
-      await sock.sendMessage(jid, { text: `✅ تم حفظ ${role.label}.\n\n${nextRole.prompt}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_67b27c216030bc5b')`✅ تم حفظ ${role.label}.\n\n${nextRole.prompt}` });
       return true;
     }
 
@@ -739,7 +740,7 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
   if (session.stage === "value") {
     const validation = await validateNewValue(sock, session, trimmed);
     if (!validation.ok) {
-      await sock.sendMessage(jid, { text: `${validation.message}\n\n${session.field.prompt}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_9356cc1a8cbd96ad')`${validation.message}\n\n${session.field.prompt}` });
       return true;
     }
 
@@ -752,7 +753,7 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
 
   if (session.stage === "confirm") {
     if (!CONFIRM_PATTERN.test(trimmed)) {
-      await sock.sendMessage(jid, { text: "اكتب تأكيد للحفظ أو إلغاء للإلغاء." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_8f52d3de7b16af01')(["اكتب تأكيد للحفظ أو إلغاء للإلغاء."]) });
       return true;
     }
 
@@ -760,14 +761,14 @@ export async function handleKingdomEditStep(sock, jid, sender, text) {
       const kingdom = await saveKingdomEdit(session, sender);
       editSessions.delete(sender);
       const actor = await resolveMentionContext(sender, kingdom.id);
-      await sock.sendMessage(jid, { text: `✅ تم تعديل ${kingdom.name} بنجاح.\nالحقل: ${session.field.label}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_8f22c4292addf8ab')`✅ تم تعديل ${kingdom.name} بنجاح.\nالحقل: ${session.field.label}` });
       await sock.sendMessage(DEVELOPER_JID, {
-        text: `🏰 تم تعديل مملكة\nالمملكة: ${kingdom.name} (${kingdom.id})\nالحقل: ${session.field.label}\nبواسطة: ${actor.text}`,
+        text: dashboardReply('reply_badc2e78d9bee90a')`🏰 تم تعديل مملكة\nالمملكة: ${kingdom.name} (${kingdom.id})\nالحقل: ${session.field.label}\nبواسطة: ${actor.text}`,
         mentions: actor.mentions
       });
     } catch (error) {
       editSessions.delete(sender);
-      await sock.sendMessage(jid, { text: `❌ فشل تعديل المملكة: ${error.message}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_cbe728d1ad9acbe2')`❌ فشل تعديل المملكة: ${error.message}` });
     }
     return true;
   }

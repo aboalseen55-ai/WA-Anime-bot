@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import User from "../database/userModel.js";
 import { showBankBalance, depositToBank, withdrawFromBank, classifyIdentifier, isSuperAdminInKingdom, isAdmin, isModerator, findUserByNickname, findUserByNicknameOrPhone, getCleanMentionTextForUser } from "./adminSystem.js";
 import { getHighestRank, displayRank } from "./rankSystem.js";
@@ -25,21 +26,21 @@ export async function userCommands(sock, jid, sender, text, msg) {
 
   if (command === "/مستواي" || command === "/مستوى" || command === "/لفلي") {
     if (!user) {
-      await sock.sendMessage(jid, { text: "❌ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_b506fc58ef1c1cc6')(["❌ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك"]) });
       return true;
     }
 
     const progress = formatLevelProgress(user);
-    let message = `✨ مستوى ${user.nickname}\n`;
-    message += `━━━━━━━━━━━━━━━━━\n`;
-    message += `🏅 المستوى: ${progress.level}\n`;
-    message += `✨ XP: ${progress.xp}\n`;
-    message += `📈 التقدم: ${progress.progressBar} ${progress.percent}%\n`;
-    message += `⬆️ المتبقي للمستوى ${progress.level + 1}: ${progress.remaining} XP\n`;
-    message += `💬 رسائل اليوم: ${user.dailyMessages || 0}\n`;
-    message += `📊 إجمالي الرسائل: ${user.totalMessages || 0}\n`;
-    message += `🗨️ XP المحادثة: ${user.chatXp || 0}\n`;
-    message += `🎮 XP الألعاب: ${user.gameXp || 0}`;
+    let message = dashboardReply('reply_8df34b51fb4f08f2')`✨ مستوى ${user.nickname}\n`;
+    message += dashboardReply('reply_e9c24da67b9fb911')`━━━━━━━━━━━━━━━━━\n`;
+    message += dashboardReply('reply_307c56c3f2ace444')`🏅 المستوى: ${progress.level}\n`;
+    message += dashboardReply('reply_c8349dbcea8911ab')`✨ XP: ${progress.xp}\n`;
+    message += dashboardReply('reply_fe818e48a8ec0f16')`📈 التقدم: ${progress.progressBar} ${progress.percent}%\n`;
+    message += dashboardReply('reply_ba90089ddc119759')`⬆️ المتبقي للمستوى ${progress.level + 1}: ${progress.remaining} XP\n`;
+    message += dashboardReply('reply_2d97b255615fee23')`💬 رسائل اليوم: ${user.dailyMessages || 0}\n`;
+    message += dashboardReply('reply_fd9f6034ed2f7a3c')`📊 إجمالي الرسائل: ${user.totalMessages || 0}\n`;
+    message += dashboardReply('reply_1112d50b86c4042f')`🗨️ XP المحادثة: ${user.chatXp || 0}\n`;
+    message += dashboardReply('reply_2ba3022b2896836a')`🎮 XP الألعاب: ${user.gameXp || 0}`;
 
     await sock.sendMessage(jid, { text: message });
     return true;
@@ -51,7 +52,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
       .limit(10);
 
     if (!users.length) {
-      await sock.sendMessage(jid, { text: "لا يوجد ترتيب مستويات بعد." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_ff6b4a5dbf8aa2a6')(["لا يوجد ترتيب مستويات بعد."]) });
       return true;
     }
 
@@ -69,19 +70,19 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/تعيين_منشن" || command === "/تغيير_منشن") {
     const nick = args[1];
     if (!nick) {
-      await sock.sendMessage(jid, { text: "❌ استخدم: /تعيين_منشن <لقب>" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_0f67c7f9a8d87b14')(["❌ استخدم: /تعيين_منشن <لقب>"]) });
       return true;
     }
     let targetUser = await findUserByNickname(nick.trim(), kingdom);
     if (!targetUser) {
-      await sock.sendMessage(jid, { text: "❌ لا يوجد مستخدم بهذا اللقب." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_1a37a1912f9b8391')(["❌ لا يوجد مستخدم بهذا اللقب."]) });
       return true;
     }
     // تحقق من صلاحية الأدمن أو المشرف أو الأدمن الرئيسي في هذه المملكة
     const isSuperAdminUser = await isSuperAdminInKingdom(sender, kingdom);
     const isAdminOrMod = user && (user.role === 'admin' || user.role === 'moderator');
     if (!isAdminOrMod && !isSuperAdminUser) {
-      await sock.sendMessage(jid, { text: "❌ فقط الأدمن أو المشرف يمكنهم تعيين أو تغيير منشن الأعضاء." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_ea3525b2ba4de1d7')(["❌ فقط الأدمن أو المشرف يمكنهم تعيين أو تغيير منشن الأعضاء."]) });
       return true;
     }
     
@@ -103,7 +104,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
       
       if (!foundParticipant) {
         await sock.sendMessage(jid, { 
-          text: `❌ لم يتم العثور على ${targetUser.nickname} في قائمة المشاركين!` 
+          text: dashboardReply('reply_3d37fbbf090b7bc8')`❌ لم يتم العثور على ${targetUser.nickname} في قائمة المشاركين!`
         });
         return true;
       }
@@ -126,7 +127,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
       
       // رسالة نجاح مع عرض المنشن الجديد
       const action = command === "/تعيين_منشن" ? "تعيين" : "تغيير";
-      const successMessage = `✅ تم ${action} منشن ${targetUser.nickname}!\n📣 المنشن الجديد: ${mentionText}`;
+      const successMessage = dashboardReply('reply_4cc139d433ea9551')`✅ تم ${action} منشن ${targetUser.nickname}!\n📣 المنشن الجديد: ${mentionText}`;
       await sock.sendMessage(jid, { text: successMessage });
       
       // إرسال رسالة إلى المستخدم يخبره بالمنشن الجديد
@@ -136,7 +137,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
     } catch (error) {
       console.error('❌ خطأ في استخراج بيانات المشاركين:', error);
       await sock.sendMessage(jid, { 
-        text: '❌ حدث خطأ في الوصول لبيانات المجموعة!\n\nتأكد من أن البوت أدمن في المجموعة.' 
+        text: dashboardReply('reply_26fcf97bffb56867')(['❌ حدث خطأ في الوصول لبيانات المجموعة!\n\nتأكد من أن البوت أدمن في المجموعة.'])
       });
     }
     return true;
@@ -146,13 +147,13 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/devinfo" || command === "/مطور" || command === "/مطور_معلومات") {
     // تحقق من أن المرسل من قائمة المطورين
     if (!DEVELOPER_JIDS.includes(sender)) {
-      await sock.sendMessage(jid, { text: "❌ هذا الأمر مخصّص للمطورين فقط." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_ca9a4d988be6f4cc')(["❌ هذا الأمر مخصّص للمطورين فقط."]) });
       return true;
     }
 
     const nick = args.slice(1).join(" ").trim();
     if (!nick) {
-      await sock.sendMessage(jid, { text: "❌ استخدم: /devinfo <لقب_المستخدم>" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_c90422a8a9c4098f')(["❌ استخدم: /devinfo <لقب_المستخدم>"]) });
       return true;
     }
 
@@ -164,7 +165,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
     }
 
     if (!targetUser) {
-      await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم باسم "${nick}"` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_7afc7026e5ab24ca')`❌ لم يتم العثور على مستخدم باسم "${nick}"` });
       return true;
     }
 
@@ -211,14 +212,14 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/لقبي") {
     const nick = args.slice(1).join(" ");
     if (!nick) {
-      await sock.sendMessage(jid, { text: "❌ اكتب لقب بعد الأمر\n/لقبي لقبك الجديد" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_bab74d239a09385d')(["❌ اكتب لقب بعد الأمر\n/لقبي لقبك الجديد"]) });
       return true;
     }
 
     // التحقق من أن اللقب غير مستخدم من قبل
     const existingUser = await User.findOne({ nickname: nick, kingdom_id: kingdom });
     if (existingUser && existingUser.jid !== sender) {
-      await sock.sendMessage(jid, { text: `❌ هذا اللقب مستخدم بالفعل من قبل شخص آخر!` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_430cbbd1ffe454b4')`❌ هذا اللقب مستخدم بالفعل من قبل شخص آخر!` });
       return true;
     }
 
@@ -238,13 +239,13 @@ export async function userCommands(sock, jid, sender, text, msg) {
         whatsappName: whatsappName
       });
       await user.save();
-      await sock.sendMessage(jid, { text: `✅ تم تسجيل لقبك: ${nick}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_46480f679a31c2e2')`✅ تم تسجيل لقبك: ${nick}` });
     } else {
       // تغيير اللقب (يتطلب عملات إذا تم تغييره من قبل)
       // التحقق من أن اللقب الجديد غير مستخدم من قبل
       const existingUser = await User.findOne({ nickname: nick, kingdom_id: kingdom });
       if (existingUser && existingUser.jid !== sender) {
-        await sock.sendMessage(jid, { text: `❌ هذا اللقب مستخدم بالفعل من قبل شخص آخر!` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_430cbbd1ffe454b4')`❌ هذا اللقب مستخدم بالفعل من قبل شخص آخر!` });
         return true;
       }
 
@@ -254,14 +255,14 @@ export async function userCommands(sock, jid, sender, text, msg) {
           return true;
         }
         user.coins -= 50;
-        await sock.sendMessage(jid, { text: `💰 تم خصم 50 عملة لتغيير اللقب\n💰 رصيدك الآن: ${user.coins}` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_0a35411ad0f4acf1')`💰 تم خصم 50 عملة لتغيير اللقب\n💰 رصيدك الآن: ${user.coins}` });
       }
       const oldNick = user.nickname;
       user.nickname = nick;
       user.whatsappName = msg?.pushName || user.whatsappName || 'صديق';
       user.nicknameChanged = true;
       await user.save();
-      await sock.sendMessage(jid, { text: `✅ تم تغيير لقبك إلى: ${nick}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_34f4ef0e702290a1')`✅ تم تغيير لقبك إلى: ${nick}` });
     }
     return true;
   }
@@ -269,9 +270,9 @@ export async function userCommands(sock, jid, sender, text, msg) {
   // معرفة الـ ID
   if (command === "/معرف") {
     if (user) {
-      await sock.sendMessage(jid, { text: `🆔 لقبك: *${user.nickname}*\nID الخاص بك:\n${sender}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_f266661a19be7992')`🆔 لقبك: *${user.nickname}*\nID الخاص بك:\n${sender}` });
     } else {
-      await sock.sendMessage(jid, { text: `🆔 ID الخاص بك:\n${sender}\n\n⚠️ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_dc30d1ee7703cfca')`🆔 ID الخاص بك:\n${sender}\n\n⚠️ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك` });
     }
     return true;
   }
@@ -279,12 +280,12 @@ export async function userCommands(sock, jid, sender, text, msg) {
   // إعادة ضبط بيانات المستخدم وحذف نفسه
   if (command === "/اعادة") {
     if (!user) {
-      await sock.sendMessage(jid, { text: "❌ لا توجد بيانات لحذفها." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_fdb8c280729493fc')(["❌ لا توجد بيانات لحذفها."]) });
       return true;
     }
 
     await User.deleteOne({ nickname: user.nickname, kingdom_id: kingdom });
-    await sock.sendMessage(jid, { text: "✅ تم حذف بياناتك بالكامل، يمكنك إعادة التسجيل مجددًا." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_76dcfa37578c108d')(["✅ تم حذف بياناتك بالكامل، يمكنك إعادة التسجيل مجددًا."]) });
     return true;
   }
 
@@ -294,7 +295,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
     user = await User.findOne({ jid: sender, kingdom_id: kingdom });
     
     if (!user) {
-      await sock.sendMessage(jid, { text: "❌ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_b506fc58ef1c1cc6')(["❌ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك"]) });
       return true;
     }
 
@@ -315,22 +316,22 @@ export async function userCommands(sock, jid, sender, text, msg) {
     const kingdomRank = user.kingdomRankByKingdom?.[kingdom];
     const kingdomRankDisplay = kingdomRank ? displayRank(kingdom, kingdomRank) : '❌ لا توجد رتبة';
 
-    let message = `${roleEmoji} ملفك الشخصي\n`;
-    message += `━━━━━━━━━━━━━━━━━\n`;
-    message += `📛 اللقب: ${user.nickname}\n`;
-    message += `🎖️ الرتبة الإدارية: ${roleText}\n`;
-    message += `👑 رتبة المملكة: ${kingdomRankDisplay}\n`;
-    message += `✨ المستوى: ${user.level || 0} (${user.xp || 0} XP)\n`;
-    message += `💰 النقاط: ${user.points || 0}\n`;
-    message += `🎖️ نجوم الرتب: ${user.rankStarsByKingdom?.[kingdom] || 0}\n`;
-    message += `💰 العملات: ${user.coins}\n`;
-    message += `🏦 البنك: ${user.bankCoins || 0}\n`;
-    message += `💬 الرسائل اليومية: ${user.dailyMessages || 0}\n`;
-    message += `📊 إجمالي الرسائل: ${user.totalMessages || 0}\n`;
-    message += `📅 تاريخ الانضمام: ${user.createdAt.toLocaleDateString('ar-EG')}\n`;
+    let message = dashboardReply('reply_b151e67b637f02c1')`${roleEmoji} ملفك الشخصي\n`;
+    message += dashboardReply('reply_e9c24da67b9fb911')`━━━━━━━━━━━━━━━━━\n`;
+    message += dashboardReply('reply_235bf1bab2728de3')`📛 اللقب: ${user.nickname}\n`;
+    message += dashboardReply('reply_51fbf500268a631f')`🎖️ الرتبة الإدارية: ${roleText}\n`;
+    message += dashboardReply('reply_4f1612dc415d0f3d')`👑 رتبة المملكة: ${kingdomRankDisplay}\n`;
+    message += dashboardReply('reply_7445371c678332b5')`✨ المستوى: ${user.level || 0} (${user.xp || 0} XP)\n`;
+    message += dashboardReply('reply_4d8b7c89e1da55f7')`💰 النقاط: ${user.points || 0}\n`;
+    message += dashboardReply('reply_b7dcedfbe59da5b4')`🎖️ نجوم الرتب: ${user.rankStarsByKingdom?.[kingdom] || 0}\n`;
+    message += dashboardReply('reply_fd0d8b2dd2c18c1b')`💰 العملات: ${user.coins}\n`;
+    message += dashboardReply('reply_a14f1730add346b9')`🏦 البنك: ${user.bankCoins || 0}\n`;
+    message += dashboardReply('reply_e296e2690edf37e2')`💬 الرسائل اليومية: ${user.dailyMessages || 0}\n`;
+    message += dashboardReply('reply_fd9f6034ed2f7a3c')`📊 إجمالي الرسائل: ${user.totalMessages || 0}\n`;
+    message += dashboardReply('reply_a2dbc74b4a5b56e4')`📅 تاريخ الانضمام: ${user.createdAt.toLocaleDateString('ar-EG')}\n`;
 
     if (user.isBanned) {
-      message += `🚫 محظور - السبب: ${user.banReason}\n`;
+      message += dashboardReply('reply_ac8a80de90a13f27')`🚫 محظور - السبب: ${user.banReason}\n`;
     }
 
     await sock.sendMessage(jid, { text: message });
@@ -348,7 +349,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/إيداع") {
     const amount = parseInt(args[1]);
     if (isNaN(amount)) {
-      await sock.sendMessage(jid, { text: "❌ استخدام: /إيداع <المبلغ>" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_c948977a152a031f')(["❌ استخدام: /إيداع <المبلغ>"]) });
       return true;
     }
     // إعادة جلب البيانات لضمان الحصول على أحدث المعلومات
@@ -360,7 +361,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/سحب") {
     const amount = parseInt(args[1]);
     if (isNaN(amount)) {
-      await sock.sendMessage(jid, { text: "❌ استخدام: /سحب <المبلغ>" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_76f0f22db8d354b5')(["❌ استخدام: /سحب <المبلغ>"]) });
       return true;
     }
     await withdrawFromBank(sock, jid, sender, amount);
@@ -371,7 +372,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
     const recipientNick = args[1];
     const amount = parseInt(args[2]);
     if (!recipientNick || isNaN(amount)) {
-      await sock.sendMessage(jid, { text: "❌ استخدام: /تحويل <لقب المستلم> <المبلغ>" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_58553de26c89afd1')(["❌ استخدام: /تحويل <لقب المستلم> <المبلغ>"]) });
       return true;
     }
     const { transferCoinsBetweenUsers } = await import('./adminSystem.js');
@@ -383,12 +384,12 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/منشن") {
     const nick = args.slice(1).join(" ");
     if (!nick) {
-      await sock.sendMessage(jid, { text: "❌ استخدم: /منشن <لقب>" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_b78c991b95509301')(["❌ استخدم: /منشن <لقب>"]) });
       return true;
     }
     const targetUser = await findUserByNickname(nick.trim(), kingdom);
     if (!targetUser) {
-      await sock.sendMessage(jid, { text: "❌ لا يوجد مستخدم بهذا اللقب." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_1a37a1912f9b8391')(["❌ لا يوجد مستخدم بهذا اللقب."]) });
       return true;
     }
     await sendMentionMessage(sock, jid, targetUser);
@@ -399,30 +400,30 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/تسجيل_عيد_ميلاد") {
     const dateStr = args.slice(1).join(" ");
     if (!dateStr) {
-      await sock.sendMessage(jid, { text: "❌ استخدم: /تسجيل_عيد_ميلاد <تاريخ الميلاد> (مثال: 15/08/2000)" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_d5b5dd33541ec9c2')(["❌ استخدم: /تسجيل_عيد_ميلاد <تاريخ الميلاد> (مثال: 15/08/2000)"]) });
       return true;
     }
     const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
     const match = dateStr.match(dateRegex);
     if (!match) {
-      await sock.sendMessage(jid, { text: "❌ صيغة التاريخ غير صحيحة. استخدم: DD/MM/YYYY" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_71e128b43e50700d')(["❌ صيغة التاريخ غير صحيحة. استخدم: DD/MM/YYYY"]) });
       return true;
     }
     const day = parseInt(match[1]);
     const month = parseInt(match[2]);
     const year = parseInt(match[3]);
     if (day < 1 || day > 31 || month < 1 || month > 12 || year < 1900 || year > new Date().getFullYear()) {
-      await sock.sendMessage(jid, { text: "❌ تاريخ غير صحيح." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_d2434807f52a2eaf')(["❌ تاريخ غير صحيح."]) });
       return true;
     }
     const birthDate = new Date(year, month - 1, day);
     if (!user) {
-      await sock.sendMessage(jid, { text: "❌ يرجى تسجيل لقبك أولاً باستخدام /لقب" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_38d0f10015fc2164')(["❌ يرجى تسجيل لقبك أولاً باستخدام /لقب"]) });
       return true;
     }
     user.birthDate = birthDate;
     await user.save();
-    await sock.sendMessage(jid, { text: `✅ تم تسجيل عيد ميلادك: ${day}/${month}/${year}` });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_4bec0a779ae96fc9')`✅ تم تسجيل عيد ميلادك: ${day}/${month}/${year}` });
     return true;
   }
 
@@ -430,7 +431,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/من") {
     const query = args.slice(1).join(" ").trim();
     if (!query || !query.startsWith('@')) {
-      await sock.sendMessage(jid, { text: "❌ استخدم: /من @<رقم> أو @<lid>@lid\n💡 أمثلة: /من @962791234567 أو /من @123@lid" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_550862de7846358e')(["❌ استخدم: /من @<رقم> أو @<lid>@lid\n💡 أمثلة: /من @962791234567 أو /من @123@lid"]) });
       return true;
     }
 
@@ -440,7 +441,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
       if (lookup.identifierType === 'lid_jid' || lookup.identifierType === 'raw_lid') {
         const targetUser = await User.findOne({ lid: lookup.lid, kingdom_id: kingdom });
         if (!targetUser) {
-          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم بالـ lid "${lookup.lid}"` });
+          await sock.sendMessage(jid, { text: dashboardReply('reply_488e8e8d1042d4ab')`❌ لم يتم العثور على مستخدم بالـ lid "${lookup.lid}"` });
           return true;
         }
         var targetUserResolved = targetUser;
@@ -450,7 +451,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
           targetUser = await User.findOne({ phoneNumber: lookup.phoneNumber, kingdom_id: kingdom });
         }
         if (!targetUser) {
-          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم برقم "${lookup.phoneNumber}"` });
+          await sock.sendMessage(jid, { text: dashboardReply('reply_0deca06b67f1349a')`❌ لم يتم العثور على مستخدم برقم "${lookup.phoneNumber}"` });
           return true;
         }
         var targetUserResolved = targetUser;
@@ -462,7 +463,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
           targetUser = await findUserByNicknameOrPhone(query, kingdom);
         }
         if (!targetUser) {
-          await sock.sendMessage(jid, { text: `❌ لم يتم العثور على مستخدم بالمنشن أو اللقب "${query}"` });
+          await sock.sendMessage(jid, { text: dashboardReply('reply_f102573240b0b2ce')`❌ لم يتم العثور على مستخدم بالمنشن أو اللقب "${query}"` });
           return true;
         }
         var targetUserResolved = targetUser;
@@ -470,49 +471,49 @@ export async function userCommands(sock, jid, sender, text, msg) {
 
       // جمع معلومات المستخدم
       const t = targetUserResolved;
-      let userInfo = `👤 *معلومات المستخدم*\n━━━━━━━━━━━━━━━━━━━━━\n\n📝 *اللقب:* ${t.nickname}\n📞 *رقم الواتس:* +${t.phoneNumber || 'غير مسجل'}`;
+      let userInfo = dashboardReply('reply_ceb587b0139a486f')`👤 *معلومات المستخدم*\n━━━━━━━━━━━━━━━━━━━━━\n\n📝 *اللقب:* ${t.nickname}\n📞 *رقم الواتس:* +${t.phoneNumber || 'غير مسجل'}`;
 
       // إن وجد lid، أضفه
-      if (t.lid) userInfo += `\n🔗 *lid:* ${t.lid}`;
+      if (t.lid) userInfo += dashboardReply('reply_4b463ecad5d7ca70')`\n🔗 *lid:* ${t.lid}`;
 
       // إضافة معلومات الترتيب إذا كانت موجودة
       const targetRankStars = t.rankStarsByKingdom?.[kingdom] || 0;
       const targetKingdomRank = t.kingdomRankByKingdom?.[kingdom];
       if (targetRankStars > 0 || targetKingdomRank) {
-        userInfo += `\n🎖️ *الترتيب:* `;
+        userInfo += dashboardReply('reply_c244108efe06b6f1')`\n🎖️ *الترتيب:* `;
         if (targetKingdomRank) {
-          userInfo += `المستوى ${targetKingdomRank}`;
+          userInfo += dashboardReply('reply_d4e9c53f4dcf4d9f')`المستوى ${targetKingdomRank}`;
         }
         if (targetRankStars > 0) {
-          userInfo += ` - ${targetRankStars} ⭐`;
+          userInfo += dashboardReply('reply_b11b14f2ff126153')` - ${targetRankStars} ⭐`;
         }
       }
 
       // إضافة النقاط
       if (t.points !== undefined) {
-        userInfo += `\n💰 *النقاط:* ${t.points}`;
+        userInfo += dashboardReply('reply_3bde4635b3cf37c7')`\n💰 *النقاط:* ${t.points}`;
       }
-      userInfo += `\n✨ *المستوى:* ${t.level || 0} (${t.xp || 0} XP)`;
-      userInfo += `\n📊 *إجمالي الرسائل:* ${t.totalMessages || 0}`;
+      userInfo += dashboardReply('reply_682c57476fbe3475')`\n✨ *المستوى:* ${t.level || 0} (${t.xp || 0} XP)`;
+      userInfo += dashboardReply('reply_bfe3a892e524fabe')`\n📊 *إجمالي الرسائل:* ${t.totalMessages || 0}`;
 
       // إضافة البنك
       if (t.bankBalance !== undefined) {
-        userInfo += `\n🏦 *البنك:* ${t.bankBalance}`;
+        userInfo += dashboardReply('reply_ea6f281c283c85f4')`\n🏦 *البنك:* ${t.bankBalance}`;
       }
 
       // إضافة الدور إذا كان أدمن أو مشرف
       if (t.role) {
         const roleEmoji = t.role === 'admin' ? '👑' : t.role === 'moderator' ? '🛡️' : '👤';
         const roleName = t.role === 'admin' ? 'أدمن' : t.role === 'moderator' ? 'مشرف' : 'عضو';
-        userInfo += `\n${roleEmoji} *الدور:* ${roleName}`;
+        userInfo += dashboardReply('reply_a67f9297da4c2cfd')`\n${roleEmoji} *الدور:* ${roleName}`;
       }
 
-      userInfo += `\n━━━━━━━━━━━━━━━━━━━━━`;
+      userInfo += dashboardReply('reply_a5ecaa55670778e4')`\n━━━━━━━━━━━━━━━━━━━━━`;
 
       await sock.sendMessage(jid, { text: userInfo });
     } catch (error) {
       console.error("خطأ في البحث عن المستخدم:", error);
-      await sock.sendMessage(jid, { text: "❌ حدث خطأ أثناء البحث" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_42dd28cced8600e1')(["❌ حدث خطأ أثناء البحث"]) });
     }
     return true;
   }
@@ -521,16 +522,16 @@ export async function userCommands(sock, jid, sender, text, msg) {
   if (command === "/معايدة") {
     const nick = args.slice(1).join(" ");
     if (!nick) {
-      await sock.sendMessage(jid, { text: "❌ استخدم: /معايدة <لقب>" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_67c272f61d679f58')(["❌ استخدم: /معايدة <لقب>"]) });
       return true;
     }
     const targetUser = await findUserByNickname(nick.trim(), kingdom);
     if (!targetUser) {
-      await sock.sendMessage(jid, { text: "❌ لا يوجد مستخدم بهذا اللقب." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_1a37a1912f9b8391')(["❌ لا يوجد مستخدم بهذا اللقب."]) });
       return true;
     }
     if (!targetUser.birthDate) {
-      await sock.sendMessage(jid, { text: `❌ ${targetUser.nickname} لم يسجل تاريخ ميلاده بعد.` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_b1d19b8fd1644fbf')`❌ ${targetUser.nickname} لم يسجل تاريخ ميلاده بعد.` });
       return true;
     }
     const today = new Date();
@@ -540,7 +541,7 @@ export async function userCommands(sock, jid, sender, text, msg) {
       const birthdayMessage = `🎉 **عيد ميلاد سعيد!** 🎂\n\n${getCleanMentionTextForUser(targetUser)}، نتمنى لك عاماً مليئاً بالسعادة والنجاح! 🎈✨\n\nمن جميع أعضاء المجموعة 💕`;
       await sendMentionMessage(sock, jid, targetUser, birthdayMessage);
     } else {
-      await sock.sendMessage(jid, { text: `❌ اليوم ليس عيد ميلاد ${targetUser.nickname}.` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_c0a5e90cc6240b26')`❌ اليوم ليس عيد ميلاد ${targetUser.nickname}.` });
     }
     return true;
   }

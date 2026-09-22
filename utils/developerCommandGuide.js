@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import { isDeveloper } from "./kingdomService.js";
 
 export const DEVELOPER_GUIDE_COMMANDS = new Set([
@@ -191,14 +192,14 @@ export async function handleDeveloperCommandGuide(sock, jid, sender, trimmedText
   if (!DEVELOPER_GUIDE_COMMANDS.has(command)) return false;
 
   if (!isDeveloper(sender)) {
-    await sock.sendMessage(jid, { text: "❌ هذا الأمر خاص بالمطور فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_a38b7be895960ab1')(["❌ هذا الأمر خاص بالمطور فقط."]) });
     return true;
   }
 
   const chunks = splitMessage(buildDeveloperCommandGuide());
   for (let index = 0; index < chunks.length; index++) {
     const suffix = chunks.length > 1 ? `\n\n(${index + 1}/${chunks.length})` : "";
-    await sock.sendMessage(jid, { text: `${chunks[index]}${suffix}` });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_422df11a60009c7c')`${chunks[index]}${suffix}` });
   }
 
   return true;

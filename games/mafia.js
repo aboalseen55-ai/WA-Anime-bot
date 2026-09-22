@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import MafiaPlayer from "../database/mafiaPlayerModel.js";
 import MafiaSession from "../database/mafiaSessionModel.js";
 import { classifyIdentifier, getCleanMentionTextForUser } from "../commands/adminSystem.js";
@@ -20,7 +21,7 @@ const ROLE_ICONS = {
 };
 
 const ACTIVE_STATUSES = ["collecting_players", "collecting_config", "roles_distributed", "game_over"];
-const PRIVATE_NICKNAME_MESSAGE = `أهلًا 👋
+const PRIVATE_NICKNAME_MESSAGE = dashboardReply('reply_ac99a69f9695e685')`أهلًا 👋
 اكتب اسمك أو لقبك الذي تريد استخدامه في لعبة المافيا.`;
 const JOIN_COMMAND_PATTERN = /^(\/انضم_مافيا|انضم|مشارك|بلعب)$/i;
 const START_SETUP_PATTERN = /^(\/ابدأ_مافيا|\/ابدا_مافيا)$/i;
@@ -317,7 +318,7 @@ async function createCollectingPlayersSession(previousSession) {
 
 async function joinMafiaSession(sock, session, sender) {
   if (isSessionHostIdentifier(session, sender)) {
-    await sock.sendMessage(session.groupId, { text: "🎭 الراوي لا يدخل كلاعب في المافيا." });
+    await sock.sendMessage(session.groupId, { text: dashboardReply('reply_48aded4811408a54')(["🎭 الراوي لا يدخل كلاعب في المافيا."]) });
     return;
   }
 
@@ -352,14 +353,14 @@ async function joinMafiaSession(sock, session, sender) {
   if (!nickname) {
     await promptMafiaNicknameRegistration(sock, sender, session.groupId);
     await sock.sendMessage(session.groupId, {
-      text: `✅ تم تسجيل انضمامك يا ${hostMention(sender)}.\nأرسلت لك خاص لتثبيت لقب المافيا.`,
+      text: dashboardReply('reply_471f33e8c159e15b')`✅ تم تسجيل انضمامك يا ${hostMention(sender)}.\nأرسلت لك خاص لتثبيت لقب المافيا.`,
       mentions: [sender]
     });
     return;
   }
 
   await sock.sendMessage(session.groupId, {
-    text: `✅ انضم ${hostMention(sender)} إلى المافيا باسم: ${nickname}`,
+    text: dashboardReply('reply_5ccb6447d213ee0f')`✅ انضم ${hostMention(sender)} إلى المافيا باسم: ${nickname}`,
     mentions: [sender]
   });
 }
@@ -380,7 +381,7 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
     if (!session || session.status !== "collecting_players") return false;
 
     if (!await canControlSession(sock, session, sender)) {
-      await sock.sendMessage(jid, { text: "❌ فقط الراوي أو أدمن القروب يمكنه بدء إعداد المافيا." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_994b91812bc35450')(["❌ فقط الراوي أو أدمن القروب يمكنه بدء إعداد المافيا."]) });
       return true;
     }
 
@@ -388,14 +389,14 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
     const pendingPlayers = getPendingJoinedPlayers(session);
     if (pendingPlayers.length) {
       await sock.sendMessage(jid, {
-        text: `⚠️ يوجد لاعبون لم يثبتوا ألقابهم بعد:\n${pendingPlayers.map((player) => `• ${hostMention(player.jid)}`).join("\n")}\n\nبعد التسجيل اكتب /ابدأ_مافيا.`,
+        text: dashboardReply('reply_2cfbc86c4f027a48')`⚠️ يوجد لاعبون لم يثبتوا ألقابهم بعد:\n${pendingPlayers.map((player) => `• ${hostMention(player.jid)}`).join("\n")}\n\nبعد التسجيل اكتب /ابدأ_مافيا.`,
         mentions: pendingPlayers.map((player) => player.jid).filter(Boolean)
       });
       return true;
     }
 
     if (readyPlayers.length < 2) {
-      await sock.sendMessage(jid, { text: "❌ تحتاج لاعبين اثنين على الأقل غير الراوي قبل بدء الإعداد." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_c1f222cbebd29f88')(["❌ تحتاج لاعبين اثنين على الأقل غير الراوي قبل بدء الإعداد."]) });
       return true;
     }
 
@@ -404,7 +405,7 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
     await session.save();
 
     await sock.sendMessage(session.hostJid, {
-      text: `أنت الراوي للعبة المافيا 🎭
+      text: dashboardReply('reply_2d7c7515c9fe1f7c')`أنت الراوي للعبة المافيا 🎭
 
 اللاعبون المشاركون: ${readyPlayers.length}
 
@@ -412,7 +413,7 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
 مثال:
 2`
     });
-    await sock.sendMessage(jid, { text: "✅ تم إغلاق الانضمام. أرسلت إعدادات الأدوار للراوي في الخاص." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_f536d15f4245af6d')(["✅ تم إغلاق الانضمام. أرسلت إعدادات الأدوار للراوي في الخاص."]) });
     return true;
   }
 
@@ -421,14 +422,14 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
     if (!session || session.status !== "game_over") return false;
 
     if (!await canControlSession(sock, session, sender)) {
-      await sock.sendMessage(jid, { text: "❌ فقط الراوي أو أدمن القروب يمكنه بدء جولة مافيا جديدة." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_2a3cf1ce3d332bac')(["❌ فقط الراوي أو أدمن القروب يمكنه بدء جولة مافيا جديدة."]) });
       return true;
     }
 
     await closeSession(session);
     await createCollectingPlayersSession(session);
     await sock.sendMessage(jid, {
-      text: `تم فتح جولة مافيا جديدة 🎭
+      text: dashboardReply('reply_ce17814662f33b71')`تم فتح جولة مافيا جديدة 🎭
 الراوي هو: ${hostMention(session.hostJid)}
 
 اللي بده يلعب يكتب:
@@ -446,13 +447,13 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
     if (!session) return false;
 
     if (!await canControlSession(sock, session, sender)) {
-      await sock.sendMessage(jid, { text: "❌ فقط الراوي أو أدمن القروب يمكنه إنهاء جلسة المافيا." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_cda328b1ae00a00d')(["❌ فقط الراوي أو أدمن القروب يمكنه إنهاء جلسة المافيا."]) });
       return true;
     }
 
     await closeSession(session);
     await sock.sendMessage(jid, {
-      text: `تم إنهاء جلسة المافيا ✅
+      text: dashboardReply('reply_a62282eb03f72c1b')`تم إنهاء جلسة المافيا ✅
 تم حذف بيانات الجولة، وتم الاحتفاظ بأسماء اللاعبين للجولات القادمة.`
     });
     return true;
@@ -460,13 +461,13 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
 
   if (["/مافيا", "مافيا", "لعبة مافيا", "لعبه مافيا", "mafia"].includes(trimmed.toLowerCase())) {
     if (!isGroupJid(jid)) {
-      await sock.sendMessage(jid, { text: "❌ بدء لعبة المافيا يعمل داخل القروبات فقط." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_037fd2cf0d740ee6')(["❌ بدء لعبة المافيا يعمل داخل القروبات فقط."]) });
       return true;
     }
 
     const active = await getActiveSession(jid);
     if (active) {
-      await sock.sendMessage(jid, { text: "⚠️ توجد لعبة مافيا فعالة في هذا القروب." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_5cf759d5debbf5b4')(["⚠️ توجد لعبة مافيا فعالة في هذا القروب."]) });
       return true;
     }
 
@@ -481,7 +482,7 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
     });
 
     await sock.sendMessage(jid, {
-      text: `تم فتح لعبة المافيا 🎭
+      text: dashboardReply('reply_d266d042236ae723')`تم فتح لعبة المافيا 🎭
 الراوي هو: ${hostMention(sender)}
 
 اللي بده يلعب يكتب:
@@ -499,18 +500,18 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
   if (trimmed === "/انهاء_مافيا") {
     const session = await getActiveSession(jid);
     if (!session) {
-      await sock.sendMessage(jid, { text: "لا توجد جلسة مافيا فعالة." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_84147c2da10b31f8')(["لا توجد جلسة مافيا فعالة."]) });
       return true;
     }
 
     if (!await canControlSession(sock, session, sender)) {
-      await sock.sendMessage(jid, { text: "❌ فقط الراوي أو أدمن القروب يمكنه إنهاء جلسة المافيا." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_cda328b1ae00a00d')(["❌ فقط الراوي أو أدمن القروب يمكنه إنهاء جلسة المافيا."]) });
       return true;
     }
 
     await closeSession(session);
     await sock.sendMessage(jid, {
-      text: `تم إنهاء جلسة المافيا ✅
+      text: dashboardReply('reply_a62282eb03f72c1b')`تم إنهاء جلسة المافيا ✅
 تم حذف بيانات الجولة، وتم الاحتفاظ بأسماء اللاعبين للجولات القادمة.`
     });
     return true;
@@ -519,12 +520,12 @@ export async function handleMafiaCommand(sock, jid, sender, text) {
   if (["/فوز_المواطنين", "/فوز_مافيا", "/فوز_المافيا"].includes(trimmed)) {
     const session = await getActiveSession(jid);
     if (!session) {
-      await sock.sendMessage(jid, { text: "لا توجد جلسة مافيا فعالة." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_84147c2da10b31f8')(["لا توجد جلسة مافيا فعالة."]) });
       return true;
     }
 
     if (!await canControlSession(sock, session, sender)) {
-      await sock.sendMessage(jid, { text: "❌ فقط الراوي أو أدمن القروب يمكنه إعلان نتيجة المافيا." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_f0c909d6f83ed44b')(["❌ فقط الراوي أو أدمن القروب يمكنه إعلان نتيجة المافيا."]) });
       return true;
     }
 
@@ -554,7 +555,7 @@ export async function handleMafiaHostPrivateFlow(sock, jid, sender, text) {
       await closeSession(session);
       const newSession = await createCollectingPlayersSession(session);
       await sock.sendMessage(session.groupId, {
-        text: `تم فتح جولة مافيا جديدة 🎭
+        text: dashboardReply('reply_ce17814662f33b71')`تم فتح جولة مافيا جديدة 🎭
 الراوي هو: ${hostMention(session.hostJid)}
 
 اللي بده يلعب يكتب:
@@ -564,21 +565,21 @@ export async function handleMafiaHostPrivateFlow(sock, jid, sender, text) {
 /ابدأ_مافيا`,
         mentions: [session.hostJid]
       });
-      await sock.sendMessage(jid, { text: "تمام. فتحت باب الانضمام للجولة الجديدة في القروب." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_e04ca833e1c450c7')(["تمام. فتحت باب الانضمام للجولة الجديدة في القروب."]) });
       return Boolean(newSession);
     }
 
     if (/^(2|إنهاء الجلسة|انهاء الجلسة|انهاء|end)$/i.test(trimmed)) {
       await closeSession(session);
       await sock.sendMessage(session.groupId, {
-        text: `تم إنهاء جلسة المافيا ✅
+        text: dashboardReply('reply_a62282eb03f72c1b')`تم إنهاء جلسة المافيا ✅
 تم حذف بيانات الجولة، وتم الاحتفاظ بأسماء اللاعبين للجولات القادمة.`
       });
-      await sock.sendMessage(jid, { text: "✅ تم إنهاء جلسة المافيا." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_5648d781b311e343')(["✅ تم إنهاء جلسة المافيا."]) });
       return true;
     }
 
-    await sock.sendMessage(jid, { text: "اكتب 1 للعب مرة أخرى أو 2 لإنهاء الجلسة." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_b436300494316f75')(["اكتب 1 للعب مرة أخرى أو 2 لإنهاء الجلسة."]) });
     return true;
   }
 
@@ -587,21 +588,21 @@ export async function handleMafiaHostPrivateFlow(sock, jid, sender, text) {
   if (session.configStep === "mafiaCount") {
     const count = Number(trimmed);
     if (!Number.isInteger(count) || count < 1) {
-      await sock.sendMessage(jid, { text: "❌ عدد المافيا يجب أن يكون رقمًا صحيحًا لا يقل عن 1.\nكم عدد لاعبي المافيا؟" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_5d1f13a0ed10525a')(["❌ عدد المافيا يجب أن يكون رقمًا صحيحًا لا يقل عن 1.\nكم عدد لاعبي المافيا؟"]) });
       return true;
     }
 
     session.mafiaCount = count;
     session.configStep = "sheikh";
     await session.save();
-    await sock.sendMessage(jid, { text: "هل تريد إضافة الشيخ؟\nرد بـ نعم أو لا." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_7003257d36eaae64')(["هل تريد إضافة الشيخ؟\nرد بـ نعم أو لا."]) });
     return true;
   }
 
   if (session.configStep === "sheikh") {
     const answer = yesNo(trimmed);
     if (answer === null) {
-      await sock.sendMessage(jid, { text: "رد بـ نعم أو لا.\nهل تريد إضافة الشيخ؟" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_3766fe4be1b44440')(["رد بـ نعم أو لا.\nهل تريد إضافة الشيخ؟"]) });
       return true;
     }
 
@@ -609,14 +610,14 @@ export async function handleMafiaHostPrivateFlow(sock, jid, sender, text) {
     session.configStep = "girl";
     session.markModified("enabledRoles");
     await session.save();
-    await sock.sendMessage(jid, { text: "هل تريد إضافة البنت؟\nرد بـ نعم أو لا." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_2bd87a0fba8eb275')(["هل تريد إضافة البنت؟\nرد بـ نعم أو لا."]) });
     return true;
   }
 
   if (session.configStep === "girl") {
     const answer = yesNo(trimmed);
     if (answer === null) {
-      await sock.sendMessage(jid, { text: "رد بـ نعم أو لا.\nهل تريد إضافة البنت؟" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_4cd531e7d1fd2404')(["رد بـ نعم أو لا.\nهل تريد إضافة البنت؟"]) });
       return true;
     }
 
@@ -624,14 +625,14 @@ export async function handleMafiaHostPrivateFlow(sock, jid, sender, text) {
     session.configStep = "boy";
     session.markModified("enabledRoles");
     await session.save();
-    await sock.sendMessage(jid, { text: "هل تريد إضافة الولد؟\nرد بـ نعم أو لا." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_20d2232ab2aa383e')(["هل تريد إضافة الولد؟\nرد بـ نعم أو لا."]) });
     return true;
   }
 
   if (session.configStep === "boy") {
     const answer = yesNo(trimmed);
     if (answer === null) {
-      await sock.sendMessage(jid, { text: "رد بـ نعم أو لا.\nهل تريد إضافة الولد؟" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_47cc92bd3e6d3353')(["رد بـ نعم أو لا.\nهل تريد إضافة الولد؟"]) });
       return true;
     }
 
@@ -676,7 +677,7 @@ async function distributeRoles(sock, session) {
     await session.save();
 
     await sock.sendMessage(session.hostJid, {
-      text: `❌ الإعداد غير صالح.
+      text: dashboardReply('reply_bcf831da11382801')`❌ الإعداد غير صالح.
 اللاعبون المسجلون المتاحون: ${total}
 المافيا يجب أن تكون 1 على الأقل وأقل من عدد اللاعبين، والأدوار الاختيارية لا تتجاوز العدد.
 
@@ -727,7 +728,7 @@ async function distributeRoles(sock, session) {
 
   await sock.sendMessage(session.hostJid, { text: hostList.trim() });
   await sock.sendMessage(session.groupId, {
-    text: `تم توزيع أدوار لعبة المافيا ✅
+    text: dashboardReply('reply_378d47b2cb05b328')`تم توزيع أدوار لعبة المافيا ✅
 الراوي هو: ${hostMention(session.hostJid)}
 
 ابدأوا اللعبة في الواقع، والراوي معه قائمة الأدوار.`,
@@ -741,7 +742,7 @@ async function announceGameOver(sock, session, winner) {
   await session.save();
 
   const winnerLabel = winner === "mafia" ? "المافيا 🕵️‍♂️" : "المواطنين 👥";
-  const groupMessage = `انتهت لعبة المافيا 🎭
+  const groupMessage = dashboardReply('reply_c65416efc63874f2')`انتهت لعبة المافيا 🎭
 
 الفائزون: ${winnerLabel}
 
@@ -749,7 +750,7 @@ async function announceGameOver(sock, session, winner) {
 - لعب مرة أخرى
 - إنهاء الجلسة`;
 
-  const privateMessage = `انتهت لعبة المافيا 🎭
+  const privateMessage = dashboardReply('reply_d114f961b68d1ab8')`انتهت لعبة المافيا 🎭
 
 الفائزون: ${winnerLabel}
 

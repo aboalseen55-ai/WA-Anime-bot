@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import mongoose from "mongoose";
 import SamBotUsage from "../database/samBotUsageModel.js";
@@ -287,14 +288,14 @@ export async function handleSamBotTokenCountCommand(sock, jid, sender, trimmedTe
   if (!COUNT_TOKEN_COMMANDS.has(command)) return false;
 
   if (!isDeveloper(sender)) {
-    await sock.sendMessage(jid, { text: "❌ هذا الأمر خاص بالمطور فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_5c479b3bb0ecf4e5')(["❌ هذا الأمر خاص بالمطور فقط."]) });
     return true;
   }
 
   const text = String(trimmedText || "").slice(parts[0].length).trim();
   if (!text) {
     await sock.sendMessage(jid, {
-      text: "استخدم الأمر بهذا الشكل:\n/عد_التوكن النص الذي تريد حسابه"
+      text: dashboardReply('reply_8f8ae549d7098ea9')(["استخدم الأمر بهذا الشكل:\n/عد_التوكن النص الذي تريد حسابه"])
     });
     return true;
   }
@@ -316,7 +317,7 @@ export async function handleSamBotTokenCountCommand(sock, jid, sender, trimmedTe
 
     await sock.sendMessage(jid, { text: message.trim() });
   } catch (error) {
-    await sock.sendMessage(jid, { text: `❌ تعذر حساب التوكنات: ${error.message}` });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_dee2682aeb08a36d')`❌ تعذر حساب التوكنات: ${error.message}` });
   }
 
   return true;
@@ -327,7 +328,7 @@ export async function handleSamBotUsageCommand(sock, jid, sender, trimmedText) {
   if (!USAGE_COMMANDS.has(command)) return false;
 
   if (!isDeveloper(sender)) {
-    await sock.sendMessage(jid, { text: "❌ هذا الأمر خاص بالمطور فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_5c479b3bb0ecf4e5')(["❌ هذا الأمر خاص بالمطور فقط."]) });
     return true;
   }
 

@@ -1,0 +1,6544 @@
+{
+  "reply_ef90c404b1307d55": {
+    "title": "⏳ جارٍ البحث عن صور أنمي لـ *{value1}*...",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "⏳ جارٍ البحث عن صور أنمي لـ *{value1}*..."
+  },
+  "reply_e9181e32342dbd35": {
+    "title": "🎯 اختر صورة من {value1}: رد برقم الصورة.",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎯 اختر صورة من {value1}: رد برقم الصورة."
+  },
+  "reply_eac04ddb2086860d": {
+    "title": "❌ *لم يتم العثور على صور أنمي مناسبة* 👤 اللقب: {value1} رد بـ 1 للترحيب بدون صورة أو 2 للإلغاء.",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ *لم يتم العثور على صور أنمي مناسبة*\n\n👤 اللقب: {value1}\n\nرد بـ 1 للترحيب بدون صورة أو 2 للإلغاء."
+  },
+  "reply_3e60af889d6537e6": {
+    "title": "اكتب اسم الشخصية للعضو *{value1}*.",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "اكتب اسم الشخصية للعضو *{value1}*."
+  },
+  "reply_8ba62cb9561ff1cb": {
+    "title": "اختر 1 للترحيب السريع أو 2 للترحيب المتقدم.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "اختر 1 للترحيب السريع أو 2 للترحيب المتقدم."
+  },
+  "reply_3e20622551f4d07d": {
+    "title": "اكتب اسم شخصية واضحًا، بين حرفين و100 حرف.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "اكتب اسم شخصية واضحًا، بين حرفين و100 حرف."
+  },
+  "reply_1148e1245646d96d": {
+    "title": "اكتب اسم الأنمي الذي تظهر فيه الشخصية.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "اكتب اسم الأنمي الذي تظهر فيه الشخصية."
+  },
+  "reply_854399586c917da7": {
+    "title": "اكتب اسم الأنمي بشكل أوضح.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "اكتب اسم الأنمي بشكل أوضح."
+  },
+  "reply_18cd5dd7994baf41": {
+    "title": "❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات."
+  },
+  "reply_50004d757234e192": {
+    "title": "❌ هذا الأمر متاح فقط للأدمن الرئيسي في هذه المملكة.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر متاح فقط للأدمن الرئيسي في هذه المملكة."
+  },
+  "reply_9a3a72ef3a9d6317": {
+    "title": "❌ لا يوجد قروب إدارة لهذه المملكة، لذلك لن يتم إرسال التقرير.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يوجد قروب إدارة لهذه المملكة، لذلك لن يتم إرسال التقرير."
+  },
+  "reply_95c2fafbb311ec14": {
+    "title": "لا يوجد أعضاء لديهم تفاعل اليوم.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "لا يوجد أعضاء لديهم تفاعل اليوم."
+  },
+  "reply_3d5bbdd0b5318f72": {
+    "title": "✅ تم إرسال التقارير الإدارية لقروب إدارة المملكة. 🕒 وقت المملكة الآن: {value1} 🌐 التوقيت: {value2}",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "✅ تم إرسال التقارير الإدارية لقروب إدارة المملكة.\n\n🕒 وقت المملكة الآن: {value1}\n🌐 التوقيت: {value2}\n📅 موعد التقرير اليومي التالي: {value3}"
+  },
+  "reply_9d8c6f2e3354fb01": {
+    "title": "❌ فقط الأدمن الأساسي أو المشرف يمكنهم عرض تفاعل الأعضاء!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الأساسي أو المشرف يمكنهم عرض تفاعل الأعضاء!"
+  },
+  "reply_f1c405c7e7449acf": {
+    "title": "❌ فقط الأدمن الأساسي أو الأدمن الرئيسي يمكنهم تنفيذ هذا الأمر.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الأساسي أو الأدمن الرئيسي يمكنهم تنفيذ هذا الأمر."
+  },
+  "reply_32e89df332010124": {
+    "title": "✅ تم تصفير التفاعل اليومي وسجلات الألعاب لجميع المستخدمين (أمر طارئ).",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم تصفير التفاعل اليومي وسجلات الألعاب لجميع المستخدمين (أمر طارئ)."
+  },
+  "reply_fcc8a6a4a7bc3f03": {
+    "title": "❌ فقط الأدمن الأساسي يستطيع ترقية الأعضاء!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الأساسي يستطيع ترقية الأعضاء!"
+  },
+  "reply_e47147b262ab39d7": {
+    "title": "❌ استخدام: /ترقية <اللقب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /ترقية <اللقب>"
+  },
+  "reply_7d4de7fcae9f5d88": {
+    "title": "❌ لم يتم العثور على لاعب باسم \"{value1}\"!",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على لاعب باسم \"{value1}\"!"
+  },
+  "reply_8f44d050cd81f0f5": {
+    "title": "✋ الرجاء عمل منشن (@) للاعب *{value1}* لتسجيل رقمه وإتمام الترقية. 💡 ضع \"رد\" على الرسالة واكتب اسم ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✋ الرجاء عمل منشن (@) للاعب *{value1}* لتسجيل رقمه وإتمام الترقية.\n\n💡 ضع \"رد\" على الرسالة واكتب اسم اللاعب أو رقمه واضغط منشن."
+  },
+  "reply_cd158b67ddbb934c": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع خفض الأدمنين الأساسيين والمشرفين!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع خفض الأدمنين الأساسيين والمشرفين!"
+  },
+  "reply_f8e6354cf644858c": {
+    "title": "❌ استخدام: /خفض <اللقب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /خفض <اللقب>"
+  },
+  "reply_28d33a1a49b83718": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!"
+  },
+  "reply_2e40306b6de80c32": {
+    "title": "❌ استخدام: /نقاط <اللقب> <العدد>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /نقاط <اللقب> <العدد>"
+  },
+  "reply_67f29b70e772f1a9": {
+    "title": "❌ العدد يجب أن يكون رقماً!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ العدد يجب أن يكون رقماً!"
+  },
+  "reply_c890aff4b7af93d6": {
+    "title": "❌ لم يتم العثور على لاعب باسم \"{value1}\"!",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على لاعب باسم \"{value1}\"!"
+  },
+  "reply_1666c256942d1c12": {
+    "title": "❌ استخدام: /عملات <اللقب> <العدد>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /عملات <اللقب> <العدد>"
+  },
+  "reply_3cd3a2959a49971d": {
+    "title": "❌ استخدام: /نجوم <اللقب> <العدد>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /نجوم <اللقب> <العدد>"
+  },
+  "reply_369251df510f153a": {
+    "title": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة نجوم الرتبة!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة نجوم الرتبة!"
+  },
+  "reply_111f0a7ab112c702": {
+    "title": "❌ استخدام: /إزالة_نجوم <اللقب> <العدد>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /إزالة_نجوم <اللقب> <العدد>"
+  },
+  "reply_9437dd9da35becf9": {
+    "title": "❌ العدد يجب أن يكون رقماً موجباً!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ العدد يجب أن يكون رقماً موجباً!"
+  },
+  "reply_f399ac2ff98182bb": {
+    "title": "❌ استخدام: /منح_رتبة_إمبراطور <اللقب> <مفتاح_الرتبة>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /منح_رتبة_إمبراطور <اللقب> <مفتاح_الرتبة>"
+  },
+  "reply_505ffda78d85d3c2": {
+    "title": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة النقاط!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة النقاط!"
+  },
+  "reply_d431aef2905ba5a2": {
+    "title": "❌ استخدام: /إزالة_نقاط <اللقب> <العدد>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /إزالة_نقاط <اللقب> <العدد>"
+  },
+  "reply_91321c8e87aadb27": {
+    "title": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة العملات!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون إزالة العملات!"
+  },
+  "reply_8fc2ee50feb98f05": {
+    "title": "❌ استخدام: /إزالة_عملات <اللقب> <العدد>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /إزالة_عملات <اللقب> <العدد>"
+  },
+  "reply_c9dea760af7677db": {
+    "title": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون طرد الأعضاء!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون طرد الأعضاء!"
+  },
+  "reply_2f7cc89ab7b88d42": {
+    "title": "❌ استخدام: /طرد <اللقب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /طرد <اللقب>"
+  },
+  "reply_aff590dcae12f7a8": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع حظر الأعضاء!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع حظر الأعضاء!"
+  },
+  "reply_97ab87b818555a77": {
+    "title": "❌ استخدام: /حظر <اللقب> <السبب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /حظر <اللقب> <السبب>"
+  },
+  "reply_66ef068433c6c115": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع إزالة الحظر!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع إزالة الحظر!"
+  },
+  "reply_f570f1e092ab3560": {
+    "title": "❌ استخدام: /فكحظر <اللقب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /فكحظر <اللقب>"
+  },
+  "reply_453ffd1c0313902c": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع حذف بيانات المستخدمين!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع حذف بيانات المستخدمين!"
+  },
+  "reply_db1aa305663c1b8d": {
+    "title": "❌ استخدام: /حذف <اللقب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /حذف <اللقب>"
+  },
+  "reply_b9b41ef055846b3f": {
+    "title": "❌ استخدام: /ملف <اللقب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /ملف <اللقب>"
+  },
+  "reply_1c4b89b975223845": {
+    "title": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون تغيير الألقاب!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنين الأساسيين والمشرفين يستطيعون تغيير الألقاب!"
+  },
+  "reply_6742beebb7db9ca5": {
+    "title": "❌ استخدام: /تغيير <اللقب الحالي> الى <اللقب الجديد>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /تغيير <اللقب الحالي> الى <اللقب الجديد>"
+  },
+  "reply_dd45a8513b0071cc": {
+    "title": "✋ الرجاء عمل منشن (@) للعضو الذي تريد استرجاع لقبه. 💡 ضع \"رد\" على الرسالة واكتب اسم العضو أو رقمه و",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "✋ الرجاء عمل منشن (@) للعضو الذي تريد استرجاع لقبه.\n\n💡 ضع \"رد\" على الرسالة واكتب اسم العضو أو رقمه واضغط منشن."
+  },
+  "reply_af73916bfe025a78": {
+    "title": "❌ فقط الأدمن يستطيع عرض القائمة الكاملة!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن يستطيع عرض القائمة الكاملة!"
+  },
+  "reply_98b28fbb88f99ed2": {
+    "title": "❌ فقط الأدمن يستطيع عرض قائمة الأعضاء!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن يستطيع عرض قائمة الأعضاء!"
+  },
+  "reply_f7ed391fc8900346": {
+    "title": "❌ فقط الأدمن يستطيع عرض جميع المستخدمين!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن يستطيع عرض جميع المستخدمين!"
+  },
+  "reply_23883bfde33bea8f": {
+    "title": "❌ استخدام: /تعيين_أدمن <اللقب> <كلمة_المرور>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /تعيين_أدمن <اللقب> <كلمة_المرور>"
+  },
+  "reply_d6b1ca919485ca57": {
+    "title": "❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD."
+  },
+  "reply_8c88350c12f79579": {
+    "title": "❌ كلمة المرور غير صحيحة!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ كلمة المرور غير صحيحة!"
+  },
+  "reply_32255d9c8e8b0a16": {
+    "title": "⚠️ {value1} هو بالفعل أدمن رئيسي!",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "⚠️ {value1} هو بالفعل أدمن رئيسي!"
+  },
+  "reply_3c58e4da0f51d066": {
+    "title": "✅ تم تعيين {value1} كأدمن رئيسي!",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم تعيين {value1} كأدمن رئيسي!"
+  },
+  "reply_4b8acf9724b3a20a": {
+    "title": "❌ استخدام: /حذف_أدمن_نفسي <كلمة_المرور>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /حذف_أدمن_نفسي <كلمة_المرور>"
+  },
+  "reply_dc18d0b04dade621": {
+    "title": "❌ لم يتم العثور على ملفك!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على ملفك!"
+  },
+  "reply_eb12dba7469edc3a": {
+    "title": "✅ تم حذف بيانات الأدمن \"{value1}\" بالكامل من النظام!",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم حذف بيانات الأدمن \"{value1}\" بالكامل من النظام!"
+  },
+  "reply_eccad0c0f5da734a": {
+    "title": "❌ أمر الترحيب يعمل *فقط* في مجموعة الاستقبال! 🤔",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ أمر الترحيب يعمل *فقط* في مجموعة الاستقبال! 🤔"
+  },
+  "reply_92b10acea48cd58b": {
+    "title": "❌ فقط الأدمنز والمشرفين يستطيعون إرسال رسالة الترحيب!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز والمشرفين يستطيعون إرسال رسالة الترحيب!"
+  },
+  "reply_041428e979e24b0d": {
+    "title": "❌ استخدام: /ترحيب <اللقب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /ترحيب <اللقب>"
+  },
+  "reply_adc626f36783ef3a": {
+    "title": "❌ لم يتم العثور على عضو باسم \"{value1}\" في هذه المملكة!",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على عضو باسم \"{value1}\" في هذه المملكة!"
+  },
+  "reply_45cc074cc7677aa3": {
+    "title": "❌ خطأ في الحصول على معلوماتك!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ خطأ في الحصول على معلوماتك!"
+  },
+  "reply_1f19ca990102a465": {
+    "title": "👋 *ترحيب العضو: {value1}* 1️⃣ سريع — بحث تلقائي باللقب 2️⃣ متقدم — تحدد الشخصية والأنمي",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👋 *ترحيب العضو: {value1}*\n\n1️⃣ سريع — بحث تلقائي باللقب\n2️⃣ متقدم — تحدد الشخصية والأنمي"
+  },
+  "reply_4f9d79844c80b089": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع إرسال رسائل إلى مجموعات أخرى!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع إرسال رسائل إلى مجموعات أخرى!"
+  },
+  "reply_9eac88a7fcec3b00": {
+    "title": "❌ استخدام: /إرسال_رسالة <JID المجموعة> <نص الرسالة>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /إرسال_رسالة <JID المجموعة> <نص الرسالة>"
+  },
+  "reply_4f4cfaab8d52fb1c": {
+    "title": "✅ تم إرسال الرسالة إلى المجموعة بنجاح.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم إرسال الرسالة إلى المجموعة بنجاح."
+  },
+  "reply_caa9d9ad4861133d": {
+    "title": "❌ خطأ في إرسال الرسالة: {value1}",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ خطأ في إرسال الرسالة: {value1}"
+  },
+  "reply_40d440bfb136ff35": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع منح رتبة الإمبراطور!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع منح رتبة الإمبراطور!"
+  },
+  "reply_de909179a53769d9": {
+    "title": "❌ استخدام: /منح_إمبراطور <اللقب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /منح_إمبراطور <اللقب>"
+  },
+  "reply_a62f10765a983019": {
+    "title": "❌ استخدام: /أضف_أدمن <كلمة_المرور>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /أضف_أدمن <كلمة_المرور>"
+  },
+  "reply_78f8b32474be7d5c": {
+    "title": "❌ لم يتم العثور على ملفك في قاعدة البيانات!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على ملفك في قاعدة البيانات!"
+  },
+  "reply_ff2151b1496595af": {
+    "title": "✅ تم ترقيتك إلى أدمن بنجاح! 🎉 يمكنك الآن استخدام جميع أوامر الإدارة.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم ترقيتك إلى أدمن بنجاح! 🎉\n\nيمكنك الآن استخدام جميع أوامر الإدارة."
+  },
+  "reply_6f2f8b641f096b86": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع الحصول على JID المجموعة!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع الحصول على JID المجموعة!"
+  },
+  "reply_a903b5bbe48c9a62": {
+    "title": "❌ هذا الأمر يعمل فقط في المجموعات!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر يعمل فقط في المجموعات!"
+  },
+  "reply_2b03889e7770ce54": {
+    "title": "📋 JID المجموعة الحالية: `{value1}`",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📋 JID المجموعة الحالية:\n\n`{value1}`"
+  },
+  "reply_2ad18296da1d4b69": {
+    "title": "✅ تم إرسال JID المجموعة إلى الخاص.",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم إرسال JID المجموعة إلى الخاص."
+  },
+  "reply_ab46e2d1a02ff74e": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع إرسال رسائل تحفيزية فورية!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع إرسال رسائل تحفيزية فورية!"
+  },
+  "reply_3971da22ad398462": {
+    "title": "❌ خطأ في تحديد المملكة!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ خطأ في تحديد المملكة!"
+  },
+  "reply_0797cb99533bd077": {
+    "title": "❌ لم يتم العثور على قروب الاستقبال!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على قروب الاستقبال!"
+  },
+  "reply_0d33aafa37733709": {
+    "title": "❌ لم يتم العثور على قروب إضافي!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على قروب إضافي!"
+  },
+  "reply_1914caee57442ff6": {
+    "title": "❌ لم يتم تحديد قروب أدمن لهذه المملكة!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم تحديد قروب أدمن لهذه المملكة!"
+  },
+  "reply_5ffa5602d36741f7": {
+    "title": "✅ تم إرسال رسالة تحفيزية فورية إلى {value1} قروب من أصل {value2} قروب!",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم إرسال رسالة تحفيزية فورية إلى {value1} قروب من أصل {value2} قروب!"
+  },
+  "reply_6697de0ec33170e3": {
+    "title": "❌ استخدام: /رسالة_تحفيزية [أساسي|استقبال|إضافي|أدمن|الكل] 💡 الأنواع المتاحة: • أساسي - القروب الرئي",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /رسالة_تحفيزية [أساسي|استقبال|إضافي|أدمن|الكل]\n\n💡 الأنواع المتاحة:\n• أساسي - القروب الرئيسي\n• استقبال - قروب الاستقبال\n• إضافي - القروب الإضافي\n• أدمن - قروب الأدمن\n• الكل - جميع القروبات"
+  },
+  "reply_27b72d5c5e829274": {
+    "title": "✅ تم إرسال رسالة تحفيزية فورية إلى {value1} بنجاح!",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم إرسال رسالة تحفيزية فورية إلى {value1} بنجاح!"
+  },
+  "reply_a0af414fe548e97b": {
+    "title": "❌ فقط الأدمنز والمشرفين يستطيعون استخراج الألقاب!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز والمشرفين يستطيعون استخراج الألقاب!"
+  },
+  "reply_be00339b5644e1d5": {
+    "title": "❌ الرجاء عمل منشن (@) للاعب الذي تريد معرفة لقبه! استخدام: رد على رسالة واكتب /اسحب_اللقب مع عمل منش",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ الرجاء عمل منشن (@) للاعب الذي تريد معرفة لقبه!\n\nاستخدام: رد على رسالة واكتب /اسحب_اللقب مع عمل منشن للاعب"
+  },
+  "reply_8df15bae4a517af4": {
+    "title": "❌ خطأ في استخراج اللقب: {value1}",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ خطأ في استخراج اللقب: {value1}"
+  },
+  "reply_ce7466fa0b2541e8": {
+    "title": "❌ لم يتم العثور على ملفك الشخصي!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على ملفك الشخصي!"
+  },
+  "reply_c58f4d68d06259a6": {
+    "title": "📢 *نموذج التبليغ عن الإساءة* 📢 الرجاء عمل منشن (@) للشخص المسيء: 💡 *خطوات التبليغ:* 1️⃣ ضع \"رد\" ع",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "📢 *نموذج التبليغ عن الإساءة* 📢\n\nالرجاء عمل منشن (@) للشخص المسيء:\n\n💡 *خطوات التبليغ:*\n1️⃣ ضع \"رد\" على هذه الرسالة\n2️⃣ اكتب اسم الشخص أو رقمه\n3️⃣ اضغط على منشن (@)\n\nسيتم إرسال التبليغ إلى الأداريين بسرعة ⚡"
+  },
+  "reply_5c695a5cfe4615eb": {
+    "title": "❌ فقط الأدمنز يستطيعون إرسال الرسائل التذكيرية!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز يستطيعون إرسال الرسائل التذكيرية!"
+  },
+  "reply_bdecf0d80bec294d": {
+    "title": "✅ تم إرسال رسالة التذكير للمجموعة",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم إرسال رسالة التذكير للمجموعة"
+  },
+  "reply_a22275854152094a": {
+    "title": "❌ فقط الأدمنز يستطيعون تفعيل التذكيرات الدورية!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز يستطيعون تفعيل التذكيرات الدورية!"
+  },
+  "reply_280e8778293d6e11": {
+    "title": "❌ استخدام: /تذكيرات_تلقائية <عدد_الساعات> 💡 مثال: /تذكيرات_تلقائية 12",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /تذكيرات_تلقائية <عدد_الساعات>\n\n💡 مثال: /تذكيرات_تلقائية 12"
+  },
+  "reply_1d1432818fa975c6": {
+    "title": "✅ تم تفعيل التذكيرات الدورية 📅 ستُرسل رسالة تذكيرية كل {value1} ساعة",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم تفعيل التذكيرات الدورية\n📅 ستُرسل رسالة تذكيرية كل {value1} ساعة"
+  },
+  "reply_3a143e3392d3a1ad": {
+    "title": "❌ فقط المشرفون والأدمنز يستطيعون حذف الرسائل!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط المشرفون والأدمنز يستطيعون حذف الرسائل!"
+  },
+  "reply_9bdaeb928fd3e0c8": {
+    "title": "❌ يجب أن تكون هذه الرسالة رد على الرسالة التي تريد حذفها!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ يجب أن تكون هذه الرسالة رد على الرسالة التي تريد حذفها!"
+  },
+  "reply_a38bb58a612f5396": {
+    "title": "❌ فقط الأدمنز يستطيعون ترقية الأعضاء فعلياً!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز يستطيعون ترقية الأعضاء فعلياً!"
+  },
+  "reply_6b86c5b043f8cda8": {
+    "title": "❌ استخدام: /اشراف <اللقب>",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /اشراف <اللقب>"
+  },
+  "reply_26ef37fed6bdf7b5": {
+    "title": "🔰 تم ترقية {value1} إلى مشرف فعلياً في المجموعة!",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🔰 تم ترقية {value1} إلى مشرف فعلياً في المجموعة!"
+  },
+  "reply_f5d06507ffb22723": {
+    "title": "❌ فشل في ترقية العضو!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فشل في ترقية العضو!"
+  },
+  "reply_dced804e08505eaf": {
+    "title": "❌ لم يتم العثور على منشن صحيح!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على منشن صحيح!"
+  },
+  "reply_99a2d2ecb4a324b0": {
+    "title": "❌ هذا المنشن لا يُمثل JID واتساب صالحاً!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا المنشن لا يُمثل JID واتساب صالحاً!"
+  },
+  "reply_86d6877893978385": {
+    "title": "❌ حدث خطأ في معالجة المنشن!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في معالجة المنشن!"
+  },
+  "reply_a055f5b97fcda5ed": {
+    "title": "❌ لم يتم العثور على مستخدم باسم \"{value1}\"!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على مستخدم باسم \"{value1}\"!"
+  },
+  "reply_b59ada79ba742f34": {
+    "title": "❌ فقط الأدمنز يستطيعون ترقية المشرفين!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز يستطيعون ترقية المشرفين!"
+  },
+  "reply_d2f7a7683f73761f": {
+    "title": "❌ لم يتم العثور على هذا المستخدم!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على هذا المستخدم!"
+  },
+  "reply_ad712d6741b2e9a5": {
+    "title": "🔰 تم ترقية {value1} من مشرف إلى أدمن بنجاح!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🔰 تم ترقية {value1} من مشرف إلى أدمن بنجاح!"
+  },
+  "reply_2ad7577b117671af": {
+    "title": "🔰 تم ترقية {value1} إلى مشرف بنجاح!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🔰 تم ترقية {value1} إلى مشرف بنجاح!"
+  },
+  "reply_4dee8121d9d5c8dd": {
+    "title": "❌ فقط الأدمنز يستطيعون تخفيض الرتب!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز يستطيعون تخفيض الرتب!"
+  },
+  "reply_1b0e1af1e0bb9692": {
+    "title": "❌ لا يمكن تخفيض الأدمن الرئيسي!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن تخفيض الأدمن الرئيسي!"
+  },
+  "reply_ecc9cb1ca83364ac": {
+    "title": "👤 تم تخفيض {value1} من رتبة المشرفين إلى عضو عادي!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👤 تم تخفيض {value1} من رتبة المشرفين إلى عضو عادي!"
+  },
+  "reply_3a0a4f9f44323592": {
+    "title": "👤 تم تخفيض {value1} من رتبة الأدمن إلى مشرف!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👤 تم تخفيض {value1} من رتبة الأدمن إلى مشرف!"
+  },
+  "reply_f057eae046808be9": {
+    "title": "⚠️ هذا العضو لا يحتاج إلى تخفيض!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "⚠️ هذا العضو لا يحتاج إلى تخفيض!"
+  },
+  "reply_cb555a47cc94f762": {
+    "title": "❌ فقط الأدمنز يستطيعون إضافة النقاط!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز يستطيعون إضافة النقاط!"
+  },
+  "reply_b680ef757d09731d": {
+    "title": "💰 تم إضافة {value1} نقطة لـ {value2}! مجموع نقاطه: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "💰 تم إضافة {value1} نقطة لـ {value2}!\nمجموع نقاطه: {value3}"
+  },
+  "reply_bb16e9734c123288": {
+    "title": "❌ فقط الأدمنز والمشرفين يستطيعون إزالة النقاط!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز والمشرفين يستطيعون إزالة النقاط!"
+  },
+  "reply_f9a9f62917600f71": {
+    "title": "💰 تم إزالة {value1} نقطة من {value2}! مجموع نقاطه: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "💰 تم إزالة {value1} نقطة من {value2}!\nمجموع نقاطه: {value3}"
+  },
+  "reply_9d77f64a2d315a6b": {
+    "title": "❌ فقط الأدمن الرئيسي في هذه المملكة يستطيع إضافة العملات!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي في هذه المملكة يستطيع إضافة العملات!"
+  },
+  "reply_246a54de8b0c80fb": {
+    "title": "❌ لم يتم العثور على العضو \"{value1}\" في هذه المملكة!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على العضو \"{value1}\" في هذه المملكة!"
+  },
+  "reply_a9f38a3f9cd3fe65": {
+    "title": "💰 تم إضافة {value1} عملة لـ {value2}! مجموع عملاته: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "💰 تم إضافة {value1} عملة لـ {value2}!\nمجموع عملاته: {value3}"
+  },
+  "reply_35afe84465768748": {
+    "title": "❌ فقط الأدمنز يستطيعون إزالة العملات!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز يستطيعون إزالة العملات!"
+  },
+  "reply_17e421bf1d087cd9": {
+    "title": "💰 تم إزالة {value1} عملة من {value2}! مجموع عملاته: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "💰 تم إزالة {value1} عملة من {value2}!\nمجموع عملاته: {value3}"
+  },
+  "reply_8eba998d034af5b6": {
+    "title": "❌ فقط الأدمنز والمشرفين يستطيعون طرد الأعضاء!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز والمشرفين يستطيعون طرد الأعضاء!"
+  },
+  "reply_0e4fb2877f972a88": {
+    "title": "❌ لا يمكن طرد الأدمن الرئيسي!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن طرد الأدمن الرئيسي!"
+  },
+  "reply_ab49116a7c338dd0": {
+    "title": "❌ لا يمكن طرد الأدمن إلا من قبل أدمن رئيسي!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن طرد الأدمن إلا من قبل أدمن رئيسي!"
+  },
+  "reply_5f90fdb7d59fcbe3": {
+    "title": "❌ المشرفون لا يمكنهم طرد الأدمنز أو المشرفين الآخرين!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ المشرفون لا يمكنهم طرد الأدمنز أو المشرفين الآخرين!"
+  },
+  "reply_59716b0f39404248": {
+    "title": "❌ فشل في طرد العضو من المجموعة!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فشل في طرد العضو من المجموعة!"
+  },
+  "reply_3f8dbc7671d60166": {
+    "title": "🚫 تم طرد {value1} من المجموعة فعلياً! هل تريد حذف بياناته من قاعدة البيانات؟ أجب بنعم أو لا.",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🚫 تم طرد {value1} من المجموعة فعلياً!\n\nهل تريد حذف بياناته من قاعدة البيانات؟\nأجب بنعم أو لا."
+  },
+  "reply_c75fc539837b76d3": {
+    "title": "❌ فقط الأدمنز والمشرفين يستطيعون حظر الأعضاء!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز والمشرفين يستطيعون حظر الأعضاء!"
+  },
+  "reply_e9f75dc5eb60fb6f": {
+    "title": "❌ المشرفون لا يمكنهم حظر الأدمن الرئيسي!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ المشرفون لا يمكنهم حظر الأدمن الرئيسي!"
+  },
+  "reply_09f98184d771557a": {
+    "title": "❌ لا يمكن حظر الأدمن الرئيسي!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن حظر الأدمن الرئيسي!"
+  },
+  "reply_9a792ddfa98ab564": {
+    "title": "🚫 تم حظر {value1}! السبب: {value2}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "🚫 تم حظر {value1}!\nالسبب: {value2}"
+  },
+  "reply_2ee29f23a9f4abef": {
+    "title": "❌ فقط الأدمنز والمشرفين يستطيعون إزالة الحظر!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز والمشرفين يستطيعون إزالة الحظر!"
+  },
+  "reply_105fb5f4c57149df": {
+    "title": "✅ تم إزالة الحظر عن {value1}!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم إزالة الحظر عن {value1}!"
+  },
+  "reply_284b771fb9eae7f9": {
+    "title": "❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات.",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا القروب غير مرتبط بأي مملكة في قاعدة البيانات."
+  },
+  "reply_71d017b75bdda24a": {
+    "title": "❌ لم يتم العثور على حسابك!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على حسابك!"
+  },
+  "reply_509b6fd0fbe42afb": {
+    "title": "❌ المبلغ يجب أن يكون أكبر من صفر!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ المبلغ يجب أن يكون أكبر من صفر!"
+  },
+  "reply_4ba15dc9c64dc1e6": {
+    "title": "❌ ليس لديك عملات كافية!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ ليس لديك عملات كافية!"
+  },
+  "reply_688786a79ddc5ee2": {
+    "title": "🏦 تم إيداع {value1} عملة في البنك بنجاح! 💰 رصيدك الآن: {value2} 🏦 رصيدك في البنك: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "🏦 تم إيداع {value1} عملة في البنك بنجاح!\n💰 رصيدك الآن: {value2}\n🏦 رصيدك في البنك: {value3}"
+  },
+  "reply_1d447917b6e8163e": {
+    "title": "❌ حدث خطأ في الإيداع!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في الإيداع!"
+  },
+  "reply_277e3578bb43c97d": {
+    "title": "❌ ليس لديك عملات كافية في البنك!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ ليس لديك عملات كافية في البنك!"
+  },
+  "reply_d0e90482270f9940": {
+    "title": "🏦 تم سحب {value1} عملة من البنك بنجاح! 💰 رصيدك الآن: {value2} 🏦 رصيدك في البنك: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "🏦 تم سحب {value1} عملة من البنك بنجاح!\n💰 رصيدك الآن: {value2}\n🏦 رصيدك في البنك: {value3}"
+  },
+  "reply_e08a40d5f294c98d": {
+    "title": "❌ حدث خطأ في السحب!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في السحب!"
+  },
+  "reply_2683ccfe4605612d": {
+    "title": "❌ حدث خطأ في عرض الرصيد!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في عرض الرصيد!"
+  },
+  "reply_238ddcea4e7be15d": {
+    "title": "❌ لم يتم العثور على المستلم!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على المستلم!"
+  },
+  "reply_dbb22dd51799a29e": {
+    "title": "❌ لا يمكنك التحويل لنفسك!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكنك التحويل لنفسك!"
+  },
+  "reply_f3e5d1d390e47cc3": {
+    "title": "✅ تم التحويل بنجاح! 💰 تم إرسال {value1} عملة إلى {value2} 💰 رصيدك الآن: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "✅ تم التحويل بنجاح!\n💰 تم إرسال {value1} عملة إلى {value2}\n💰 رصيدك الآن: {value3}"
+  },
+  "reply_075e8fdf5df2ec49": {
+    "title": "💰 {value1} استلم {value2} عملة من {value3}! 💰 رصيده الآن: {value4}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "sample": "💰 {value1} استلم {value2} عملة من {value3}!\n💰 رصيده الآن: {value4}"
+  },
+  "reply_6006257b5f60c187": {
+    "title": "❌ حدث خطأ في التحويل!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في التحويل!"
+  },
+  "reply_c043e7286de61e8e": {
+    "title": "❌ حدث خطأ في عرض الإحصائيات!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في عرض الإحصائيات!"
+  },
+  "reply_8704a9b643f3d08d": {
+    "title": "❌ اللقب الجديد لا يمكن أن يكون فارغاً!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اللقب الجديد لا يمكن أن يكون فارغاً!"
+  },
+  "reply_cb4572411008fd44": {
+    "title": "❌ هذا اللقب مستخدم بالفعل!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا اللقب مستخدم بالفعل!"
+  },
+  "reply_7b14529f261b6d8c": {
+    "title": "❌ لم يتم العثور على المستخدم!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على المستخدم!"
+  },
+  "reply_4fb7538bb7175246": {
+    "title": "❌ يمكنك تغيير لقبك الخاص فقط!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ يمكنك تغيير لقبك الخاص فقط!"
+  },
+  "reply_5bb17e6f0b7adaf0": {
+    "title": "❌ حدث خطأ في تغيير اللقب!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في تغيير اللقب!"
+  },
+  "reply_02ee96eff3fe9413": {
+    "title": "✅ لقب العضو محفوظ: *{value1}* 🔗 منشنه المسجل: {value2}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ لقب العضو محفوظ: *{value1}*\n🔗 منشنه المسجل: {value2}"
+  },
+  "reply_91afae100be3dc08": {
+    "title": "✅ لقب العضو محفوظ: *{value1}* 🔗 تم تحديث منشنه: {value2}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ لقب العضو محفوظ: *{value1}*\n🔗 تم تحديث منشنه: {value2}"
+  },
+  "reply_3040f71ab58781c9": {
+    "title": "⚠️ تم العثور على لقب العضو لكن حدث خطأ في تحديث المنشن",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "⚠️ تم العثور على لقب العضو لكن حدث خطأ في تحديث المنشن"
+  },
+  "reply_c58d9eb035e5a2ab": {
+    "title": "❌ فشل في إنشاء لقب فريد، يرجى المحاولة لاحقاً",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فشل في إنشاء لقب فريد، يرجى المحاولة لاحقاً"
+  },
+  "reply_9def18ad885b3470": {
+    "title": "✅ تم تسجيل العضو بنجاح! 🎖️ لقبه: *{value1}* 🔗 منشنه: {value2} 💡 يمكنه الآن الاستمتاع بالألعاب وال",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم تسجيل العضو بنجاح!\n\n🎖️ لقبه: *{value1}*\n🔗 منشنه: {value2}\n\n💡 يمكنه الآن الاستمتاع بالألعاب والأنشطة!"
+  },
+  "reply_08743ca685cac30f": {
+    "title": "❌ حدث خطأ في حفظ بيانات العضو!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في حفظ بيانات العضو!"
+  },
+  "reply_bd67249a52447cc8": {
+    "title": "❌ لا يوجد مستخدمين مسجلين!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يوجد مستخدمين مسجلين!"
+  },
+  "reply_9ae5fb57b56f556e": {
+    "title": "❌ حدث خطأ في عرض البيانات!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في عرض البيانات!"
+  },
+  "reply_d6ddb097108d2c3b": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع حذف بيانات المستخدمين!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع حذف بيانات المستخدمين!"
+  },
+  "reply_eb3f1f9845bc409d": {
+    "title": "❌ لا يمكن حذف بيانات الأدمن الرئيسي!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن حذف بيانات الأدمن الرئيسي!"
+  },
+  "reply_26ab8bb159b7f673": {
+    "title": "✅ تم حذف بيانات المستخدم \"{value1}\" بنجاح!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم حذف بيانات المستخدم \"{value1}\" بنجاح!"
+  },
+  "reply_f486617a3df5a790": {
+    "title": "❌ حدث خطأ في حذف البيانات!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في حذف البيانات!"
+  },
+  "reply_e5e91d2f8299509c": {
+    "title": "✅ لا توجد بيانات بدون لقب للحذف!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ لا توجد بيانات بدون لقب للحذف!"
+  },
+  "reply_88d65b10e5b95d2e": {
+    "title": "❌ حدث خطأ في الحصول على البيانات!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في الحصول على البيانات!"
+  },
+  "reply_e08e1dad0d7fd1f6": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع تنفيذ هذا الأمر!"
+  },
+  "reply_2e42c266627948b4": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع إضافة نجوم الرتبة!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع إضافة نجوم الرتبة!"
+  },
+  "reply_556aba20adf14982": {
+    "title": "❌ فقط الأدمنز والمشرفين يستطيعون إزالة نجوم الرتبة!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمنز والمشرفين يستطيعون إزالة نجوم الرتبة!"
+  },
+  "reply_7377f228911240a0": {
+    "title": "❌ فقط الإمبراطور يستطيع منح الرتب التي تتطلب قراره!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الإمبراطور يستطيع منح الرتب التي تتطلب قراره!"
+  },
+  "reply_e4a807e4eba30bcc": {
+    "title": "❌ هذه الرتبة لا تتطلب قرار الإمبراطور أو غير موجودة!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذه الرتبة لا تتطلب قرار الإمبراطور أو غير موجودة!"
+  },
+  "reply_ecef17e294f9ef5d": {
+    "title": "✅ تم منح رتبة {value1} {value2} للاعب {value3} بقرار من الإمبراطور! 🎖️ نجوم الرتبة: {value4}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "sample": "✅ تم منح رتبة {value1} {value2} للاعب {value3} بقرار من الإمبراطور!\n🎖️ نجوم الرتبة: {value4}"
+  },
+  "reply_e8bd4aa090335cb9": {
+    "title": "🎖️ مبروك {value1}! تم ترقيتك إلى رتبة {value2} {value3} بقرار من الإمبراطور! ✨ شرف عظيم!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "🎖️ مبروك {value1}! تم ترقيتك إلى رتبة {value2} {value3} بقرار من الإمبراطور!\n✨ شرف عظيم!"
+  },
+  "reply_ad269521821ecb15": {
+    "title": "❌ حدث خطأ في منح الرتبة!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في منح الرتبة!"
+  },
+  "reply_063883924c5a9a8a": {
+    "title": "❌ فقط الأدمن الرئيسي يستطيع منح رتبة الإمبراطور!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن الرئيسي يستطيع منح رتبة الإمبراطور!"
+  },
+  "reply_cac78760dec61b61": {
+    "title": "⚠️ هذا العضو لديه رتبة الإمبراطور بالفعل!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "⚠️ هذا العضو لديه رتبة الإمبراطور بالفعل!"
+  },
+  "reply_34cc6e3f001eea83": {
+    "title": "🔐 تم إرسال طلب منح رتبة الإمبراطور لـ {value1} إلى الخاص الخاص بك.",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🔐 تم إرسال طلب منح رتبة الإمبراطور لـ {value1} إلى الخاص الخاص بك."
+  },
+  "reply_e8ab1d1eb34049eb": {
+    "title": "🔑 لمنح رتبة الإمبراطور لـ {value1}، أدخل كلمة المرور:",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🔑 لمنح رتبة الإمبراطور لـ {value1}، أدخل كلمة المرور:"
+  },
+  "reply_2bbb9cbd7c1c48dc": {
+    "title": "❌ حدث خطأ في بدء العملية!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في بدء العملية!"
+  },
+  "reply_f5aa05241197fc49": {
+    "title": "❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD.",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD."
+  },
+  "reply_55c7325e1328a018": {
+    "title": "❌ كلمة المرور غير صحيحة!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ كلمة المرور غير صحيحة!"
+  },
+  "reply_e49e601c6c5b86e7": {
+    "title": "✅ تم منح رتبة الإمبراطور لـ {value1} بنجاح! 🎖️ نجوم الرتبة: {value2} ✨ شرف عظيم!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم منح رتبة الإمبراطور لـ {value1} بنجاح!\n🎖️ نجوم الرتبة: {value2}\n✨ شرف عظيم!"
+  },
+  "reply_e3a359ff93b7be67": {
+    "title": "👑 تم منح رتبة الإمبراطور لـ {value1} بنجاح! 🎖️ نجوم الرتبة: {value2} ✨ شرف عظيم!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "👑 تم منح رتبة الإمبراطور لـ {value1} بنجاح!\n🎖️ نجوم الرتبة: {value2}\n✨ شرف عظيم!"
+  },
+  "reply_9f450ecd8f9c5b43": {
+    "title": "🎖️ مبروك! تم منحك رتبة الإمبراطور بقرار من الأدمن الرئيسي! ✨ شرف عظيم!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎖️ مبروك! تم منحك رتبة الإمبراطور بقرار من الأدمن الرئيسي!\n✨ شرف عظيم!"
+  },
+  "reply_03e67497903fafac": {
+    "title": "❌ هذا الأمر متاح للأدمن والمشرفين فقط!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر متاح للأدمن والمشرفين فقط!"
+  },
+  "reply_9227163734f1ebeb": {
+    "title": "❌ اسم المستخدم غير صحيح!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اسم المستخدم غير صحيح!"
+  },
+  "reply_1ad0ef4081e12b55": {
+    "title": "يرجى إرسال المنشن الجديد بالصيغة @المنشن",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "يرجى إرسال المنشن الجديد بالصيغة @المنشن"
+  },
+  "reply_10883609a35965f7": {
+    "title": "✅ تم تعيين المنشن {value1} للعضو {value2} بنجاح!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم تعيين المنشن {value1} للعضو {value2} بنجاح!"
+  },
+  "reply_1ad13b4c421651e5": {
+    "title": "❌ اسم المستخدم القديم غير صحيح!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اسم المستخدم القديم غير صحيح!"
+  },
+  "reply_1f6e1f6b2f0283b0": {
+    "title": "❌ لم يتم العثور على مستخدم باسم \"{value1}\"!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على مستخدم باسم \"{value1}\"!"
+  },
+  "reply_8aca94195074e851": {
+    "title": "❌ هذا المنشن مرتبط بمستخدم آخر بالفعل!",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا المنشن مرتبط بمستخدم آخر بالفعل!"
+  },
+  "reply_8060c526f9631159": {
+    "title": "❌ هذه القائمة للمشرفين فقط.",
+    "file": "commands/commandsList.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذه القائمة للمشرفين فقط."
+  },
+  "reply_77e41a5c17509111": {
+    "title": "❌ هذه القائمة للأدمن فقط.",
+    "file": "commands/commandsList.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذه القائمة للأدمن فقط."
+  },
+  "reply_8cb76eca086ba707": {
+    "title": "❌ اختيار غير صحيح. اكتب رقم من القائمة.",
+    "file": "commands/commandsList.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختيار غير صحيح. اكتب رقم من القائمة."
+  },
+  "reply_ebcaa87d009e7fdd": {
+    "title": "❌ لا تملك صلاحية لهذه القائمة.",
+    "file": "commands/dynamicCommandsList.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا تملك صلاحية لهذه القائمة."
+  },
+  "reply_165840f461a66aa2": {
+    "title": "❌ لم أجد أمرًا يطابق: {value1}",
+    "file": "commands/dynamicCommandsList.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم أجد أمرًا يطابق: {value1}"
+  },
+  "reply_0fd60d2ffb5ee292": {
+    "title": "❌ هذه القائمة للمشرفين فقط.",
+    "file": "commands/dynamicCommandsList.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذه القائمة للمشرفين فقط."
+  },
+  "reply_e591b68d7be2344d": {
+    "title": "❌ هذه القائمة للأدمن فقط.",
+    "file": "commands/dynamicCommandsList.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذه القائمة للأدمن فقط."
+  },
+  "reply_b38e970965abf5b1": {
+    "title": "*🔍 البحث في الأوامر* اكتب: بحث كلمة مثال: بحث نقاط",
+    "file": "commands/dynamicCommandsList.js",
+    "fields": [],
+    "required": [],
+    "sample": "*🔍 البحث في الأوامر*\nاكتب: بحث كلمة\nمثال: بحث نقاط"
+  },
+  "reply_c73303a8a8a002c3": {
+    "title": "❌ اختيار غير صحيح. اكتب رقم من القائمة.",
+    "file": "commands/dynamicCommandsList.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختيار غير صحيح. اكتب رقم من القائمة."
+  },
+  "reply_90f1bc29b133f9bd": {
+    "title": "❌ لا توجد نخبة في هذه المملكة حتى الآن!",
+    "file": "commands/eliteFunction.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا توجد نخبة في هذه المملكة حتى الآن!"
+  },
+  "reply_995098e91c301286": {
+    "title": "❌ حدث خطأ في عرض النخبة!",
+    "file": "commands/eliteFunction.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في عرض النخبة!"
+  },
+  "reply_b506fc58ef1c1cc6": {
+    "title": "❌ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك"
+  },
+  "reply_ff6b4a5dbf8aa2a6": {
+    "title": "لا يوجد ترتيب مستويات بعد.",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "لا يوجد ترتيب مستويات بعد."
+  },
+  "reply_0f67c7f9a8d87b14": {
+    "title": "❌ استخدم: /تعيين_منشن <لقب>",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدم: /تعيين_منشن <لقب>"
+  },
+  "reply_1a37a1912f9b8391": {
+    "title": "❌ لا يوجد مستخدم بهذا اللقب.",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يوجد مستخدم بهذا اللقب."
+  },
+  "reply_ea3525b2ba4de1d7": {
+    "title": "❌ فقط الأدمن أو المشرف يمكنهم تعيين أو تغيير منشن الأعضاء.",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الأدمن أو المشرف يمكنهم تعيين أو تغيير منشن الأعضاء."
+  },
+  "reply_3d37fbbf090b7bc8": {
+    "title": "❌ لم يتم العثور على {value1} في قائمة المشاركين!",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على {value1} في قائمة المشاركين!"
+  },
+  "reply_26fcf97bffb56867": {
+    "title": "❌ حدث خطأ في الوصول لبيانات المجموعة! تأكد من أن البوت أدمن في المجموعة.",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في الوصول لبيانات المجموعة!\n\nتأكد من أن البوت أدمن في المجموعة."
+  },
+  "reply_ca9a4d988be6f4cc": {
+    "title": "❌ هذا الأمر مخصّص للمطورين فقط.",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر مخصّص للمطورين فقط."
+  },
+  "reply_c90422a8a9c4098f": {
+    "title": "❌ استخدم: /devinfo <لقب_المستخدم>",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدم: /devinfo <لقب_المستخدم>"
+  },
+  "reply_7afc7026e5ab24ca": {
+    "title": "❌ لم يتم العثور على مستخدم باسم \"{value1}\"",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على مستخدم باسم \"{value1}\""
+  },
+  "reply_bab74d239a09385d": {
+    "title": "❌ اكتب لقب بعد الأمر /لقبي لقبك الجديد",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اكتب لقب بعد الأمر\n/لقبي لقبك الجديد"
+  },
+  "reply_430cbbd1ffe454b4": {
+    "title": "❌ هذا اللقب مستخدم بالفعل من قبل شخص آخر!",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا اللقب مستخدم بالفعل من قبل شخص آخر!"
+  },
+  "reply_46480f679a31c2e2": {
+    "title": "✅ تم تسجيل لقبك: {value1}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم تسجيل لقبك: {value1}"
+  },
+  "reply_0a35411ad0f4acf1": {
+    "title": "💰 تم خصم 50 عملة لتغيير اللقب 💰 رصيدك الآن: {value1}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 تم خصم 50 عملة لتغيير اللقب\n💰 رصيدك الآن: {value1}"
+  },
+  "reply_34f4ef0e702290a1": {
+    "title": "✅ تم تغيير لقبك إلى: {value1}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم تغيير لقبك إلى: {value1}"
+  },
+  "reply_f266661a19be7992": {
+    "title": "🆔 لقبك: *{value1}* ID الخاص بك: {value2}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "🆔 لقبك: *{value1}*\nID الخاص بك:\n{value2}"
+  },
+  "reply_dc30d1ee7703cfca": {
+    "title": "🆔 ID الخاص بك: {value1} ⚠️ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🆔 ID الخاص بك:\n{value1}\n\n⚠️ لم تقم بتسجيل لقب بعد. استخدم /لقب لتسجيل لقبك"
+  },
+  "reply_fdb8c280729493fc": {
+    "title": "❌ لا توجد بيانات لحذفها.",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا توجد بيانات لحذفها."
+  },
+  "reply_76dcfa37578c108d": {
+    "title": "✅ تم حذف بياناتك بالكامل، يمكنك إعادة التسجيل مجددًا.",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم حذف بياناتك بالكامل، يمكنك إعادة التسجيل مجددًا."
+  },
+  "reply_c948977a152a031f": {
+    "title": "❌ استخدام: /إيداع <المبلغ>",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /إيداع <المبلغ>"
+  },
+  "reply_76f0f22db8d354b5": {
+    "title": "❌ استخدام: /سحب <المبلغ>",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /سحب <المبلغ>"
+  },
+  "reply_58553de26c89afd1": {
+    "title": "❌ استخدام: /تحويل <لقب المستلم> <المبلغ>",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدام: /تحويل <لقب المستلم> <المبلغ>"
+  },
+  "reply_b78c991b95509301": {
+    "title": "❌ استخدم: /منشن <لقب>",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدم: /منشن <لقب>"
+  },
+  "reply_d5b5dd33541ec9c2": {
+    "title": "❌ استخدم: /تسجيل_عيد_ميلاد <تاريخ الميلاد> (مثال: 15/08/2000)",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدم: /تسجيل_عيد_ميلاد <تاريخ الميلاد> (مثال: 15/08/2000)"
+  },
+  "reply_71e128b43e50700d": {
+    "title": "❌ صيغة التاريخ غير صحيحة. استخدم: DD/MM/YYYY",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ صيغة التاريخ غير صحيحة. استخدم: DD/MM/YYYY"
+  },
+  "reply_d2434807f52a2eaf": {
+    "title": "❌ تاريخ غير صحيح.",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ تاريخ غير صحيح."
+  },
+  "reply_38d0f10015fc2164": {
+    "title": "❌ يرجى تسجيل لقبك أولاً باستخدام /لقب",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ يرجى تسجيل لقبك أولاً باستخدام /لقب"
+  },
+  "reply_4bec0a779ae96fc9": {
+    "title": "✅ تم تسجيل عيد ميلادك: {value1}/{value2}/{value3}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "✅ تم تسجيل عيد ميلادك: {value1}/{value2}/{value3}"
+  },
+  "reply_550862de7846358e": {
+    "title": "❌ استخدم: /من @<رقم> أو @<lid>@lid 💡 أمثلة: /من @962791234567 أو /من @123@lid",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدم: /من @<رقم> أو @<lid>@lid\n💡 أمثلة: /من @962791234567 أو /من @123@lid"
+  },
+  "reply_488e8e8d1042d4ab": {
+    "title": "❌ لم يتم العثور على مستخدم بالـ lid \"{value1}\"",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على مستخدم بالـ lid \"{value1}\""
+  },
+  "reply_0deca06b67f1349a": {
+    "title": "❌ لم يتم العثور على مستخدم برقم \"{value1}\"",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على مستخدم برقم \"{value1}\""
+  },
+  "reply_f102573240b0b2ce": {
+    "title": "❌ لم يتم العثور على مستخدم بالمنشن أو اللقب \"{value1}\"",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم يتم العثور على مستخدم بالمنشن أو اللقب \"{value1}\""
+  },
+  "reply_42dd28cced8600e1": {
+    "title": "❌ حدث خطأ أثناء البحث",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ أثناء البحث"
+  },
+  "reply_67c272f61d679f58": {
+    "title": "❌ استخدم: /معايدة <لقب>",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدم: /معايدة <لقب>"
+  },
+  "reply_b1d19b8fd1644fbf": {
+    "title": "❌ {value1} لم يسجل تاريخ ميلاده بعد.",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ {value1} لم يسجل تاريخ ميلاده بعد."
+  },
+  "reply_c0a5e90cc6240b26": {
+    "title": "❌ اليوم ليس عيد ميلاد {value1}.",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ اليوم ليس عيد ميلاد {value1}."
+  },
+  "reply_29e13cd40eec80ba": {
+    "title": "✅ إجابة صحيحة! الدولة: {value1} لكن لا يمكن احتساب النقاط لأنك غير مسجل.",
+    "file": "games/flagGame.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ إجابة صحيحة!\nالدولة: {value1}\nلكن لا يمكن احتساب النقاط لأنك غير مسجل."
+  },
+  "reply_e77c8afdd8efcb5b": {
+    "title": "✅ إجابة صحيحة! الدولة: {value1} +2 نقاط ✨ +{value2} XP{value3} مجموع نقاطك: 💰{value4}",
+    "file": "games/flagGame.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "sample": "✅ إجابة صحيحة!\nالدولة: {value1}\n+2 نقاط\n✨ +{value2} XP{value3}\nمجموع نقاطك: 💰{value4}"
+  },
+  "reply_68af1f24486da17b": {
+    "title": "⏭️ جولة جديدة قادمة بعد 3 ثواني...",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏭️ جولة جديدة قادمة بعد 3 ثواني..."
+  },
+  "reply_2c96188a6ade9e42": {
+    "title": "🎮 هناك لعبة تعمل حالياً!",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 هناك لعبة تعمل حالياً!"
+  },
+  "reply_a4eec916e4926443": {
+    "title": "🚩 اختر تصنيف الدول للعبة الأعلام: 🌍 1️⃣ الدول العربية فقط ⭐ 2️⃣ الدول المعروفة فقط 🌐 3️⃣ جميع دول",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "🚩 اختر تصنيف الدول للعبة الأعلام:\n\n🌍 1️⃣ الدول العربية فقط\n⭐ 2️⃣ الدول المعروفة فقط\n🌐 3️⃣ جميع دول العالم\n\n📚 4️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.\n📌 لإيقاف اللعبة في أي وقت استخدم الأمر /وقف"
+  },
+  "reply_bc7a66f890c39685": {
+    "title": "❌ لا توجد أعلام متاحة للدول {value1} في قاعدة البيانات.",
+    "file": "games/flagGame.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لا توجد أعلام متاحة للدول {value1} في قاعدة البيانات."
+  },
+  "reply_f605107af9d16e49": {
+    "title": "❌ فشل اختيار دولة",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فشل اختيار دولة"
+  },
+  "reply_ec2803a9a7224221": {
+    "title": "🚩 لعبة الأعلام - {value1} ⏱ لديك 10 ثواني 💡 سيظهر تلميح بعد 2 ثانية (لم تتمكن من تحميل صورة العلم ",
+    "file": "games/flagGame.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🚩 لعبة الأعلام - {value1}\n⏱ لديك 10 ثواني\n💡 سيظهر تلميح بعد 2 ثانية\n\n(لم تتمكن من تحميل صورة العلم من الإنترنت)"
+  },
+  "reply_d438f76e09d12189": {
+    "title": "💡 تلميح: {value1}",
+    "file": "games/flagGame.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💡 تلميح: {value1}"
+  },
+  "reply_d0a9f1a48d375e6a": {
+    "title": "⏱ انتهى الوقت! الدولة هي: {value1}",
+    "file": "games/flagGame.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "⏱ انتهى الوقت!\nالدولة هي: {value1}"
+  },
+  "reply_0de4cb0bd24d460f": {
+    "title": "🚩 اختر نوع لعبة الأعلام (الدول العربية): 1️⃣ للجميع في المجموعة 2️⃣ بين شخصين محددين 3️⃣ شرح اللعبة",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "🚩 اختر نوع لعبة الأعلام (الدول العربية):\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب."
+  },
+  "reply_86bcd2e6b249d1e5": {
+    "title": "🚩 اختر نوع لعبة الأعلام (الدول المعروفة): 1️⃣ للجميع في المجموعة 2️⃣ بين شخصين محددين 3️⃣ شرح اللعب",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "🚩 اختر نوع لعبة الأعلام (الدول المعروفة):\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب."
+  },
+  "reply_6180cdbb0914f588": {
+    "title": "🚩 اختر نوع لعبة الأعلام (جميع الدول): 1️⃣ للجميع في المجموعة 2️⃣ بين شخصين محددين 3️⃣ شرح اللعبة أر",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "🚩 اختر نوع لعبة الأعلام (جميع الدول):\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب."
+  },
+  "reply_1821fb49e4c4aef2": {
+    "title": "❌ اختر 1 أو 2 أو 3 أو 4 فقط.",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختر 1 أو 2 أو 3 أو 4 فقط."
+  },
+  "reply_e493aed11d98aa11": {
+    "title": "👤 أرسل اسم اللاعب الأول (اللقب):",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "👤 أرسل اسم اللاعب الأول (اللقب):"
+  },
+  "reply_80473e3df9f02bb6": {
+    "title": "❌ اختر 1 أو 2 أو 3 فقط.",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختر 1 أو 2 أو 3 فقط."
+  },
+  "reply_df60ffa05cd2f2ea": {
+    "title": "❌ لم يتم العثور على اللاعب. أعد المحاولة:",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على اللاعب. أعد المحاولة:"
+  },
+  "reply_ae0bf40a1e03f59c": {
+    "title": "👤 أرسل اسم اللاعب الثاني (اللقب):",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "👤 أرسل اسم اللاعب الثاني (اللقب):"
+  },
+  "reply_6575b9462f54f81c": {
+    "title": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:"
+  },
+  "reply_57f4dd27416f46f1": {
+    "title": "🎮 هناك لعبة تعمل حالياً!",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 هناك لعبة تعمل حالياً!"
+  },
+  "reply_862f4d06f5ba373f": {
+    "title": "🎮 اختر نوع لعبة تخمين الأنمي: 1️⃣ للجميع في المجموعة 2️⃣ بين شخصين محددين 3️⃣ شرح اللعبة أرسل الرقم",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 اختر نوع لعبة تخمين الأنمي:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.\n📌 لإيقاف اللعبة في أي وقت استخدم الأمر /وقف"
+  },
+  "reply_6f7b0f072c868ad3": {
+    "title": "❌ لا يوجد أنميات عربية في قاعدة البيانات",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يوجد أنميات عربية في قاعدة البيانات"
+  },
+  "reply_2c18ebcc0ef4a503": {
+    "title": "❌ تعذر العثور على صورة مناسبة للأنمي الآن. جرّب مرة أخرى بعد قليل.",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ تعذر العثور على صورة مناسبة للأنمي الآن. جرّب مرة أخرى بعد قليل."
+  },
+  "reply_dd08c9f567307091": {
+    "title": "❌ خطأ في تحميل اللعبة، الأنمي غير مكتمل في قاعدة البيانات.",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ خطأ في تحميل اللعبة، الأنمي غير مكتمل في قاعدة البيانات."
+  },
+  "reply_fbe3e90965dbc507": {
+    "title": "❌ فشل إرسال صورة الأنمي. سأبدأ جولة جديدة بعد قليل.",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فشل إرسال صورة الأنمي. سأبدأ جولة جديدة بعد قليل."
+  },
+  "reply_d6bf0b3a513e895e": {
+    "title": "💡 تلميح: {value1}...",
+    "file": "games/guessAnime.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💡 تلميح: {value1}..."
+  },
+  "reply_cd2d95e32942a626": {
+    "title": "⏱ انتهى الوقت! الأنمي هو: {value1}",
+    "file": "games/guessAnime.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "⏱ انتهى الوقت!\nالأنمي هو: {value1}"
+  },
+  "reply_ca6064ee5746ff62": {
+    "title": "⏭️ جولة جديدة قادمة بعد 3 ثواني...",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏭️ جولة جديدة قادمة بعد 3 ثواني..."
+  },
+  "reply_27a77313a88f7d31": {
+    "title": "👤 أرسل اسم اللاعب الأول (اللقب):",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "👤 أرسل اسم اللاعب الأول (اللقب):"
+  },
+  "reply_f917f410793f70f7": {
+    "title": "❌ اختر 1 أو 2 أو 3 فقط.",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختر 1 أو 2 أو 3 فقط."
+  },
+  "reply_712da6b6863fb594": {
+    "title": "❌ لم يتم العثور على اللاعب. أعد المحاولة:",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على اللاعب. أعد المحاولة:"
+  },
+  "reply_a83b9f0e3abf8453": {
+    "title": "👤 أرسل اسم اللاعب الثاني (اللقب):",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "👤 أرسل اسم اللاعب الثاني (اللقب):"
+  },
+  "reply_d8d5a2b096f95548": {
+    "title": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:"
+  },
+  "reply_c450c5c5ee3ea05d": {
+    "title": "🎉 أحسنت {value1}! الأنمي هو: {value2} 💰 +1 نقطة ✨ +{value3} XP{value4}",
+    "file": "games/guessAnime.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "sample": "🎉 أحسنت {value1}!\nالأنمي هو: {value2}\n💰 +1 نقطة\n✨ +{value3} XP{value4}"
+  },
+  "reply_622228bccd5a3332": {
+    "title": "✅ إجابة صحيحة! الأنمي هو: {value1} لكن لا يمكن احتساب النقاط لأنك غير مسجل.",
+    "file": "games/guessAnime.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ إجابة صحيحة!\nالأنمي هو: {value1}\nلكن لا يمكن احتساب النقاط لأنك غير مسجل."
+  },
+  "reply_c5f403209cc701dc": {
+    "title": "لا يوجد لاعبين مسجلين بعد.",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "لا يوجد لاعبين مسجلين بعد."
+  },
+  "reply_efb547ea24c55132": {
+    "title": "🛑 تم إيقاف لعبة تخمين الأنمي!",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "🛑 تم إيقاف لعبة تخمين الأنمي!"
+  },
+  "reply_9b47ffae994d4c08": {
+    "title": "❌ لا توجد لعبة تخمين أنمي تعمل حالياً!",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا توجد لعبة تخمين أنمي تعمل حالياً!"
+  },
+  "reply_9fde949a094756a7": {
+    "title": "🎮 هناك لعبة تعمل حالياً!",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 هناك لعبة تعمل حالياً!"
+  },
+  "reply_31caf27244b1ff14": {
+    "title": "❌ هذا الأمر متاح للمشرفين فقط!",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر متاح للمشرفين فقط!"
+  },
+  "reply_5ad11957722fca77": {
+    "title": "🎭 لعبة تخمين الشخصيات اختر وضع اللعبة: 1️⃣ لجميع الأعضاء 2️⃣ لشخصين محددين 3️⃣ شرح اللعبة أرسل الرق",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎭 لعبة تخمين الشخصيات\n\nاختر وضع اللعبة:\n1️⃣ لجميع الأعضاء\n2️⃣ لشخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب\n📌 لإيقاف اللعبة في أي وقت، استخدم /وقف"
+  },
+  "reply_6c7a95e5c1a3f39a": {
+    "title": "⏱ انتهى وقت الاختيار!",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏱ انتهى وقت الاختيار!"
+  },
+  "reply_6d7ce06860c1871e": {
+    "title": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!"
+  },
+  "reply_dcf1bf4d0cb5762e": {
+    "title": "👥 وضع لشخصين محددين أرسل اسم اللاعب الأول (اللقب):",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):"
+  },
+  "reply_7784d3366ddf9d12": {
+    "title": "⏱ انتهى وقت اختيار المشاركين!",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏱ انتهى وقت اختيار المشاركين!"
+  },
+  "reply_586268b3d0f85c2b": {
+    "title": "❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط.",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط."
+  },
+  "reply_585e011036647bd7": {
+    "title": "❌ لم يتم العثور على اللاعب. أعد المحاولة:",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على اللاعب. أعد المحاولة:"
+  },
+  "reply_b1d5d92a48b8519b": {
+    "title": "👤 أرسل اسم اللاعب الثاني (اللقب):",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "👤 أرسل اسم اللاعب الثاني (اللقب):"
+  },
+  "reply_99063f2ab909cfc1": {
+    "title": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:"
+  },
+  "reply_60cda0e6fd195b70": {
+    "title": "💡 تلميح: {value1}",
+    "file": "games/guessCharacter.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💡 تلميح: {value1}"
+  },
+  "reply_86483ba1ae0c978a": {
+    "title": "💡 تلميح إضافي: {value1}",
+    "file": "games/guessCharacter.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💡 تلميح إضافي: {value1}"
+  },
+  "reply_8031a39cd0bf767e": {
+    "title": "⏱ انتهى الوقت! الإجابة الصحيحة: {value1} من أنمي: {value2}",
+    "file": "games/guessCharacter.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "⏱ انتهى الوقت!\nالإجابة الصحيحة: {value1}\nمن أنمي: {value2}"
+  },
+  "reply_277cdc011b1440a5": {
+    "title": "⏭️ جولة جديدة قادمة بعد 3 ثواني...",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏭️ جولة جديدة قادمة بعد 3 ثواني..."
+  },
+  "reply_8790dce44491452b": {
+    "title": "✅ إجابة صحيحة! الإجابة: {value1} من أنمي: {value2} لكن لا يمكن احتساب النقاط لأنك غير مسجل.",
+    "file": "games/guessCharacter.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ إجابة صحيحة!\nالإجابة: {value1}\nمن أنمي: {value2}\nلكن لا يمكن احتساب النقاط لأنك غير مسجل."
+  },
+  "reply_f572b7a9a6c672f1": {
+    "title": "✅ إجابة صحيحة! الإجابة: {value1} من أنمي: {value2} +1 نقطة ✨ +{value3} XP{value4} مجموع نقاطك: 💰{va",
+    "file": "games/guessCharacter.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "sample": "✅ إجابة صحيحة!\nالإجابة: {value1}\nمن أنمي: {value2}\n+1 نقطة\n✨ +{value3} XP{value4}\nمجموع نقاطك: 💰{value5}"
+  },
+  "reply_3ce8bf0cb7cbdc01": {
+    "title": "🛑 تم إيقاف لعبة تخمين الشخصيات!",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "🛑 تم إيقاف لعبة تخمين الشخصيات!"
+  },
+  "reply_2375034c4acb3f90": {
+    "title": "❌ لا توجد لعبة تخمين شخصيات تعمل حالياً!",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا توجد لعبة تخمين شخصيات تعمل حالياً!"
+  },
+  "reply_48aded4811408a54": {
+    "title": "🎭 الراوي لا يدخل كلاعب في المافيا.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎭 الراوي لا يدخل كلاعب في المافيا."
+  },
+  "reply_471f33e8c159e15b": {
+    "title": "✅ تم تسجيل انضمامك يا {value1}. أرسلت لك خاص لتثبيت لقب المافيا.",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم تسجيل انضمامك يا {value1}.\nأرسلت لك خاص لتثبيت لقب المافيا."
+  },
+  "reply_5ccb6447d213ee0f": {
+    "title": "✅ انضم {value1} إلى المافيا باسم: {value2}",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ انضم {value1} إلى المافيا باسم: {value2}"
+  },
+  "reply_994b91812bc35450": {
+    "title": "❌ فقط الراوي أو أدمن القروب يمكنه بدء إعداد المافيا.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الراوي أو أدمن القروب يمكنه بدء إعداد المافيا."
+  },
+  "reply_2cfbc86c4f027a48": {
+    "title": "⚠️ يوجد لاعبون لم يثبتوا ألقابهم بعد: {value1} بعد التسجيل اكتب /ابدأ_مافيا.",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "⚠️ يوجد لاعبون لم يثبتوا ألقابهم بعد:\n{value1}\n\nبعد التسجيل اكتب /ابدأ_مافيا."
+  },
+  "reply_c1f222cbebd29f88": {
+    "title": "❌ تحتاج لاعبين اثنين على الأقل غير الراوي قبل بدء الإعداد.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ تحتاج لاعبين اثنين على الأقل غير الراوي قبل بدء الإعداد."
+  },
+  "reply_2d7c7515c9fe1f7c": {
+    "title": "أنت الراوي للعبة المافيا 🎭 اللاعبون المشاركون: {value1} أرسل عدد لاعبي المافيا. مثال: 2",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "أنت الراوي للعبة المافيا 🎭\n\nاللاعبون المشاركون: {value1}\n\nأرسل عدد لاعبي المافيا.\nمثال:\n2"
+  },
+  "reply_f536d15f4245af6d": {
+    "title": "✅ تم إغلاق الانضمام. أرسلت إعدادات الأدوار للراوي في الخاص.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم إغلاق الانضمام. أرسلت إعدادات الأدوار للراوي في الخاص."
+  },
+  "reply_2a3cf1ce3d332bac": {
+    "title": "❌ فقط الراوي أو أدمن القروب يمكنه بدء جولة مافيا جديدة.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الراوي أو أدمن القروب يمكنه بدء جولة مافيا جديدة."
+  },
+  "reply_ce17814662f33b71": {
+    "title": "تم فتح جولة مافيا جديدة 🎭 الراوي هو: {value1} اللي بده يلعب يكتب: انضم وعندما يكتمل اللاعبون يكتب ا",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "تم فتح جولة مافيا جديدة 🎭\nالراوي هو: {value1}\n\nاللي بده يلعب يكتب:\nانضم\n\nوعندما يكتمل اللاعبون يكتب الراوي:\n/ابدأ_مافيا"
+  },
+  "reply_cda328b1ae00a00d": {
+    "title": "❌ فقط الراوي أو أدمن القروب يمكنه إنهاء جلسة المافيا.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الراوي أو أدمن القروب يمكنه إنهاء جلسة المافيا."
+  },
+  "reply_a62282eb03f72c1b": {
+    "title": "تم إنهاء جلسة المافيا ✅ تم حذف بيانات الجولة، وتم الاحتفاظ بأسماء اللاعبين للجولات القادمة.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "تم إنهاء جلسة المافيا ✅\nتم حذف بيانات الجولة، وتم الاحتفاظ بأسماء اللاعبين للجولات القادمة."
+  },
+  "reply_037fd2cf0d740ee6": {
+    "title": "❌ بدء لعبة المافيا يعمل داخل القروبات فقط.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ بدء لعبة المافيا يعمل داخل القروبات فقط."
+  },
+  "reply_5cf759d5debbf5b4": {
+    "title": "⚠️ توجد لعبة مافيا فعالة في هذا القروب.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "⚠️ توجد لعبة مافيا فعالة في هذا القروب."
+  },
+  "reply_d266d042236ae723": {
+    "title": "تم فتح لعبة المافيا 🎭 الراوي هو: {value1} اللي بده يلعب يكتب: انضم إذا ما عندك لقب مافيا، سأرسل لك ",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "تم فتح لعبة المافيا 🎭\nالراوي هو: {value1}\n\nاللي بده يلعب يكتب:\nانضم\n\nإذا ما عندك لقب مافيا، سأرسل لك خاص لتثبيته.\n\nعندما يكتمل اللاعبون يكتب الراوي:\n/ابدأ_مافيا"
+  },
+  "reply_84147c2da10b31f8": {
+    "title": "لا توجد جلسة مافيا فعالة.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "لا توجد جلسة مافيا فعالة."
+  },
+  "reply_f0c909d6f83ed44b": {
+    "title": "❌ فقط الراوي أو أدمن القروب يمكنه إعلان نتيجة المافيا.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط الراوي أو أدمن القروب يمكنه إعلان نتيجة المافيا."
+  },
+  "reply_e04ca833e1c450c7": {
+    "title": "تمام. فتحت باب الانضمام للجولة الجديدة في القروب.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "تمام. فتحت باب الانضمام للجولة الجديدة في القروب."
+  },
+  "reply_5648d781b311e343": {
+    "title": "✅ تم إنهاء جلسة المافيا.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم إنهاء جلسة المافيا."
+  },
+  "reply_b436300494316f75": {
+    "title": "اكتب 1 للعب مرة أخرى أو 2 لإنهاء الجلسة.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "اكتب 1 للعب مرة أخرى أو 2 لإنهاء الجلسة."
+  },
+  "reply_5d1f13a0ed10525a": {
+    "title": "❌ عدد المافيا يجب أن يكون رقمًا صحيحًا لا يقل عن 1. كم عدد لاعبي المافيا؟",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ عدد المافيا يجب أن يكون رقمًا صحيحًا لا يقل عن 1.\nكم عدد لاعبي المافيا؟"
+  },
+  "reply_7003257d36eaae64": {
+    "title": "هل تريد إضافة الشيخ؟ رد بـ نعم أو لا.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "هل تريد إضافة الشيخ؟\nرد بـ نعم أو لا."
+  },
+  "reply_3766fe4be1b44440": {
+    "title": "رد بـ نعم أو لا. هل تريد إضافة الشيخ؟",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "رد بـ نعم أو لا.\nهل تريد إضافة الشيخ؟"
+  },
+  "reply_2bd87a0fba8eb275": {
+    "title": "هل تريد إضافة البنت؟ رد بـ نعم أو لا.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "هل تريد إضافة البنت؟\nرد بـ نعم أو لا."
+  },
+  "reply_4cd531e7d1fd2404": {
+    "title": "رد بـ نعم أو لا. هل تريد إضافة البنت؟",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "رد بـ نعم أو لا.\nهل تريد إضافة البنت؟"
+  },
+  "reply_20d2232ab2aa383e": {
+    "title": "هل تريد إضافة الولد؟ رد بـ نعم أو لا.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "هل تريد إضافة الولد؟\nرد بـ نعم أو لا."
+  },
+  "reply_47cc92bd3e6d3353": {
+    "title": "رد بـ نعم أو لا. هل تريد إضافة الولد؟",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "رد بـ نعم أو لا.\nهل تريد إضافة الولد؟"
+  },
+  "reply_bcf831da11382801": {
+    "title": "❌ الإعداد غير صالح. اللاعبون المسجلون المتاحون: {value1} المافيا يجب أن تكون 1 على الأقل وأقل من عدد",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ الإعداد غير صالح.\nاللاعبون المسجلون المتاحون: {value1}\nالمافيا يجب أن تكون 1 على الأقل وأقل من عدد اللاعبين، والأدوار الاختيارية لا تتجاوز العدد.\n\nأرسل عدد لاعبي المافيا من جديد."
+  },
+  "reply_378d47b2cb05b328": {
+    "title": "تم توزيع أدوار لعبة المافيا ✅ الراوي هو: {value1} ابدأوا اللعبة في الواقع، والراوي معه قائمة الأدوار",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "تم توزيع أدوار لعبة المافيا ✅\nالراوي هو: {value1}\n\nابدأوا اللعبة في الواقع، والراوي معه قائمة الأدوار."
+  },
+  "reply_36255bd969909dd4": {
+    "title": "❌ هذا الأمر متاح للمشرفين فقط!",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر متاح للمشرفين فقط!"
+  },
+  "reply_aa59cbfd2f1fa4e5": {
+    "title": "🎮 هناك لعبة تعمل حالياً!",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 هناك لعبة تعمل حالياً!"
+  },
+  "reply_f13665fb047d634e": {
+    "title": "🎮 اختر نوع لعبة ترتيب الحروف: 1️⃣ للجميع في المجموعة 2️⃣ بين شخصين محددين 3️⃣ شرح اللعبة أرسل الرقم",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 اختر نوع لعبة ترتيب الحروف:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب."
+  },
+  "reply_7f5fb5141232d1d9": {
+    "title": "⏱ انتهى وقت الاختيار!",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏱ انتهى وقت الاختيار!"
+  },
+  "reply_b468c4f044538730": {
+    "title": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!"
+  },
+  "reply_616a0d6449d0c703": {
+    "title": "👥 وضع لشخصين محددين أرسل اسم اللاعب الأول (اللقب):",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):"
+  },
+  "reply_71da78476dc7b804": {
+    "title": "⏱ انتهى وقت اختيار المشاركين!",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏱ انتهى وقت اختيار المشاركين!"
+  },
+  "reply_d140252a66280121": {
+    "title": "❌ اختر 1 أو 2 أو 3 فقط!",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختر 1 أو 2 أو 3 فقط!"
+  },
+  "reply_dcc81fd2abe58914": {
+    "title": "❌ لم يتم العثور على اللاعب. أعد المحاولة:",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على اللاعب. أعد المحاولة:"
+  },
+  "reply_027b6c6a0a21b1dd": {
+    "title": "👤 أرسل اسم اللاعب الثاني (اللقب):",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "👤 أرسل اسم اللاعب الثاني (اللقب):"
+  },
+  "reply_93b98fe48cc3418a": {
+    "title": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:"
+  },
+  "reply_7753812c7f6b163c": {
+    "title": "💡 تلميح: أول حرف هو \"{value1}\" وآخر حرف هو \"{value2}\"",
+    "file": "games/unscramble.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "💡 تلميح: أول حرف هو \"{value1}\" وآخر حرف هو \"{value2}\""
+  },
+  "reply_17f2ed5b4cd26a10": {
+    "title": "⏱ انتهى الوقت! ✅ الكلمة الصحيحة: **{value1}**",
+    "file": "games/unscramble.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "⏱ انتهى الوقت!\n✅ الكلمة الصحيحة: **{value1}**"
+  },
+  "reply_d2d8b2c25ed3c7d8": {
+    "title": "⏭️ جولة جديدة قادمة...",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏭️ جولة جديدة قادمة..."
+  },
+  "reply_ac999f78173e8572": {
+    "title": "⏭️ جولة جديدة قادمة بعد 3 ثواني...",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏭️ جولة جديدة قادمة بعد 3 ثواني..."
+  },
+  "reply_5e1dad6699b8c107": {
+    "title": "🛑 تم إيقاف لعبة ترتيب الحروف!",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "🛑 تم إيقاف لعبة ترتيب الحروف!"
+  },
+  "reply_9e9a5537d4076690": {
+    "title": "❌ لا توجد لعبة ترتيب الحروف تعمل حالياً!",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا توجد لعبة ترتيب الحروف تعمل حالياً!"
+  },
+  "reply_f53d85e7493d2939": {
+    "title": "🎮 هناك لعبة تعمل حالياً!",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 هناك لعبة تعمل حالياً!"
+  },
+  "reply_12d8ab8faff322ce": {
+    "title": "🎮 اختر نوع لعبة تفكيك الكلمات: 1️⃣ للجميع في المجموعة 2️⃣ بين شخصين محددين 3️⃣ شرح اللعبة أرسل الرق",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 اختر نوع لعبة تفكيك الكلمات:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب."
+  },
+  "reply_a85bb7cd0034b23c": {
+    "title": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!"
+  },
+  "reply_f28e1be74052a238": {
+    "title": "👥 وضع لشخصين محددين أرسل اسم اللاعب الأول (اللقب):",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):"
+  },
+  "reply_806914f6fcd01a09": {
+    "title": "⏱ انتهى وقت اختيار المشاركين!",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏱ انتهى وقت اختيار المشاركين!"
+  },
+  "reply_b170e2aaf5195543": {
+    "title": "❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط.",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط."
+  },
+  "reply_5ccbbc4fc1f9b3eb": {
+    "title": "❌ لم يتم العثور على اللاعب. أعد المحاولة:",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على اللاعب. أعد المحاولة:"
+  },
+  "reply_80a25fe458f45b0e": {
+    "title": "👤 أرسل اسم اللاعب الثاني (اللقب):",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "👤 أرسل اسم اللاعب الثاني (اللقب):"
+  },
+  "reply_9db17f84313d88fe": {
+    "title": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:"
+  },
+  "reply_7efb5a9f6b27f5f6": {
+    "title": "⏰ انتهى الوقت! ✅ الإجابة الصحيحة: {value1}",
+    "file": "games/wordSplitter.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "⏰ انتهى الوقت!\n\n✅ الإجابة الصحيحة:\n{value1}"
+  },
+  "reply_b8e97e7e2a5a5f29": {
+    "title": "⏭️ جولة جديدة قادمة بعد 5 ثواني...",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏭️ جولة جديدة قادمة بعد 5 ثواني..."
+  },
+  "reply_917b8dedb06a9fc3": {
+    "title": "🛑 تم إيقاف لعبة تفكيك الكلمات! ✅ الإجابة الصحيحة: {value1}",
+    "file": "games/wordSplitter.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🛑 تم إيقاف لعبة تفكيك الكلمات!\n\n✅ الإجابة الصحيحة:\n{value1}"
+  },
+  "reply_be60995ea2ceb39c": {
+    "title": "📝 الجولة {value1} اكتب الكلمة التالية بشكل صحيح: *{value2}* لديك 3 محاولات.",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "📝 الجولة {value1}\nاكتب الكلمة التالية بشكل صحيح: *{value2}*\nلديك 3 محاولات."
+  },
+  "reply_7dc4c909432b3ab7": {
+    "title": "🎮 هناك لعبة تعمل حالياً!",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 هناك لعبة تعمل حالياً!"
+  },
+  "reply_2d7b543ae487f97c": {
+    "title": "🎮 اختر نوع لعبة كتابة الكلمات: 1️⃣ للجميع في المجموعة 2️⃣ بين شخصين محددين 3️⃣ شرح اللعبة أرسل الرق",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 اختر نوع لعبة كتابة الكلمات:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.\n📌 لإيقاف اللعبة استخدم الأمر /وقف"
+  },
+  "reply_702c6b9a97a81691": {
+    "title": "⏱ انتهى وقت اختيار النمط!",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏱ انتهى وقت اختيار النمط!"
+  },
+  "reply_ffc4c7b1a2358f9a": {
+    "title": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!"
+  },
+  "reply_7ec1b43bc29dcdab": {
+    "title": "👥 وضع لشخصين محددين أرسل اسم اللاعب الأول (اللقب):",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):"
+  },
+  "reply_70483532c8260a3f": {
+    "title": "⏱ انتهى وقت اختيار المشاركين!",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏱ انتهى وقت اختيار المشاركين!"
+  },
+  "reply_8f557cc52dc6c71e": {
+    "title": "❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط.",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط."
+  },
+  "reply_a0e3c9c10d1d510c": {
+    "title": "❌ لم يتم العثور على اللاعب. أعد المحاولة:",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم يتم العثور على اللاعب. أعد المحاولة:"
+  },
+  "reply_5c93b6aee2221f82": {
+    "title": "👤 أرسل اسم اللاعب الثاني (اللقب):",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "👤 أرسل اسم اللاعب الثاني (اللقب):"
+  },
+  "reply_ad0f073855e7e473": {
+    "title": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:"
+  },
+  "reply_990a0d46574a839a": {
+    "title": "🎮 بدأت لعبة كتابة الكلمات{value1}! 📝 الجولة 1 اكتب الكلمة التالية بشكل صحيح: *{value2}* لديك 3 محا",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "🎮 بدأت لعبة كتابة الكلمات{value1}!\n📝 الجولة 1\nاكتب الكلمة التالية بشكل صحيح: *{value2}*\nلديك 3 محاولات لكل جولة.{value3}\nأرسل /ترك أو /وقف لإيقاف اللعبة."
+  },
+  "reply_ede6794b07534f5d": {
+    "title": "✅ أحسنت يا {value1}! الكلمة الصحيحة هي: *{value2}* 💰 +1 نقطة ✨ +{value3} XP{value4} مجموع نقاطك: 💰",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "sample": "✅ أحسنت يا {value1}! الكلمة الصحيحة هي: *{value2}*\n💰 +1 نقطة\n✨ +{value3} XP{value4}\nمجموع نقاطك: 💰{value5}\n\n⏭️ جولة جديدة قادمة..."
+  },
+  "reply_e49b41c1b4443b1b": {
+    "title": "🎉 أحسنت يا {value1}! الكلمة الصحيحة هي: *{value2}* ⚠️ لكن لا يمكن احتساب النقطة لأنك غير مسجل. ⏭️ ج",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "🎉 أحسنت يا {value1}! الكلمة الصحيحة هي: *{value2}*\n⚠️ لكن لا يمكن احتساب النقطة لأنك غير مسجل.\n\n⏭️ جولة جديدة قادمة..."
+  },
+  "reply_bb56b408ad457777": {
+    "title": "⏭️ جولة جديدة قادمة بعد 5 ثواني...",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏭️ جولة جديدة قادمة بعد 5 ثواني..."
+  },
+  "reply_99c513b3976467b8": {
+    "title": "❌ إجابة خاطئة يا {value1}! انتهت محاولاتك. 🔄 يمكن للاعب الآخر أن يكمل مع {value2} محاولات.",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "❌ إجابة خاطئة يا {value1}! انتهت محاولاتك.\n\n🔄 يمكن للاعب الآخر أن يكمل مع {value2} محاولات."
+  },
+  "reply_23bab405d47a5c69": {
+    "title": "❌ انتهت المحاولات للجميع! الكلمة الصحيحة كانت: *{value1}* ⏭️ جولة جديدة قادمة...",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ انتهت المحاولات للجميع! الكلمة الصحيحة كانت: *{value1}*\n\n⏭️ جولة جديدة قادمة..."
+  },
+  "reply_d73a5f43dd04c067": {
+    "title": "❌ إجابة خاطئة يا {value1}. تبقى لديك {value2} محاولة. حاول مرة أخرى: *{value3}*",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "❌ إجابة خاطئة يا {value1}. تبقى لديك {value2} محاولة.\nحاول مرة أخرى: *{value3}*"
+  },
+  "reply_1c1efc523a32d46a": {
+    "title": "❌ إجابة خاطئة يا {value1}! انتهت محاولاتك. 🔄 لاعبون آخرون يمكنهم المتابعة...",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ إجابة خاطئة يا {value1}! انتهت محاولاتك.\n\n🔄 لاعبون آخرون يمكنهم المتابعة..."
+  },
+  "reply_0fd64c68314333e8": {
+    "title": "❌ إجابة خاطئة يا {value1}. تبقى لديك {value2} محاولة. حاول مرة أخرى: *{value3}*",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "❌ إجابة خاطئة يا {value1}. تبقى لديك {value2} محاولة.\nحاول مرة أخرى: *{value3}*"
+  },
+  "reply_cb2fd33198da0f30": {
+    "title": "🛑 تم إيقاف لعبة كتابة الكلمات! 📊 انتهت اللعبة في الجولة {value1} استخدم /كلمات لبدء لعبة جديدة.",
+    "file": "games/wordtype.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🛑 تم إيقاف لعبة كتابة الكلمات!\n📊 انتهت اللعبة في الجولة {value1}\n\nاستخدم /كلمات لبدء لعبة جديدة."
+  },
+  "reply_c0d242e1eeaa3b8f": {
+    "title": "اكتب لقب أو اسم أوضح شوي.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "اكتب لقب أو اسم أوضح شوي."
+  },
+  "reply_0fd3742cf18df010": {
+    "title": "اللقب طويل. خليه 30 حرف أو أقل.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "اللقب طويل. خليه 30 حرف أو أقل."
+  },
+  "reply_7cc75f67f1bb0f71": {
+    "title": "هذا اللقب مستخدم. جرّب لقب ثاني.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "هذا اللقب مستخدم. جرّب لقب ثاني."
+  },
+  "reply_8b9dba8ac6f6ce21": {
+    "title": "تم تسجيلك يا {value1}. أرسلت لك رابط القروب الأساسي على الخاص.",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "تم تسجيلك يا {value1}. أرسلت لك رابط القروب الأساسي على الخاص."
+  },
+  "reply_0d387407a1af16d8": {
+    "title": "أهلًا {value1}. هذا رابط دخول {value2}: {value3}",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "أهلًا {value1}.\nهذا رابط دخول {value2}:\n{value3}"
+  },
+  "reply_46687aa97fe57087": {
+    "title": "تم التسجيل، لكن ما قدرت أرسل الرابط على الخاص. افتح الخاص للبوت أو تواصل مع الإدارة.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "تم التسجيل، لكن ما قدرت أرسل الرابط على الخاص. افتح الخاص للبوت أو تواصل مع الإدارة."
+  },
+  "reply_2f64b979601e2b17": {
+    "title": "تم التسجيل، لكن رابط القروب الأساسي غير مضبوط في بيانات المملكة.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "تم التسجيل، لكن رابط القروب الأساسي غير مضبوط في بيانات المملكة."
+  },
+  "reply_fe59138dd97f6adc": {
+    "title": "تم التسجيل، لكن لم أستطع إخراج العضو من الاستقبال. تأكد أن البوت أدمن.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "تم التسجيل، لكن لم أستطع إخراج العضو من الاستقبال. تأكد أن البوت أدمن."
+  },
+  "reply_2cde6253a66bdae5": {
+    "title": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!"
+  },
+  "reply_05c4dfb7d205e2d2": {
+    "title": "❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!"
+  },
+  "reply_9d6d52e0724498b2": {
+    "title": "❌ فقط المشرفون والأدمن الأساسي يمكنهم إيقاف الألعاب!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط المشرفون والأدمن الأساسي يمكنهم إيقاف الألعاب!"
+  },
+  "reply_f476b998baf36762": {
+    "title": "🛑 تم إيقاف لعبة الأعلام!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "🛑 تم إيقاف لعبة الأعلام!"
+  },
+  "reply_54c70184a6bde4d5": {
+    "title": "❌ لا توجد ألعاب تعمل حالياً!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لا توجد ألعاب تعمل حالياً!"
+  },
+  "reply_f00173bca4450e6a": {
+    "title": "📝 *تم تحديد الشخص المسيء: {value1}* 📋 الآن، الرجاء إرسال سبب التبليغ: 💡 (وصف مختصر للإساءة أو الس",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📝 *تم تحديد الشخص المسيء: {value1}*\n\n📋 الآن، الرجاء إرسال سبب التبليغ:\n\n💡 (وصف مختصر للإساءة أو السلوك غير المناسب)"
+  },
+  "reply_1f45fb8219da7caa": {
+    "title": "❌ فقط المشرفون والأدمنز يمكنهم الرد على هذا السؤال!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ فقط المشرفون والأدمنز يمكنهم الرد على هذا السؤال!"
+  },
+  "reply_ed705629dfd2c162": {
+    "title": "✅ تم حذف بيانات {value1} من قاعدة البيانات!",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم حذف بيانات {value1} من قاعدة البيانات!"
+  },
+  "reply_06aa610196f3dd2f": {
+    "title": "ℹ️ تم الاحتفاظ ببيانات {value1}.",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "ℹ️ تم الاحتفاظ ببيانات {value1}."
+  },
+  "reply_e760c62a7333ac5c": {
+    "title": "❌ الأمر غير معروف: {value1}",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ الأمر غير معروف: {value1}"
+  },
+  "reply_9a93ad4c91b9475d": {
+    "title": "❌ اختيار غير صحيح! الرجاء اختيار رقم بين 1️⃣ و {value1}️⃣",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ اختيار غير صحيح! الرجاء اختيار رقم بين 1️⃣ و {value1}️⃣"
+  },
+  "reply_f370b48298e1394c": {
+    "title": "✅ *تم إرسال رسالة الترحيب بنجاح للعضو {value1} إلى المجموعة الأساسية* ✨",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ *تم إرسال رسالة الترحيب بنجاح للعضو {value1} إلى المجموعة الأساسية* ✨"
+  },
+  "reply_28bc138e3781317c": {
+    "title": "⚠️ *تم إرسال الترحيب بدون صورة للعضو {value1}* 📌 السبب: {value2}",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "⚠️ *تم إرسال الترحيب بدون صورة للعضو {value1}*\n\n📌 السبب: {value2}"
+  },
+  "reply_8661ce481a0428cf": {
+    "title": "❌ *خطأ في إرسال رسالة الترحيب للعضو {value1}* 📌 الخطأ: {value2}",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "❌ *خطأ في إرسال رسالة الترحيب للعضو {value1}*\n\n📌 الخطأ: {value2}"
+  },
+  "reply_7b6d42379b05cc83": {
+    "title": "❌ *خطأ في الترحيب - لم يتمكن من الوصول إلى المجموعة الأساسية* 📌 الخطأ: {value1}",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ *خطأ في الترحيب - لم يتمكن من الوصول إلى المجموعة الأساسية*\n\n📌 الخطأ: {value1}"
+  },
+  "reply_92cfbfd5459d2bde": {
+    "title": "✅ *تم إرسال رسالة الترحيب بنجاح للعضو {value1} إلى المجموعة الأساسية* ✨",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ *تم إرسال رسالة الترحيب بنجاح للعضو {value1} إلى المجموعة الأساسية* ✨"
+  },
+  "reply_f9fb7e4ce5429843": {
+    "title": "❌ *خطأ في إرسال رسالة الترحيب للعضو {value1}* 📌 الخطأ: {value2}",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "❌ *خطأ في إرسال رسالة الترحيب للعضو {value1}*\n\n📌 الخطأ: {value2}"
+  },
+  "reply_63cc3d123854a8fc": {
+    "title": "❌ *تم إلغاء ترحيب العضو {value1}*",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ *تم إلغاء ترحيب العضو {value1}*"
+  },
+  "reply_87bd76f679e89ee2": {
+    "title": "❌ حدث خطأ في عرض المعلومات!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في عرض المعلومات!"
+  },
+  "reply_a1b55ebedab8924f": {
+    "title": "📊 *الألعاب المبدوءة من قبل {value1}* ✅ لم يبدأ أي لعبة اليوم",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📊 *الألعاب المبدوءة من قبل {value1}*\n\n✅ لم يبدأ أي لعبة اليوم"
+  },
+  "reply_7e6b5f8582959039": {
+    "title": "❌ حدث خطأ في عرض الألعاب!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في عرض الألعاب!"
+  },
+  "reply_19814631abda7076": {
+    "title": "❌ حدث خطأ في عرض المعلومات الأساسية.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في عرض المعلومات الأساسية."
+  },
+  "reply_376b781a98e231c3": {
+    "title": "📊 *جلسات الألعاب الخاصة بك* ✅ لم تبدأ أي لعبة اليوم",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "📊 *جلسات الألعاب الخاصة بك*\n\n✅ لم تبدأ أي لعبة اليوم"
+  },
+  "reply_9992d425e73f89dc": {
+    "title": "❌ الرجاء إرسال سبب التبليغ بشكل صحيح!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ الرجاء إرسال سبب التبليغ بشكل صحيح!"
+  },
+  "reply_1515b798e522c0f3": {
+    "title": "❌ خطأ: لم يتم تحديد مجموعة الإدارة!",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ خطأ: لم يتم تحديد مجموعة الإدارة!"
+  },
+  "reply_626e8423c26d6b59": {
+    "title": "✅ *تم استلام تبليغك* 🔔 تم إرسال التبليغ إلى الأداريين 📋 سيتم النظر في الأمر في أقرب وقت شكراً لك ع",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ *تم استلام تبليغك*\n\n🔔 تم إرسال التبليغ إلى الأداريين\n📋 سيتم النظر في الأمر في أقرب وقت\n\nشكراً لك على مساعدتك في الحفاظ على بيئة صحية! 🙏"
+  },
+  "reply_b800495d3ca38672": {
+    "title": "❌ حدث خطأ في إرسال التبليغ. الرجاء المحاولة لاحقاً.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ حدث خطأ في إرسال التبليغ. الرجاء المحاولة لاحقاً."
+  },
+  "reply_cd46f6729d92908e": {
+    "title": "❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD. تم إلغاء العملية.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD. تم إلغاء العملية."
+  },
+  "reply_b8556ab18fcf5378": {
+    "title": "❌ كلمة المرور غير صحيحة! تم إلغاء العملية.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ كلمة المرور غير صحيحة! تم إلغاء العملية."
+  },
+  "reply_8772d83c4c95b3d7": {
+    "title": "❌ يرجى إرسال ردك في مجموعة الاستقبال فقط.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ يرجى إرسال ردك في مجموعة الاستقبال فقط."
+  },
+  "reply_161c2cb267140ae2": {
+    "title": "تمام، مين اللي جابك أو من طرف مين دخلت؟",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "تمام، مين اللي جابك أو من طرف مين دخلت؟"
+  },
+  "reply_4cc2a281ba758cdb": {
+    "title": "أهلًا فيك. مين اللي دخلت من طرفه؟",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "أهلًا فيك. مين اللي دخلت من طرفه؟"
+  },
+  "reply_d56094136e92b65c": {
+    "title": "اكتب اسم الشخص اللي دخلت من طرفه.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "اكتب اسم الشخص اللي دخلت من طرفه."
+  },
+  "reply_2438bd567579a3cc": {
+    "title": "الاسم طويل شوي. اكتب اسم الشخص فقط.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "الاسم طويل شوي. اكتب اسم الشخص فقط."
+  },
+  "reply_56397e6127002150": {
+    "title": "لقبك هو: {value1} اكتبه مرة ثانية للتأكيد.",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "لقبك هو: {value1}\nاكتبه مرة ثانية للتأكيد."
+  },
+  "reply_a099bd0f5cec76de": {
+    "title": "تمام. شو اللقب اللي تحب نسجلك فيه؟",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "تمام. شو اللقب اللي تحب نسجلك فيه؟"
+  },
+  "reply_9b00bb3b05002ee8": {
+    "title": "أهلًا. شو اللقب اللي نسجلك فيه؟",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "أهلًا. شو اللقب اللي نسجلك فيه؟"
+  },
+  "reply_3618c46e5b137ac1": {
+    "title": "❌ اختيار غير صحيح. أرسل رقمًا من 1 إلى 6.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختيار غير صحيح. أرسل رقمًا من 1 إلى 6."
+  },
+  "reply_a38b7be895960ab1": {
+    "title": "❌ هذا الأمر خاص بالمطور فقط.",
+    "file": "utils/developerCommandGuide.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر خاص بالمطور فقط."
+  },
+  "reply_422df11a60009c7c": {
+    "title": "{value1}{value2}",
+    "file": "utils/developerCommandGuide.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}{value2}"
+  },
+  "reply_28a796ea71521c65": {
+    "title": "🔐 للحذف بأمان، أرسل أمر /حذف_مملكة في خاص البوت فقط.",
+    "file": "utils/kingdomDelete.js",
+    "fields": [],
+    "required": [],
+    "sample": "🔐 للحذف بأمان، أرسل أمر /حذف_مملكة في خاص البوت فقط."
+  },
+  "reply_85374e93b8bb0e00": {
+    "title": "❌ هذا الأمر خاص بالمطور فقط.",
+    "file": "utils/kingdomDelete.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر خاص بالمطور فقط."
+  },
+  "reply_92f9a0cb6e9c4faa": {
+    "title": "❌ ADMIN_PASSWORD غير مضبوط في Railway variables.",
+    "file": "utils/kingdomDelete.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ ADMIN_PASSWORD غير مضبوط في Railway variables."
+  },
+  "reply_3ef60938f02c8a85": {
+    "title": "🔐 أرسل كلمة مرور الأدمن لبدء حذف مملكة. للإلغاء اكتب: إلغاء",
+    "file": "utils/kingdomDelete.js",
+    "fields": [],
+    "required": [],
+    "sample": "🔐 أرسل كلمة مرور الأدمن لبدء حذف مملكة.\nللإلغاء اكتب: إلغاء"
+  },
+  "reply_21ae751a6a62fb66": {
+    "title": "🔐 أكمل حذف المملكة في الخاص فقط.",
+    "file": "utils/kingdomDelete.js",
+    "fields": [],
+    "required": [],
+    "sample": "🔐 أكمل حذف المملكة في الخاص فقط."
+  },
+  "reply_d7ee39463e103c0e": {
+    "title": "✅ تم إلغاء حذف المملكة.",
+    "file": "utils/kingdomDelete.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم إلغاء حذف المملكة."
+  },
+  "reply_0d85ac1da583b567": {
+    "title": "❌ كلمة المرور غير صحيحة. تم إلغاء العملية.",
+    "file": "utils/kingdomDelete.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ كلمة المرور غير صحيحة. تم إلغاء العملية."
+  },
+  "reply_2bb5761676eb3f31": {
+    "title": "لا توجد ممالك في قاعدة البيانات لحذفها.",
+    "file": "utils/kingdomDelete.js",
+    "fields": [],
+    "required": [],
+    "sample": "لا توجد ممالك في قاعدة البيانات لحذفها."
+  },
+  "reply_831afb143f09ecba": {
+    "title": "✅ تم قبول كلمة المرور. اختر المملكة المراد حذفها بإرسال الرقم أو المعرف: {value1} للإلغاء اكتب: إلغا",
+    "file": "utils/kingdomDelete.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم قبول كلمة المرور.\n\nاختر المملكة المراد حذفها بإرسال الرقم أو المعرف:\n{value1}\n\nللإلغاء اكتب: إلغاء"
+  },
+  "reply_d24d7b29aebb0b39": {
+    "title": "❌ لم أجد هذا الاختيار. أرسل رقمًا من القائمة أو معرف المملكة: {value1}",
+    "file": "utils/kingdomDelete.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لم أجد هذا الاختيار. أرسل رقمًا من القائمة أو معرف المملكة:\n{value1}"
+  },
+  "reply_802e033378a6e683": {
+    "title": "وجدت أكثر من مملكة بهذا الاسم. اختر بالرقم أو المعرف: {value1}",
+    "file": "utils/kingdomDelete.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "وجدت أكثر من مملكة بهذا الاسم. اختر بالرقم أو المعرف:\n{value1}"
+  },
+  "reply_aa27a1a45e31184c": {
+    "title": "❌ لم أعد أجد هذه المملكة. أعد المحاولة.",
+    "file": "utils/kingdomDelete.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم أعد أجد هذه المملكة. أعد المحاولة."
+  },
+  "reply_4c2e7656e0077e83": {
+    "title": "للتأكيد اكتب بالضبط: حذف {value1} للإلغاء اكتب: إلغاء",
+    "file": "utils/kingdomDelete.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "للتأكيد اكتب بالضبط:\nحذف {value1}\n\nللإلغاء اكتب: إلغاء"
+  },
+  "reply_e655c8ce4df20ca9": {
+    "title": "🗑️ تم حذف مملكة المملكة: {value1} ({value2}) بواسطة: {value3}",
+    "file": "utils/kingdomDelete.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "🗑️ تم حذف مملكة\nالمملكة: {value1} ({value2})\nبواسطة: {value3}"
+  },
+  "reply_e5053bfe1b27da26": {
+    "title": "❌ فشل حذف المملكة: {value1}",
+    "file": "utils/kingdomDelete.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ فشل حذف المملكة: {value1}"
+  },
+  "reply_b25db578ab1980eb": {
+    "title": "🔐 للتعديل بأمان، أرسل أمر /تعديل_مملكة في خاص البوت فقط.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "🔐 للتعديل بأمان، أرسل أمر /تعديل_مملكة في خاص البوت فقط."
+  },
+  "reply_e60715f41cc6965c": {
+    "title": "❌ تعديل المملكة وروابط الفورمات خاص بالمطور فقط.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ تعديل المملكة وروابط الفورمات خاص بالمطور فقط."
+  },
+  "reply_42cae74baa02940b": {
+    "title": "❌ ADMIN_PASSWORD غير مضبوط في Railway variables.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ ADMIN_PASSWORD غير مضبوط في Railway variables."
+  },
+  "reply_3ad01094f466acbe": {
+    "title": "🔐 أرسل كلمة مرور الأدمن لبدء تعديل المملكة. للإلغاء اكتب: إلغاء",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "🔐 أرسل كلمة مرور الأدمن لبدء تعديل المملكة.\nللإلغاء اكتب: إلغاء"
+  },
+  "reply_35cc91a01df7ec34": {
+    "title": "🔐 أكمل تعديل المملكة في الخاص فقط.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "🔐 أكمل تعديل المملكة في الخاص فقط."
+  },
+  "reply_08cd94d18c2b7647": {
+    "title": "✅ تم إلغاء تعديل المملكة.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم إلغاء تعديل المملكة."
+  },
+  "reply_b5a2c9c4c100fa88": {
+    "title": "❌ كلمة المرور غير صحيحة. تم إلغاء العملية.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ كلمة المرور غير صحيحة. تم إلغاء العملية."
+  },
+  "reply_93ff3fbbdd5cc6d4": {
+    "title": "✅ تم قبول كلمة المرور. أرسل معرف المملكة أو اسمها: {value1}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم قبول كلمة المرور.\n\nأرسل معرف المملكة أو اسمها:\n{value1}"
+  },
+  "reply_5d44d51aae1ff9c9": {
+    "title": "❌ لم أجد هذه المملكة. أرسل المعرف مثل clover أو الاسم كما يظهر في التقرير.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم أجد هذه المملكة. أرسل المعرف مثل clover أو الاسم كما يظهر في التقرير."
+  },
+  "reply_d650ccd4792adca1": {
+    "title": "وجدت أكثر من مملكة بهذا الاسم. أرسل المعرف المطلوب: {value1}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "وجدت أكثر من مملكة بهذا الاسم. أرسل المعرف المطلوب:\n{value1}"
+  },
+  "reply_0c2dd11f456d1c63": {
+    "title": "❌ اختر رقمًا من 1 إلى 14 أو اسم الحقل.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ اختر رقمًا من 1 إلى 14 أو اسم الحقل."
+  },
+  "reply_19fa68f95d5fc373": {
+    "title": "❌ لم أعد أجد هذه المملكة. أعد المحاولة.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ لم أعد أجد هذه المملكة. أعد المحاولة."
+  },
+  "reply_c45dbe602aea988d": {
+    "title": "{value1} القيمة الحالية: {value2}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}\n\nالقيمة الحالية:\n{value2}"
+  },
+  "reply_e603f059b2ea9be0": {
+    "title": "❌ عدد القروبات يجب أن يكون من 1 إلى 10.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ عدد القروبات يجب أن يكون من 1 إلى 10."
+  },
+  "reply_0f9b01a026fc1746": {
+    "title": "{value1} {value2}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}\n\n{value2}"
+  },
+  "reply_73f89db1598517e0": {
+    "title": "❌ JID القروب غير صحيح. يجب أن ينتهي بـ @g.us {value1}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ JID القروب غير صحيح. يجب أن ينتهي بـ @g.us\n\n{value1}"
+  },
+  "reply_5eb2ae67a0c2eda7": {
+    "title": "❌ هذا الـ JID مكرر داخل نفس المملكة. {value1}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ هذا الـ JID مكرر داخل نفس المملكة.\n\n{value1}"
+  },
+  "reply_197f6537b3d7365c": {
+    "title": "{value1} {value2}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}\n\n{value2}"
+  },
+  "reply_22c0cf511aff266a": {
+    "title": "{value1} {value2}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}\n\n{value2}"
+  },
+  "reply_67b27c216030bc5b": {
+    "title": "✅ تم حفظ {value1}. {value2}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم حفظ {value1}.\n\n{value2}"
+  },
+  "reply_9356cc1a8cbd96ad": {
+    "title": "{value1} {value2}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}\n\n{value2}"
+  },
+  "reply_8f52d3de7b16af01": {
+    "title": "اكتب تأكيد للحفظ أو إلغاء للإلغاء.",
+    "file": "utils/kingdomEdit.js",
+    "fields": [],
+    "required": [],
+    "sample": "اكتب تأكيد للحفظ أو إلغاء للإلغاء."
+  },
+  "reply_8f22c4292addf8ab": {
+    "title": "✅ تم تعديل {value1} بنجاح. الحقل: {value2}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم تعديل {value1} بنجاح.\nالحقل: {value2}"
+  },
+  "reply_badc2e78d9bee90a": {
+    "title": "🏰 تم تعديل مملكة المملكة: {value1} ({value2}) الحقل: {value3} بواسطة: {value4}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "sample": "🏰 تم تعديل مملكة\nالمملكة: {value1} ({value2})\nالحقل: {value3}\nبواسطة: {value4}"
+  },
+  "reply_cbe728d1ad9acbe2": {
+    "title": "❌ فشل تعديل المملكة: {value1}",
+    "file": "utils/kingdomEdit.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ فشل تعديل المملكة: {value1}"
+  },
+  "reply_5645d6a7db7134c5": {
+    "title": "❌ هذا الأمر خاص بالمطور فقط.",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر خاص بالمطور فقط."
+  },
+  "reply_ad6ee467c105136b": {
+    "title": "✅ تم إرسال رمز فتح المملكة إلى {value1} مستلم/مستلمين.",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم إرسال رمز فتح المملكة إلى {value1} مستلم/مستلمين."
+  },
+  "reply_0f7e2e2dfa5c52d2": {
+    "title": "🔐 مستلمو رموز فتح المملكة: {value1} لإضافة مستلم جديد أضف JID في Railway داخل KINGDOM_CODE_RECIPIEN",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🔐 مستلمو رموز فتح المملكة:\n\n{value1}\n\nلإضافة مستلم جديد أضف JID في Railway داخل KINGDOM_CODE_RECIPIENT_JIDS مفصولًا بفاصلة."
+  },
+  "reply_ec78dafbdf14a6e7": {
+    "title": "❌ استخدم: /فتح_مملكة <الرمز>",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ استخدم: /فتح_مملكة <الرمز>"
+  },
+  "reply_633616cbfc23ffa0": {
+    "title": "⚠️ لديك عملية فتح مملكة غير مكتملة. {value1}",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "⚠️ لديك عملية فتح مملكة غير مكتملة.\n{value1}"
+  },
+  "reply_927b6e0ef169b7aa": {
+    "title": "❌ الرمز غير صحيح أو تم استخدامه مسبقًا.",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ الرمز غير صحيح أو تم استخدامه مسبقًا."
+  },
+  "reply_5bf17cc4b0e74b5c": {
+    "title": "✅ تم قبول الرمز وبدأت عملية فتح المملكة. {value1} لإلغاء العملية اكتب: إلغاء",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم قبول الرمز وبدأت عملية فتح المملكة.\n\n{value1}\n\nلإلغاء العملية اكتب: إلغاء"
+  },
+  "reply_2ebf924c2d69e6a4": {
+    "title": "✅ تم إلغاء عملية فتح المملكة.",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [],
+    "required": [],
+    "sample": "✅ تم إلغاء عملية فتح المملكة."
+  },
+  "reply_105586a28d10ef52": {
+    "title": "❌ لا يمكن إنشاء المملكة الآن. {value1} تأكد أن البوت مضاف في القروبات ثم اكتب تأكيد مرة أخرى.",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ لا يمكن إنشاء المملكة الآن.\n{value1}\n\nتأكد أن البوت مضاف في القروبات ثم اكتب تأكيد مرة أخرى."
+  },
+  "reply_4d416ae1d51dd30a": {
+    "title": "✅ تم إنشاء {value1} بنجاح. المعرف: {value2}",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم إنشاء {value1} بنجاح.\nالمعرف: {value2}"
+  },
+  "reply_759b8df33844f182": {
+    "title": "🏰 تم إنشاء مملكة جديدة الاسم: {value1} المعرف: {value2} بواسطة: {value3}",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "🏰 تم إنشاء مملكة جديدة\nالاسم: {value1}\nالمعرف: {value2}\nبواسطة: {value3}"
+  },
+  "reply_e97f715ff96ef856": {
+    "title": "❌ فشل إنشاء المملكة: {value1}",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ فشل إنشاء المملكة: {value1}"
+  },
+  "reply_c7d2aa64e0c088ff": {
+    "title": "{value1} {value2}",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}\n\n{value2}"
+  },
+  "reply_ffafcd8618301229": {
+    "title": "✅ تم حفظ أنواع القروبات. {value1}",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم حفظ أنواع القروبات.\n\n{value1}"
+  },
+  "reply_f8e787fef712fd44": {
+    "title": "❌ هذا الـ JID مكرر داخل نفس المملكة. {value1}",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ هذا الـ JID مكرر داخل نفس المملكة.\n\n{value1}"
+  },
+  "reply_a7248af4f2c0afa1": {
+    "title": "✅ تم حفظ {value1}. {value2}",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم حفظ {value1}.\n\n{value2}"
+  },
+  "reply_375c7fcaeef816e5": {
+    "title": "✅ تم حفظ {value1}. {value2}",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم حفظ {value1}.\n\n{value2}"
+  },
+  "reply_db63850e3200ddff": {
+    "title": "۞ *تلاوة سورة {value1}* ۞ القارئ: مشاري العفاسي",
+    "file": "utils/quran.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "۞ *تلاوة سورة {value1}* ۞\nالقارئ: مشاري العفاسي"
+  },
+  "reply_5d3b4583b93f4d0f": {
+    "title": "لم أفهم طلب القرآن. جرّب مثلًا: /قرآن الكهف أو /قرآن 2:255",
+    "file": "utils/quran.js",
+    "fields": [],
+    "required": [],
+    "sample": "لم أفهم طلب القرآن.\nجرّب مثلًا: /قرآن الكهف أو /قرآن 2:255"
+  },
+  "reply_e3c92f8a42ca9ea5": {
+    "title": "تعذر جلب طلب القرآن الآن. جرّب بعد قليل.",
+    "file": "utils/quran.js",
+    "fields": [],
+    "required": [],
+    "sample": "تعذر جلب طلب القرآن الآن. جرّب بعد قليل."
+  },
+  "reply_5c479b3bb0ecf4e5": {
+    "title": "❌ هذا الأمر خاص بالمطور فقط.",
+    "file": "utils/samBotUsage.js",
+    "fields": [],
+    "required": [],
+    "sample": "❌ هذا الأمر خاص بالمطور فقط."
+  },
+  "reply_8f8ae549d7098ea9": {
+    "title": "استخدم الأمر بهذا الشكل: /عد_التوكن النص الذي تريد حسابه",
+    "file": "utils/samBotUsage.js",
+    "fields": [],
+    "required": [],
+    "sample": "استخدم الأمر بهذا الشكل:\n/عد_التوكن النص الذي تريد حسابه"
+  },
+  "reply_dee2682aeb08a36d": {
+    "title": "❌ تعذر حساب التوكنات: {value1}",
+    "file": "utils/samBotUsage.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ تعذر حساب التوكنات: {value1}"
+  },
+  "reply_111672459858f21d": {
+    "title": "‏📊 *تفاعل الأعضاء اليومي* ",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "‏📊 *تفاعل الأعضاء اليومي*\n"
+  },
+  "reply_6b1754bb32d3f0f8": {
+    "title": "👤 *ملف {value1}* اختر ما تريد عرضه: 1️⃣ المعلومات الأساسية 2️⃣ الألعاب المبدوءة اليوم 📌 أرسل الرقم",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👤 *ملف {value1}*\n\nاختر ما تريد عرضه:\n\n1️⃣ المعلومات الأساسية\n2️⃣ الألعاب المبدوءة اليوم\n\n📌 أرسل الرقم المناسب:"
+  },
+  "reply_67a94a56dae46c35": {
+    "title": "✨ *رسالة تحفيزية* تفاعلكم جميل وواضح. استمروا بالمشاركة والدعوة بهدوء. كل عضو جديد يضيف جوًا أحلى لل",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "✨ *رسالة تحفيزية*\n\nتفاعلكم جميل وواضح.\nاستمروا بالمشاركة والدعوة بهدوء.\n\nكل عضو جديد يضيف جوًا أحلى للمجموعة."
+  },
+  "reply_10748d687225d3a3": {
+    "title": "👤 *ملفك الشخصي* اختر ما تريد عرضه: 1️⃣ المعلومات الأساسية 2️⃣ جلسات الألعاب الخاصة بك 📌 أرسل الرقم",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "👤 *ملفك الشخصي*\n\nاختر ما تريد عرضه:\n\n1️⃣ المعلومات الأساسية\n2️⃣ جلسات الألعاب الخاصة بك\n\n📌 أرسل الرقم المناسب:"
+  },
+  "reply_a8a5cc93eeba4c50": {
+    "title": "-------------------------- ",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "--------------------------\n"
+  },
+  "reply_f34432b690b0c5b4": {
+    "title": "_________________ ",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "_________________\n"
+  },
+  "reply_04a8cbd1144b9960": {
+    "title": "📈 *التفاعل الإجمالي:* {value1} ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📈 *التفاعل الإجمالي:* {value1}\n"
+  },
+  "reply_fb743cfed08a0636": {
+    "title": "━━━━━━━━━━━━━━━━━━━━ ",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━━━━━\n\n"
+  },
+  "reply_901b6ca6da19932b": {
+    "title": "*{value1} {value2}* ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "*{value1} {value2}*\n"
+  },
+  "reply_43efddee2330b086": {
+    "title": " • {value1} ({value2}⭐) ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "  • {value1} ({value2}⭐)\n"
+  },
+  "reply_4760548a4fdab337": {
+    "title": " • {value1} ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "  • {value1}\n"
+  },
+  "reply_e875dd72c3e8d99c": {
+    "title": " 👤 *مستخدم جديد* ",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n👤 *مستخدم جديد*\n"
+  },
+  "reply_eb4af8fc4afc55b7": {
+    "title": "📱 الرقم: {value1} ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📱 الرقم: {value1}\n"
+  },
+  "reply_07e7e39b254b48d6": {
+    "title": "🏷️ اللقب المعين: {value1} (اللقب الافتراضي) ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🏷️ اللقب المعين: {value1} (اللقب الافتراضي)\n"
+  },
+  "reply_fe4d8952e55a8273": {
+    "title": " ✅ تم إنشاء ملف جديد للاعب!",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n✅ تم إنشاء ملف جديد للاعب!"
+  },
+  "reply_b31b4f9fb2d653e1": {
+    "title": " 👤 *اللاعب* ",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n👤 *اللاعب*\n"
+  },
+  "reply_7bf4b1c4f794a28c": {
+    "title": "🏷️ اللقب: {value1}",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🏷️ اللقب: {value1}"
+  },
+  "reply_61e7e966e1792fa1": {
+    "title": " (⚠️ اللقب الافتراضي - لم يقم اللاعب بتغييره)",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": " (⚠️ اللقب الافتراضي - لم يقم اللاعب بتغييره)"
+  },
+  "reply_ae96ff249b6454ad": {
+    "title": " 📊 معلومات إضافية: ",
+    "file": "commands/adminCommands.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n📊 معلومات إضافية:\n"
+  },
+  "reply_745ecfa46ebab380": {
+    "title": "💰 النقاط: {value1} ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 النقاط: {value1}\n"
+  },
+  "reply_8223d9246f25ff04": {
+    "title": "🎮 العملات: {value1} ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎮 العملات: {value1}\n"
+  },
+  "reply_7f3ac533bbb87a94": {
+    "title": "⭐ الرتبة: {value1} {value2} ({value3}⭐) ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "⭐ الرتبة: {value1} {value2} ({value3}⭐)\n"
+  },
+  "reply_58592c0668946359": {
+    "title": "👑 رتبة المملكة: {value1} {value2} ",
+    "file": "commands/adminCommands.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "👑 رتبة المملكة: {value1} {value2}\n"
+  },
+  "reply_4ddf3f9c25aff1e8": {
+    "title": "{value1} معلومات {value2} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1} معلومات {value2}\n"
+  },
+  "reply_e4513cef2881cb15": {
+    "title": "🏦 معلومات حسابك البنكي ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "🏦 معلومات حسابك البنكي\n"
+  },
+  "reply_03cadf658d7a92d8": {
+    "title": "🏛️ إحصائيات البنك ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "🏛️ إحصائيات البنك\n"
+  },
+  "reply_795087bcff7c0bd4": {
+    "title": "👑 الأدمنز والمشرفين ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "👑 الأدمنز والمشرفين\n"
+  },
+  "reply_387b97ee29bdebda": {
+    "title": "📋 القائمة الكاملة للمستخدمين ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "📋 القائمة الكاملة للمستخدمين\n"
+  },
+  "reply_43820718ada49b72": {
+    "title": "👥 قائمة الأعضاء ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "👥 قائمة الأعضاء\n"
+  },
+  "reply_cca0a1d744cd2117": {
+    "title": "📊 تقرير جميع المستخدمين ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "📊 تقرير جميع المستخدمين\n"
+  },
+  "reply_be4a49501dce32d9": {
+    "title": "👤 الأعضاء ({value1}): ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👤 الأعضاء ({value1}):\n"
+  },
+  "reply_7af4c675dcbf43b1": {
+    "title": "⚠️ *تحذير - عملية حذف نهائية!* 📊 *الإحصائيات:* ━━━━━━━━━━━━━━━━━━━━ 👥 عدد المستخدمين المراد حذفهم:",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "⚠️ *تحذير - عملية حذف نهائية!*\n\n📊 *الإحصائيات:*\n━━━━━━━━━━━━━━━━━━━━\n👥 عدد المستخدمين المراد حذفهم: *{value1}*\n📋 سيتم حذف جميع بيانات هؤلاء المستخدمين نهائياً\n🔄 هذه العملية *غير قابلة للعكس!*\n━━━━━━━━━━━━━━━━━━━━\n\n✅ لتأكيد الحذف اكتب:\n/تأكيد_حذف_بدون_لقب"
+  },
+  "reply_cf4b4bc4ad7b7ef5": {
+    "title": "✅ *تم حذف البيانات بنجاح!* 📊 *الإحصائيات:* ━━━━━━━━━━━━━━━━━━━━ 👥 عدد المحذوفين: *{value1}* ⏰ التا",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ *تم حذف البيانات بنجاح!*\n\n📊 *الإحصائيات:*\n━━━━━━━━━━━━━━━━━━━━\n👥 عدد المحذوفين: *{value1}*\n⏰ التاريخ: *{value2}\n🗑️ تم حذف جميع البيانات المرتبطة\n━━━━━━━━━━━━━━━━━━━━\n\n💡 ملاحظة: تم الحفاظ على جميع الأعضاء الذين لهم لقب مسجل."
+  },
+  "reply_3154c46e3264f8cd": {
+    "title": "⭐ تم إضافة {value1} نجمة رتبة لـ {value2}! مجموع نجومه: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "⭐ تم إضافة {value1} نجمة رتبة لـ {value2}!\nمجموع نجومه: {value3}"
+  },
+  "reply_f0b19751d5d14e9a": {
+    "title": "⭐ تم إزالة {value1} نجمة رتبة من {value2}! مجموع نجومه: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "⭐ تم إزالة {value1} نجمة رتبة من {value2}!\nمجموع نجومه: {value3}"
+  },
+  "reply_66136a5c5856629b": {
+    "title": "✅ تم تغيير منشن العضو {value1} بنجاح! ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✅ تم تغيير منشن العضو {value1} بنجاح!\n\n"
+  },
+  "reply_2bd27e562fcf3ddd": {
+    "title": "━━━━━━━━━━━━━━━━━ ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━━\n"
+  },
+  "reply_8b34abe72730fbc6": {
+    "title": "📛 اللقب: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📛 اللقب: {value1}\n"
+  },
+  "reply_ee52f156c6aa6761": {
+    "title": "🎖️ الرتبة الإدارية: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎖️ الرتبة الإدارية: {value1}\n"
+  },
+  "reply_19bb1196abf63e26": {
+    "title": "👑 رتبة المملكة: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👑 رتبة المملكة: {value1}\n"
+  },
+  "reply_77d46532e45b2a62": {
+    "title": "✨ المستوى: {value1} ({value2} XP) ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✨ المستوى: {value1} ({value2} XP)\n"
+  },
+  "reply_75a4c820b85d571c": {
+    "title": "💰 النقاط: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 النقاط: {value1}\n"
+  },
+  "reply_b7ee82744aadf109": {
+    "title": "🎖️ نجوم الرتب: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎖️ نجوم الرتب: {value1}\n"
+  },
+  "reply_9d791aac8d5ae34c": {
+    "title": "💰 العملات: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 العملات: {value1}\n"
+  },
+  "reply_9a6bf1a7ab02a371": {
+    "title": "🏦 البنك: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🏦 البنك: {value1}\n"
+  },
+  "reply_717e7b6ceb525321": {
+    "title": "📊 الرسائل اليومية: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📊 الرسائل اليومية: {value1}\n"
+  },
+  "reply_5a9990dca8c56ee7": {
+    "title": "📊 إجمالي الرسائل: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📊 إجمالي الرسائل: {value1}\n"
+  },
+  "reply_e63d5f4baa1abe5a": {
+    "title": "📅 تاريخ الانضمام: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📅 تاريخ الانضمام: {value1}\n"
+  },
+  "reply_4dc35b2723ba072b": {
+    "title": "🚫 محظور - السبب: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🚫 محظور - السبب: {value1}\n"
+  },
+  "reply_c892550c9e1c68f3": {
+    "title": "━━━━━━━━━━━━━━━━━━━━ ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━━━━━\n"
+  },
+  "reply_7df0bffc59319b70": {
+    "title": "💰 عملاتك: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 عملاتك: {value1}\n"
+  },
+  "reply_29aa8afaf9900497": {
+    "title": "🏦 رصيدك في البنك: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🏦 رصيدك في البنك: {value1}\n"
+  },
+  "reply_030cae902afccdf7": {
+    "title": "🏛️ إجمالي البنك: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🏛️ إجمالي البنك: {value1}\n"
+  },
+  "reply_97581f0ccf91c9a7": {
+    "title": "━━━━━━━━━━━━━━━━ ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━\n"
+  },
+  "reply_b34edd7e7a0f99b4": {
+    "title": "💰 إجمالي العملات: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 إجمالي العملات: {value1}\n"
+  },
+  "reply_a35e1c172e0fd232": {
+    "title": "👥 عدد المودعين: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👥 عدد المودعين: {value1}\n"
+  },
+  "reply_82900c2c2c3845fd": {
+    "title": "📊 عدد المعاملات: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📊 عدد المعاملات: {value1}\n\n"
+  },
+  "reply_834d86d8178ff12f": {
+    "title": "🏦 أكبر المودعين: ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "🏦 أكبر المودعين:\n"
+  },
+  "reply_0227d4f3c4ab8ecb": {
+    "title": "{value1}. {value2} - {value3} عملة ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "{value1}. {value2} - {value3} عملة\n"
+  },
+  "reply_f9eefc423fa08fb7": {
+    "title": "━━━━━━━━━━━━━━━━━ ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━━\n\n"
+  },
+  "reply_d348a58d47faf93e": {
+    "title": "👑 الأدمن الرئيسي: ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "👑 الأدمن الرئيسي:\n"
+  },
+  "reply_def19068126a047b": {
+    "title": "{value1}. {value2} 💰{value3} 🎖️{value4} 👑{value5} 🏦{value6} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "sample": "{value1}. {value2} 💰{value3} 🎖️{value4} 👑{value5} 🏦{value6}\n"
+  },
+  "reply_d0a96cb189ceb636": {
+    "title": "👑 الأدمن العادي: ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "👑 الأدمن العادي:\n"
+  },
+  "reply_41f1782b7b739d96": {
+    "title": "{value1}. {value2} 💰{value3} 🎖️{value4} 👑{value5} 🏦{value6} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "sample": "{value1}. {value2} 💰{value3} 🎖️{value4} 👑{value5} 🏦{value6}\n"
+  },
+  "reply_be8fa7829b9d8046": {
+    "title": "🔰 المشرفين: ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "🔰 المشرفين:\n"
+  },
+  "reply_f3cb560dd9569e1a": {
+    "title": "{value1}. {value2} 💰{value3} 🎖️{value4} 👑{value5} 🏦{value6} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "sample": "{value1}. {value2} 💰{value3} 🎖️{value4} 👑{value5} 🏦{value6}\n"
+  },
+  "reply_846a8031ea876557": {
+    "title": "🔰 لا يوجد مشرفين ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "🔰 لا يوجد مشرفين\n"
+  },
+  "reply_3d6d0299e14f380c": {
+    "title": "━━━━━━━━━━━━━━━━━━━━━━━ ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+  },
+  "reply_bc2d991751882cf0": {
+    "title": "👑 الأدمن الرئيسي ({value1}): ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👑 الأدمن الرئيسي ({value1}):\n"
+  },
+  "reply_469d74e3c0ca09b6": {
+    "title": "{value1}. {value2} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}. {value2}\n"
+  },
+  "reply_bb5f97e4557d6ab3": {
+    "title": " JID: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   JID: {value1}\n"
+  },
+  "reply_a7d98aef9c8b496c": {
+    "title": " 💰 نقاط: {value1} | 🎖️ نجوم رتبة: {value2} | 👑 رتبة المملكة: {value3} | 💰 عملات: {value4} | 🏦 ب",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "sample": "   💰 نقاط: {value1} | 🎖️ نجوم رتبة: {value2} | 👑 رتبة المملكة: {value3} | 💰 عملات: {value4} | 🏦 بنك: {value5}\n\n"
+  },
+  "reply_0e11251e2c8408d2": {
+    "title": "👑 الأدمن العادي ({value1}): ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👑 الأدمن العادي ({value1}):\n"
+  },
+  "reply_08325038d536fc9f": {
+    "title": "🔰 المشرفين ({value1}): ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🔰 المشرفين ({value1}):\n"
+  },
+  "reply_fa629532d3e6a417": {
+    "title": "{value1}. {value2} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}. {value2}\n"
+  },
+  "reply_7f083a701ea8aecc": {
+    "title": " JID: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   JID: {value1}\n"
+  },
+  "reply_574e0c852504540c": {
+    "title": " 💰 نقاط: {value1} | 🎖️ نجوم رتبة: {value2} | 👑 رتبة المملكة: {value3} | 💰 عملات: {value4} | 🏦 ب",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "sample": "   💰 نقاط: {value1} | 🎖️ نجوم رتبة: {value2} | 👑 رتبة المملكة: {value3} | 💰 عملات: {value4} | 🏦 بنك: {value5}\n\n"
+  },
+  "reply_00a238578abf2e3c": {
+    "title": "👥 الأعضاء العاديين ({value1}): ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👥 الأعضاء العاديين ({value1}):\n"
+  },
+  "reply_173c50d36894fbb4": {
+    "title": "{value1}. {value2} - 💰{value3} | 👑{value4} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "sample": "{value1}. {value2} - 💰{value3} | 👑{value4}\n"
+  },
+  "reply_dcb8a6c5ba7cd409": {
+    "title": "... و {value1} آخرين ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "... و {value1} آخرين\n"
+  },
+  "reply_b3580d118ea18a16": {
+    "title": "🚫 المحظورين ({value1}): ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🚫 المحظورين ({value1}):\n"
+  },
+  "reply_0241495a47c4252a": {
+    "title": "{value1}. {value2} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}. {value2}\n"
+  },
+  "reply_c9f86345a8af12b5": {
+    "title": " JID: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   JID: {value1}\n"
+  },
+  "reply_dd34688923384fa0": {
+    "title": " السبب: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   السبب: {value1}\n\n"
+  },
+  "reply_497842d805854f94": {
+    "title": "━━━━━━━━━━━━━━ ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━\n"
+  },
+  "reply_8fe41c5f9c1305bb": {
+    "title": "إجمالي الأعضاء: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "إجمالي الأعضاء: {value1}\n\n"
+  },
+  "reply_6e90befb00199db8": {
+    "title": "{value1}. {value2} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}. {value2}\n"
+  },
+  "reply_4dd4bbd696293ac2": {
+    "title": " JID: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   JID: {value1}\n"
+  },
+  "reply_47789d4be806858e": {
+    "title": " 💰 نقاط: {value1} | 🎖️ نجوم رتبة: {value2} | 💰 عملات: {value3} | 🏦 بنك: {value4} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "sample": "   💰 نقاط: {value1} | 🎖️ نجوم رتبة: {value2} | 💰 عملات: {value3} | 🏦 بنك: {value4}\n\n"
+  },
+  "reply_ca80a801d5237813": {
+    "title": "✅ تم تحديث لقبك من *{value1}* إلى *{value2}*!",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✅ تم تحديث لقبك من *{value1}* إلى *{value2}*!"
+  },
+  "reply_9db555667e5c83cb": {
+    "title": "✅ تم تغيير لقب *{value1}* إلى *{value2}* بواسطة: {value3}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "✅ تم تغيير لقب *{value1}* إلى *{value2}*\nبواسطة: {value3}"
+  },
+  "reply_b6ced8b5660d4392": {
+    "title": "📈 الإحصائيات: ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "📈 الإحصائيات:\n"
+  },
+  "reply_c6212c48b91ad211": {
+    "title": "👥 إجمالي المستخدمين: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👥 إجمالي المستخدمين: {value1}\n"
+  },
+  "reply_0743c1be006271ef": {
+    "title": "👑 الأدمن الرئيسي: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👑 الأدمن الرئيسي: {value1}\n"
+  },
+  "reply_c5aeb1dc48711ef1": {
+    "title": "👑 الأدمن العادي: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👑 الأدمن العادي: {value1}\n"
+  },
+  "reply_d5fb65fd91586b92": {
+    "title": "🔰 المشرفين: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🔰 المشرفين: {value1}\n"
+  },
+  "reply_c7244e0363343b87": {
+    "title": "👤 الأعضاء: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👤 الأعضاء: {value1}\n"
+  },
+  "reply_624547cc17b582e3": {
+    "title": "🚫 المحظورين: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🚫 المحظورين: {value1}\n\n"
+  },
+  "reply_24c34ea34c123855": {
+    "title": " 💰 نقاط: {value1} | 💰 عملات: {value2} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "   💰 نقاط: {value1} | 💰 عملات: {value2}\n"
+  },
+  "reply_54e36fc664e0b678": {
+    "title": " 💰 نقاط: {value1} | 💰 عملات: {value2} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "   💰 نقاط: {value1} | 💰 عملات: {value2}\n"
+  },
+  "reply_0485074d35e3ae2d": {
+    "title": " 💰 نقاط: {value1} | 💰 عملات: {value2} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "   💰 نقاط: {value1} | 💰 عملات: {value2}\n"
+  },
+  "reply_9fba2425a1b4ac52": {
+    "title": " السبب: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   السبب: {value1}\n"
+  },
+  "reply_6bf99411a2ed75e5": {
+    "title": "👑 الأدمنز: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👑 الأدمنز: {value1}\n"
+  },
+  "reply_ea7bc6f11fe6b2b6": {
+    "title": "👑 الأدمن الرئيسي ({value1}): ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👑 الأدمن الرئيسي ({value1}):\n"
+  },
+  "reply_5a020b3331db7801": {
+    "title": " 🔰 المشرفين ({value1}): ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "\n🔰 المشرفين ({value1}):\n"
+  },
+  "reply_81263496371d0dc0": {
+    "title": " 🚫 المحظورين ({value1}): ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "\n🚫 المحظورين ({value1}):\n"
+  },
+  "reply_82a46c93fbda6757": {
+    "title": " 🎖️ ترقية: {value1} → {value2}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "\n🎖️ ترقية: {value1} → {value2}"
+  },
+  "reply_74e09fb1293027f3": {
+    "title": " 👑 رتبة المملكة: {value1}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "\n👑 رتبة المملكة: {value1}"
+  },
+  "reply_86e1675726618e4d": {
+    "title": " 🎖️ تغيير رتبة: {value1} → {value2}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "\n🎖️ تغيير رتبة: {value1} → {value2}"
+  },
+  "reply_2e9ad33512c62478": {
+    "title": "📋 *البيانات القديمة:* ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "📋 *البيانات القديمة:*\n"
+  },
+  "reply_c3ee1557fa115d59": {
+    "title": " • المنشن: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   • المنشن: {value1}\n"
+  },
+  "reply_9bab4e9bfe4e7c1e": {
+    "title": " • الرقم: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   • الرقم: {value1}\n\n"
+  },
+  "reply_554c4594112fc114": {
+    "title": "📋 *البيانات الجديدة:* ",
+    "file": "commands/adminSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "📋 *البيانات الجديدة:*\n"
+  },
+  "reply_bbfa6a0e9477945d": {
+    "title": " • المنشن: {value1} ",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   • المنشن: {value1}\n"
+  },
+  "reply_8e9b5d559d9fdf06": {
+    "title": " • الرقم: {value1}",
+    "file": "commands/adminSystem.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   • الرقم: {value1}"
+  },
+  "reply_fba9e96a13e498c3": {
+    "title": "👑 *نخبة المملكة* 👑 ",
+    "file": "commands/eliteFunction.js",
+    "fields": [],
+    "required": [],
+    "sample": "👑 *نخبة المملكة* 👑\n"
+  },
+  "reply_1e759a5d04d918d6": {
+    "title": "━━━━━━━━━━━━━━━━━━━━━ ",
+    "file": "commands/eliteFunction.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━━━━━━\n\n"
+  },
+  "reply_79b7ec542ed4d68e": {
+    "title": "{value1}: {value2} ",
+    "file": "commands/eliteFunction.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}: {value2}\n"
+  },
+  "reply_8714f27dde14a3b3": {
+    "title": "━━━━━━━━━━━━━━━━━━━━━ ",
+    "file": "commands/eliteFunction.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━━━━━━\n"
+  },
+  "reply_5c93e9cf06272cb0": {
+    "title": " ━━━━━━━━━━━━━━━━━━━━━ ",
+    "file": "commands/eliteFunction.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n━━━━━━━━━━━━━━━━━━━━━\n"
+  },
+  "reply_8c99a94cccd2576f": {
+    "title": "📊 إجمالي النخبة: {value1}",
+    "file": "commands/eliteFunction.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📊 إجمالي النخبة: {value1}"
+  },
+  "reply_8df34b51fb4f08f2": {
+    "title": "✨ مستوى {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✨ مستوى {value1}\n"
+  },
+  "reply_4cc139d433ea9551": {
+    "title": "✅ تم {value1} منشن {value2}! 📣 المنشن الجديد: {value3}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "✅ تم {value1} منشن {value2}!\n📣 المنشن الجديد: {value3}"
+  },
+  "reply_b151e67b637f02c1": {
+    "title": "{value1} ملفك الشخصي ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "{value1} ملفك الشخصي\n"
+  },
+  "reply_ceb587b0139a486f": {
+    "title": "👤 *معلومات المستخدم* ━━━━━━━━━━━━━━━━━━━━━ 📝 *اللقب:* {value1} 📞 *رقم الواتس:* +{value2}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "👤 *معلومات المستخدم*\n━━━━━━━━━━━━━━━━━━━━━\n\n📝 *اللقب:* {value1}\n📞 *رقم الواتس:* +{value2}"
+  },
+  "reply_e9c24da67b9fb911": {
+    "title": "━━━━━━━━━━━━━━━━━ ",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━━\n"
+  },
+  "reply_307c56c3f2ace444": {
+    "title": "🏅 المستوى: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🏅 المستوى: {value1}\n"
+  },
+  "reply_c8349dbcea8911ab": {
+    "title": "✨ XP: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "✨ XP: {value1}\n"
+  },
+  "reply_fe818e48a8ec0f16": {
+    "title": "📈 التقدم: {value1} {value2}% ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "📈 التقدم: {value1} {value2}%\n"
+  },
+  "reply_ba90089ddc119759": {
+    "title": "⬆️ المتبقي للمستوى {value1}: {value2} XP ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "⬆️ المتبقي للمستوى {value1}: {value2} XP\n"
+  },
+  "reply_2d97b255615fee23": {
+    "title": "💬 رسائل اليوم: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💬 رسائل اليوم: {value1}\n"
+  },
+  "reply_fd9f6034ed2f7a3c": {
+    "title": "📊 إجمالي الرسائل: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📊 إجمالي الرسائل: {value1}\n"
+  },
+  "reply_1112d50b86c4042f": {
+    "title": "🗨️ XP المحادثة: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🗨️ XP المحادثة: {value1}\n"
+  },
+  "reply_2ba3022b2896836a": {
+    "title": "🎮 XP الألعاب: {value1}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎮 XP الألعاب: {value1}"
+  },
+  "reply_235bf1bab2728de3": {
+    "title": "📛 اللقب: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📛 اللقب: {value1}\n"
+  },
+  "reply_51fbf500268a631f": {
+    "title": "🎖️ الرتبة الإدارية: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎖️ الرتبة الإدارية: {value1}\n"
+  },
+  "reply_4f1612dc415d0f3d": {
+    "title": "👑 رتبة المملكة: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👑 رتبة المملكة: {value1}\n"
+  },
+  "reply_7445371c678332b5": {
+    "title": "✨ المستوى: {value1} ({value2} XP) ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✨ المستوى: {value1} ({value2} XP)\n"
+  },
+  "reply_4d8b7c89e1da55f7": {
+    "title": "💰 النقاط: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 النقاط: {value1}\n"
+  },
+  "reply_b7dcedfbe59da5b4": {
+    "title": "🎖️ نجوم الرتب: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎖️ نجوم الرتب: {value1}\n"
+  },
+  "reply_fd0d8b2dd2c18c1b": {
+    "title": "💰 العملات: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 العملات: {value1}\n"
+  },
+  "reply_a14f1730add346b9": {
+    "title": "🏦 البنك: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🏦 البنك: {value1}\n"
+  },
+  "reply_e296e2690edf37e2": {
+    "title": "💬 الرسائل اليومية: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💬 الرسائل اليومية: {value1}\n"
+  },
+  "reply_a2dbc74b4a5b56e4": {
+    "title": "📅 تاريخ الانضمام: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📅 تاريخ الانضمام: {value1}\n"
+  },
+  "reply_ac8a80de90a13f27": {
+    "title": "🚫 محظور - السبب: {value1} ",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🚫 محظور - السبب: {value1}\n"
+  },
+  "reply_4b463ecad5d7ca70": {
+    "title": " 🔗 *lid:* {value1}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "\n🔗 *lid:* {value1}"
+  },
+  "reply_c244108efe06b6f1": {
+    "title": " 🎖️ *الترتيب:* ",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n🎖️ *الترتيب:* "
+  },
+  "reply_d4e9c53f4dcf4d9f": {
+    "title": "المستوى {value1}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "المستوى {value1}"
+  },
+  "reply_b11b14f2ff126153": {
+    "title": " - {value1} ⭐",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": " - {value1} ⭐"
+  },
+  "reply_3bde4635b3cf37c7": {
+    "title": " 💰 *النقاط:* {value1}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "\n💰 *النقاط:* {value1}"
+  },
+  "reply_682c57476fbe3475": {
+    "title": " ✨ *المستوى:* {value1} ({value2} XP)",
+    "file": "commands/user.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "\n✨ *المستوى:* {value1} ({value2} XP)"
+  },
+  "reply_bfe3a892e524fabe": {
+    "title": " 📊 *إجمالي الرسائل:* {value1}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "\n📊 *إجمالي الرسائل:* {value1}"
+  },
+  "reply_ea6f281c283c85f4": {
+    "title": " 🏦 *البنك:* {value1}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "\n🏦 *البنك:* {value1}"
+  },
+  "reply_a67f9297da4c2cfd": {
+    "title": " {value1} *الدور:* {value2}",
+    "file": "commands/user.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "\n{value1} *الدور:* {value2}"
+  },
+  "reply_a5ecaa55670778e4": {
+    "title": " ━━━━━━━━━━━━━━━━━━━━━",
+    "file": "commands/user.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n━━━━━━━━━━━━━━━━━━━━━"
+  },
+  "reply_34d1105a1ea6c878": {
+    "title": " ╔════════════════════════════════════╗ ║ 🚩 شرح لعبة الأعلام ║ ╚═══════════════════════════════════",
+    "file": "games/flagGame.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n╔════════════════════════════════════╗\n║  🚩 شرح لعبة الأعلام                ║\n╚════════════════════════════════════╝\n\n*🎮 أهداف اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nخمّن اسم الدولة من صورة علمها وحقق نقاط!\n\n*📋 قواعد اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ ستُعرض عليك صورة علم دولة معينة\n✅ اكتب اسم الدولة بالعربية\n✅ لديك 10 ثواني فقط ⏱️⚡\n✅ بعد 2 ثانية سيظهر تلميح\n✅ أول إجابة صحيحة تحسم الجولة\n\n*🎭 أنماط اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n**🌍 تصنيف الدول:**\n   • الدول العربية: دول الوطن العربي والعالم العربي\n   • الدول المعروفة: الدول الأكثر شهرة عالمياً\n   • جميع الدول: كل الدول المتاحة في اللعبة\n\n**1️⃣ النمط الجماعي (الجميع)**\n   • جميع أعضاء المجموعة يشاركون\n   • أول من يجيب بشكل صحيح يحصل على النقاط\n   • سريعة ومشوقة\n\n**2️⃣ النمط الثنائي (شخصان)**\n   • لاعبان محددان فقط\n   • منافسة مباشرة بينهما\n   • من يكون الأسرع يفوز\n\n*💡 نصائح للفوز:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👀 انتبه لألوان وتصميم العلم\n⚡ كن سريعاً - الوقت محدود!\n🎯 حاول التخمين قبل انتهاء الوقت\n💰 كل إجابة صحيحة = +2 نقاط\n\n*📊 النقاط:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ إجابة صحيحة = +2 نقاط 🎉\n⚡ الإجابة السريعة = جميلة!\n\nجاهز للعب؟ اختر النمط! 🚀"
+  },
+  "reply_647493423f98af5a": {
+    "title": " ╔════════════════════════════════════╗ ║ 🎬 شرح لعبة تخمين الأنمي ║ ╚══════════════════════════════",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n╔════════════════════════════════════╗\n║  🎬 شرح لعبة تخمين الأنمي           ║\n╚════════════════════════════════════╝\n\n*🎮 أهداف اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nخمّن اسم الأنمي من صورة المسلسل وحقق نقاط!\n\n*📋 قواعد اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ ستُعرض عليك صورة من أنمي معين\n✅ اكتب اسم الأنمي بالعربية أو الإنجليزية\n✅ لديك 15 ثانية فقط 🏃⚡\n✅ بعد 5 ثواني سيظهر تلميح\n✅ أول إجابة صحيحة تحسم الجولة\n\n*🎭 أنماط اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n**1️⃣ النمط الجماعي (الجميع)**\n   • جميع أعضاء المجموعة يشاركون\n   • أول من يجيب بشكل صحيح يحصل على النقاط\n   • سريعة ومشوقة\n\n**2️⃣ النمط الثنائي (شخصان)**\n   • لاعبان محددان فقط\n   • منافسة مباشرة بينهما\n   • من يكون الأسرع يفوز\n\n*💡 نصائح للفوز:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👀 انتبه للتفاصيل في الصورة\n⚡ كن سريعاً - الوقت محدود!\n🎯 حاول التخمين قبل انتهاء الوقت\n💰 كل إجابة صحيحة = +10 نقاط\n\n*📊 النقاط:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ إجابة صحيحة = +10 نقاط 🎉\n🏃 الإجابة السريعة = بونص إضافي\n\nجاهز للعب؟ اختر النمط! 🚀"
+  },
+  "reply_844fad1904725425": {
+    "title": "🏆 لوحة الترتيب الموحدة - أفضل اللاعبين: ",
+    "file": "games/guessAnime.js",
+    "fields": [],
+    "required": [],
+    "sample": "🏆 لوحة الترتيب الموحدة - أفضل اللاعبين:\n\n"
+  },
+  "reply_fc5a55301f78cb9c": {
+    "title": "{value1}. {value2} - 💰{value3} ",
+    "file": "games/guessAnime.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "{value1}. {value2} - 💰{value3}\n"
+  },
+  "reply_dd5fc4982ae818a2": {
+    "title": " ╔════════════════════════════════════╗ ║ 🎭 شرح لعبة تخمين الشخصيات ║ ╚════════════════════════════",
+    "file": "games/guessCharacter.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n╔════════════════════════════════════╗\n║  🎭 شرح لعبة تخمين الشخصيات         ║\n╚════════════════════════════════════╝\n\n*🎮 أهداف اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nخمّن الشخصية من الوصف والتلميحات والصورة!\n\n*📋 قواعد اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ تعرض عليك صورة ووصف لشخصية من الأنمي\n✅ اكتب اسم الشخصية بطريقة تقريبية\n✅ لديك 20 ثانية للإجابة\n✅ بعد 10 ثواني سيظهر تلميح إضافي\n✅ التطابق التقريبي بنسبة عالية\n✅ كل إجابة صحيحة = +10 نقاط\n\n*🎭 أنماط اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n**1️⃣ النمط الجماعي**\n   • جميع الأعضاء يحاولون الإجابة\n   • أول إجابة صحيحة تفوز بالنقاط\n   • أجواء مشوقة ومنافسة حادة\n\n**2️⃣ النمط الثنائي**\n   • منافسة بين لاعبين محددين\n   • سريعة ومركزة جداً\n   • من يكون الأسرع يفوز\n\n*💡 نصائح للفوز:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ اقرأ الوصف بعناية\n✅ اركز على التفاصيل المميزة\n⚡ كن سريعاً - الوقت محدود\n🎯 استخدم التلميحات بحكمة\n🏆 كل شخصية مختلفة = فرصة جديدة\n\nجاهز للعب؟ اختر النمط! 🚀"
+  },
+  "reply_ac99a69f9695e685": {
+    "title": "أهلًا 👋 اكتب اسمك أو لقبك الذي تريد استخدامه في لعبة المافيا.",
+    "file": "games/mafia.js",
+    "fields": [],
+    "required": [],
+    "sample": "أهلًا 👋\nاكتب اسمك أو لقبك الذي تريد استخدامه في لعبة المافيا."
+  },
+  "reply_c65416efc63874f2": {
+    "title": "انتهت لعبة المافيا 🎭 الفائزون: {value1} يا راوي، اكتب: - لعب مرة أخرى - إنهاء الجلسة",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "انتهت لعبة المافيا 🎭\n\nالفائزون: {value1}\n\nيا راوي، اكتب:\n- لعب مرة أخرى\n- إنهاء الجلسة"
+  },
+  "reply_d114f961b68d1ab8": {
+    "title": "انتهت لعبة المافيا 🎭 الفائزون: {value1} ماذا تريد أن تفعل؟ 1. لعب مرة أخرى 2. إنهاء الجلسة",
+    "file": "games/mafia.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "انتهت لعبة المافيا 🎭\n\nالفائزون: {value1}\n\nماذا تريد أن تفعل؟\n\n1. لعب مرة أخرى\n2. إنهاء الجلسة"
+  },
+  "reply_7a8c39d3c32201cf": {
+    "title": " ╔════════════════════════════════════╗ ║ � شرح لعبة تفكيك الحروف ║ ╚═══════════════════════════════",
+    "file": "games/unscramble.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n╔════════════════════════════════════╗\n║  � شرح لعبة تفكيك الحروف          ║\n╚════════════════════════════════════╝\n\n*🎮 أهداف اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nرتّب الحروف المخلوطة لتكوين كلمة عربية صحيحة!\n\n*📋 قواعد اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ ستُعطى حروف مخلوطة لكلمة عربية\n✅ رتّب الحروف بالترتيب الصحيح\n✅ لديك 30 ثانية لكل كلمة\n✅ التطابق يجب أن يكون 100%\n✅ كل إجابة صحيحة = +1 نقطة\n\n*🎭 أنماط اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n**1️⃣ النمط الجماعي**\n   • كل الأعضاء يتنافسون\n   • من يكون الأسرع يفوز\n   • منافسة حادة وقوية\n\n**2️⃣ النمط الثنائي**\n   • صراع مباشر بين لاعبين\n   • سرعة وتركيز عالي\n   • من يحل أولاً يحصل على النقطة\n\n*💡 نصائح للفوز:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔍 فكّر في الكلمات العربية الشائعة\n⚡ كن سريعاً جداً\n📝 تخيل الكلمة قبل كتابتها\n🏆 التركيز أهم من السرعة\n\nجاهز للعب؟ اختر نمطاً! 🚀"
+  },
+  "reply_cd209c199eb719f5": {
+    "title": "🎉 **برافو {value1}!** ━━━━━━━━━━━━━━━━━━━ ✅ الإجابة صحيحة! 🔤 الحروف المفصولة: {value2} ⭐ +1 نقطة ✨",
+    "file": "games/unscramble.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "sample": "🎉 **برافو {value1}!**\n━━━━━━━━━━━━━━━━━━━\n✅ الإجابة صحيحة!\n🔤 الحروف المفصولة: {value2}\n⭐ +1 نقطة\n✨ +{value3} XP{value4}\n💰 إجمالي نقاطك: {value5}"
+  },
+  "reply_b825a92fcf8daa35": {
+    "title": " ╔════════════════════════════════════╗ ║ ✂️ شرح لعبة فصل الكلمات ║ ╚═══════════════════════════════",
+    "file": "games/wordSplitter.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n╔════════════════════════════════════╗\n║  ✂️ شرح لعبة فصل الكلمات          ║\n╚════════════════════════════════════╝\n\n*🎮 أهداف اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nافصل الجملة المجمعة إلى كلمات منفصلة بالمسافات!\n\n*📋 قواعد اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ ستُعطى جملة بدون مسافات\n✅ عليك إضافة المسافات بين الكلمات\n✅ يجب أن تكتب الجملة بالترتيب الصحيح تماماً\n✅ لديك 30 ثانية لحل الجملة\n✅ التطابق يجب أن يكون 100% دقيق\n✅ كل إجابة صحيحة = +1 نقطة\n\n*🎭 أنماط اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n**1️⃣ النمط الجماعي**\n   • جميع الأعضاء يشاركون\n   • سباق على السرعة والدقة\n   • منافسة حامية وقوية\n\n**2️⃣ النمط الثنائي**\n   • صراع بين لاعبين فقط\n   • تركيز عالي جداً\n   • مثير جداً ومشوق!\n\n*💡 نصائح للفوز:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👀 اقرأ الجملة بعناية عميقة\n⚡ فكّر بالكلمات العربية الشهيرة\n✂️ افصل كل كلمة على حدة بمسافة\n📖 تذكر القواعد النحوية\n🏆 السرعة + الدقة = الفوز!\n\n*مثال:*\nالجملة المجمعة: \"العلمنورالحياة\"\nالجملة الصحيحة: \"العلم نور الحياة\"\n\nجاهز؟ اختر النمط! 🚀"
+  },
+  "reply_a4c8deb13e7945eb": {
+    "title": "🎉 **برافو {value1}!** ━━━━━━━━━━━━━━━━━━━ ✅ الإجابة صحيحة! 🎯 الجملة: {value2} ⭐ +1 نقطة ✨ +{value3",
+    "file": "games/wordSplitter.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5"
+    ],
+    "sample": "🎉 **برافو {value1}!**\n━━━━━━━━━━━━━━━━━━━\n✅ الإجابة صحيحة!\n🎯 الجملة: {value2}\n⭐ +1 نقطة\n✨ +{value3} XP{value4}\n💰 إجمالي نقاطك: {value5}"
+  },
+  "reply_55493a876a7bad44": {
+    "title": "🎮 **لعبة تفكيك الحروف{value1}** ━━━━━━━━━━━━━━━━━━━ 📝 ضع مسافة بين كل حرف من الكلمة التالية: 🔤 **",
+    "file": "games/wordSplitter.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "🎮 **لعبة تفكيك الحروف{value1}**\n━━━━━━━━━━━━━━━━━━━\n📝 ضع مسافة بين كل حرف من الكلمة التالية:\n\n🔤 **{value2}**\n\n⏱️ لديك 30 ثانية!{value3}\n💡 هل تستطيع؟\n📌 أرسل /وقف لإيقاف اللعبة"
+  },
+  "reply_c0796f83bb432646": {
+    "title": "🎮 **لعبة تفكيك الكلمات{value1}** ━━━━━━━━━━━━━━━━━━━ 📝 فكك هذه الكلمات بوضع مسافات في الأماكن الصح",
+    "file": "games/wordSplitter.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "🎮 **لعبة تفكيك الكلمات{value1}**\n━━━━━━━━━━━━━━━━━━━\n📝 فكك هذه الكلمات بوضع مسافات في الأماكن الصحيحة:\n\n🔤 **{value2}**\n\n⏱️ لديك 30 ثانية!{value3}\n💡 هل تستطيع؟\n📌 أرسل /وقف لإيقاف اللعبة"
+  },
+  "reply_de89c93a1374b143": {
+    "title": " ╔════════════════════════════════════╗ ║ 📝 شرح لعبة كتابة الكلمات ║ ╚═════════════════════════════",
+    "file": "games/wordtype.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n╔════════════════════════════════════╗\n║  📝 شرح لعبة كتابة الكلمات          ║\n╚════════════════════════════════════╝\n\n*🎮 أهداف اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nاكتب الكلمات بشكل صحيح وتطابق! كل إجابة صحيحة = +1 نقطة\n\n*📋 قواعد اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ اكتب الكلمة المطلوبة بشكل دقيق\n✅ الفراغات والأحرف يجب أن تكون صحيحة تماماً\n✅ لديك 3 محاولات لكل كلمة\n✅ كل لاعب له محاولاته الخاصة 🎯\n✅ الإجابة الأولى الصحيحة تحسم الجولة\n\n*🎭 أنماط اللعبة:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n**1️⃣ النمط الجماعي (الجميع)**\n   • جميع أعضاء المجموعة يشاركون\n   • كل لاعب له 3 محاولات منفصلة\n   • أول من يجيب بشكل صحيح يحصل على النقطة\n   • إذا أنهى لاعب محاولاته، يمكن للآخرين المتابعة\n\n**2️⃣ النمط الثنائي (شخصان)**\n   • لاعبان محددان فقط\n   • كل لاعب له 3 محاولات منفصلة\n   • يستمران في المحاولة حتى ينتهي أحدهما أو أحدهما يجيب صحيح\n   • سريعة ومركزة\n\n*💡 نصائح للفوز:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔍 اقرأ الكلمة بعناية من البداية للنهاية\n⚡ كن سريعاً - أول جواب صحيح يفوز\n🎯 تجنب الأخطاء الإملائية البسيطة\n🏆 كل جولة = فرصة جديدة لكسب نقطة\n\n*📊 النقاط:*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ إجابة صحيحة = +1 نقطة 🎉\n❌ إجابة خاطئة = -1 محاولة\n\nجاهز للعب؟ أرسل /كلمات لبدء اللعبة! 🚀"
+  },
+  "reply_8e51e477ff1bb8b7": {
+    "title": "🎉 *مبروك! وصلتم إلى 50 عضو!* تفاعل جميل من الجميع، وشغل مرتب من الإدارة. استمروا بنفس الهدوء والحضو",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎉 *مبروك! وصلتم إلى 50 عضو!*\n\nتفاعل جميل من الجميع، وشغل مرتب من الإدارة.\n\nاستمروا بنفس الهدوء والحضور الحلو."
+  },
+  "reply_b27508bd616fc1bc": {
+    "title": "*🎮 قائمة الألعاب* اختر رقم اللعبة: 🎬 1. تخمين الأنمي 📝 2. لعبة الكلمات 🎭 3. تخمين الشخصيات 🔤 4.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "*🎮 قائمة الألعاب*\nاختر رقم اللعبة:\n\n🎬 1. تخمين الأنمي\n📝 2. لعبة الكلمات\n🎭 3. تخمين الشخصيات\n🔤 4. ترتيب الحروف\n✂️ 5. تفكيك الكلمات\n🚩 6. لعبة الأعلام\n\nاكتب الرقم فقط."
+  },
+  "reply_14489fb3a13a28e4": {
+    "title": "❌ *خطأ في الترحيب* لم يتم العثور على العضو *{value1}* في المجموعة الأساسية. يُرجى التأكد من انضمام ا",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ *خطأ في الترحيب*\n\nلم يتم العثور على العضو *{value1}* في المجموعة الأساسية.\n\nيُرجى التأكد من انضمام العضو إلى المجموعة الأساسية أولاً."
+  },
+  "reply_bb87d374deafddc7": {
+    "title": "❌ *خطأ في الترحيب* لم يتم العثور على العضو *{value1}* في المجموعة الأساسية. يُرجى التأكد من انضمام ا",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "❌ *خطأ في الترحيب*\n\nلم يتم العثور على العضو *{value1}* في المجموعة الأساسية.\n\nيُرجى التأكد من انضمام العضو إلى المجموعة الأساسية أولاً."
+  },
+  "reply_60db564c72525f1b": {
+    "title": "{value1} معلومات {value2} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1} معلومات {value2}\n"
+  },
+  "reply_559e912cbcfe1b93": {
+    "title": "🎮 *الألعاب المبدوءة من قبل {value1}* ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎮 *الألعاب المبدوءة من قبل {value1}*\n\n"
+  },
+  "reply_7ffad7424826c746": {
+    "title": "🎮 *جلسات الألعاب الخاصة بك* ",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "🎮 *جلسات الألعاب الخاصة بك*\n\n"
+  },
+  "reply_83efd0a23755d397": {
+    "title": "📢 *تبليغ جديد عن إساءة* 📢 ━━━━━━━━━━━━━━━━━━━━━ 👤 **المبلِّغ:** • الاسم: {value1} • الرقم: {value",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6",
+      "value7",
+      "value8"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6",
+      "value7",
+      "value8"
+    ],
+    "sample": "📢 *تبليغ جديد عن إساءة* 📢\n\n━━━━━━━━━━━━━━━━━━━━━\n👤 **المبلِّغ:**\n   • الاسم: {value1}\n   • الرقم: {value2}\n\n🚨 **الشخص المسيء:**\n   • الاسم: {value3}\n   • المنشن: {value4}\n   • الرقم: {value5}\n\n📝 **سبب التبليغ:**\n   {value6}\n\n⏰ **التاريخ والوقت:**\n   {value7} - {value8}\n━━━━━━━━━━━━━━━━━━━━━\n\n⚠️ هذا التبليغ يتطلب انتباه الأداريين!"
+  },
+  "reply_963a34dadd51d07c": {
+    "title": "لقبك هو: {value1} اكتبه مرة ثانية للتأكيد.",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "لقبك هو: {value1}\nاكتبه مرة ثانية للتأكيد."
+  },
+  "reply_e83278986b94ad29": {
+    "title": "تمام. مين اللي جابك أو من طرف مين دخلت؟",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "تمام. مين اللي جابك أو من طرف مين دخلت؟"
+  },
+  "reply_e0ed501711b642c5": {
+    "title": "ما طابق اللقب. اكتب لقبك من جديد.",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "ما طابق اللقب.\nاكتب لقبك من جديد."
+  },
+  "reply_2001c0b8598cc96d": {
+    "title": "━━━━━━━━━━━━━━━━━ ",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "━━━━━━━━━━━━━━━━━\n"
+  },
+  "reply_2caada22edeff471": {
+    "title": "📛 اللقب: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📛 اللقب: {value1}\n"
+  },
+  "reply_b7b24e6eb8ff39cd": {
+    "title": "🎖️ الرتبة الإدارية: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎖️ الرتبة الإدارية: {value1}\n"
+  },
+  "reply_4b01dc17e4c5c9b8": {
+    "title": "👑 رتبة المملكة: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "👑 رتبة المملكة: {value1}\n"
+  },
+  "reply_915d7d05a5aa92c2": {
+    "title": "✨ المستوى: {value1} ({value2} XP) ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "✨ المستوى: {value1} ({value2} XP)\n"
+  },
+  "reply_1a58359ef430e494": {
+    "title": "💰 النقاط: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 النقاط: {value1}\n"
+  },
+  "reply_70052430aa8c3037": {
+    "title": "🎖️ نجوم الرتب: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🎖️ نجوم الرتب: {value1}\n"
+  },
+  "reply_b21e9a811455a90c": {
+    "title": "💰 العملات: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "💰 العملات: {value1}\n"
+  },
+  "reply_855356fc4b7d9131": {
+    "title": "🏦 البنك: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🏦 البنك: {value1}\n"
+  },
+  "reply_3804823dac5811b4": {
+    "title": "📊 إجمالي الرسائل: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📊 إجمالي الرسائل: {value1}\n"
+  },
+  "reply_e2d874839b236d38": {
+    "title": "📅 تاريخ الانضمام: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📅 تاريخ الانضمام: {value1}\n"
+  },
+  "reply_2b232273a1306537": {
+    "title": "🚫 محظور - السبب: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🚫 محظور - السبب: {value1}\n"
+  },
+  "reply_acbe1b0d35a8d458": {
+    "title": "📅 التاريخ: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "📅 التاريخ: {value1}\n\n"
+  },
+  "reply_f23f8a2807ccf4be": {
+    "title": "{value1}️⃣ *{value2}* ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "{value1}️⃣ *{value2}*\n"
+  },
+  "reply_d38aee45698f524c": {
+    "title": " • عدد الجلسات: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   • عدد الجلسات: {value1}\n"
+  },
+  "reply_fd32e654623a89ed": {
+    "title": " • الوقت الإجمالي: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   • الوقت الإجمالي: {value1}\n\n"
+  },
+  "reply_420ee8eba5c787a6": {
+    "title": "⏱️ *الإجمالي* ",
+    "file": "handlers/messageHandler.js",
+    "fields": [],
+    "required": [],
+    "sample": "⏱️ *الإجمالي*\n"
+  },
+  "reply_a781f3e20f4b732b": {
+    "title": " • إجمالي الجلسات: {value1} ",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   • إجمالي الجلسات: {value1}\n"
+  },
+  "reply_50d4de67b2bc3ae7": {
+    "title": " • الوقت الكلي: {value1}",
+    "file": "handlers/messageHandler.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "   • الوقت الكلي: {value1}"
+  },
+  "reply_c7c6bcc0fd25eb9f": {
+    "title": "*📊 تقرير اليوم لمملكة {value1}* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ *📅 التاريخ:* {value2} *👥 نشاط الأعضا",
+    "file": "utils/dailyReports.js",
+    "fields": [
+      "value1",
+      "value2"
+    ],
+    "required": [
+      "value1",
+      "value2"
+    ],
+    "sample": "*📊 تقرير اليوم لمملكة {value1}*\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n*📅 التاريخ:* {value2}\n\n*👥 نشاط الأعضاء:*\n*━━━━━━━━━━━━━━━━━━━━*"
+  },
+  "reply_874741fb2e911b1b": {
+    "title": " ⚠️ لم يكن هناك نشاط اليوم",
+    "file": "utils/dailyReports.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n\n⚠️ لم يكن هناك نشاط اليوم"
+  },
+  "reply_20add2d15044d0f0": {
+    "title": " *🏆 أكثر الأعضاء تفاعلاً:* ",
+    "file": "utils/dailyReports.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n\n*🏆 أكثر الأعضاء تفاعلاً:*\n"
+  },
+  "reply_5962d9c707326ffd": {
+    "title": "{value1} *{value2}* - 💬 {value3} رسالة ",
+    "file": "utils/dailyReports.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3"
+    ],
+    "sample": "{value1} *{value2}* - 💬 {value3} رسالة\n"
+  },
+  "reply_c90e0266140b82eb": {
+    "title": " *🎮 ترتيب الألعاب:* ",
+    "file": "utils/dailyReports.js",
+    "fields": [],
+    "required": [],
+    "sample": "\n\n*🎮 ترتيب الألعاب:*\n"
+  },
+  "reply_b6234dbca499686d": {
+    "title": "{value1} *{value2}* - ✅ {value3} إجابة | ✨ {value4} XP ",
+    "file": "utils/dailyReports.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4"
+    ],
+    "sample": "{value1} *{value2}* - ✅ {value3} إجابة | ✨ {value4} XP\n"
+  },
+  "reply_0b39c9e637d504a3": {
+    "title": " *📈 الإحصائيات العامة:* ━━━━━━━━━━━━━━━━━━━━ • إجمالي الرسائل: 💬 {value1} • المستخدمين النشطين: 👥",
+    "file": "utils/dailyReports.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "sample": "\n\n*📈 الإحصائيات العامة:*\n━━━━━━━━━━━━━━━━━━━━\n• إجمالي الرسائل: 💬 {value1}\n• المستخدمين النشطين: 👥 {value2}\n• متوسط الرسائل: 📊 {value3}\n• إجابات الألعاب: ✅ {value4}\n• لاعبو الألعاب: 🎮 {value5}\n• XP الألعاب اليوم: ✨ {value6}\n\n🔄 تم تجديد العدادات لليوم الجديد!\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🌟 شكراً على نشاطكم المستمر! 🌟"
+  },
+  "reply_34f03ed6be974a5d": {
+    "title": "📊 تقرير الصحة اليومي: 🟢 الحالة: {value1} 📈 المستخدمون: {value2} 💾 الذاكرة: {value3} ⏱️ وقت التشغ",
+    "file": "utils/healthCheck.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "sample": "📊 تقرير الصحة اليومي:\n\n🟢 الحالة: {value1}\n\n📈 المستخدمون: {value2}\n💾 الذاكرة: {value3}\n⏱️ وقت التشغيل: {value4}\n📱 WhatsApp: {value5}\n\n{value6}"
+  },
+  "reply_b20bf799b58db73f": {
+    "title": "✅ تم حذف المملكة بنجاح. المملكة: {value1} ({value2}) الأعضاء المحذوفون: {value3} البنك المحذوف: {val",
+    "file": "utils/kingdomDelete.js",
+    "fields": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "required": [
+      "value1",
+      "value2",
+      "value3",
+      "value4",
+      "value5",
+      "value6"
+    ],
+    "sample": "✅ تم حذف المملكة بنجاح.\n\nالمملكة: {value1} ({value2})\nالأعضاء المحذوفون: {value3}\nالبنك المحذوف: {value4}\nجلسات المافيا المحذوفة: {value5}\nلاعبو المافيا المفصولون عن قروباتها: {value6}"
+  },
+  "reply_c8636d3970b9d077": {
+    "title": "🔐 رمز فتح مملكة جديد السبب: {value1} الرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه.",
+    "file": "utils/kingdomRegistration.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "🔐 رمز فتح مملكة جديد\n\nالسبب: {value1}\n\nالرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه."
+  },
+  "reply_9a1246cf0092c960": {
+    "title": "📢 *تذكير مهم* 📢 ━━━━━━━━━━━━━━━━━━━━━ هل تريد تبليغ عن إساءة أو سلوك غير مناسب؟ ✅ استخدم الأمر: */",
+    "file": "utils/rulesSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "📢 *تذكير مهم* 📢\n\n━━━━━━━━━━━━━━━━━━━━━\n\nهل تريد تبليغ عن إساءة أو سلوك غير مناسب؟\n\n✅ استخدم الأمر: */تبليغ*\n\n◾ سيتم اتخاذ إجراء سريع من قبل الأداريين\n◾ تبليغك سيبقى سري وآمن\n◾ ساعدنا في الحفاظ على مجموعة راقية\n\n━━━━━━━━━━━━━━━━━━━━━\n\n💡 كما يمكنك عرض القوانين بـ: */قوانين*\n\nشكراً لعدم الإساءة! 🙏"
+  },
+  "reply_16ef39a20b83dd02": {
+    "title": "*✦『 🍀︙قَوانيــن مَمْلَكَــة 』✦* *⟐━─⧉━⌬〔🍀〕⌬━⧉─━⟐* *『 المخـالفــات ( الإنــذارات ) 』* > 1 ┇ إرسال 3",
+    "file": "utils/rulesSystem.js",
+    "fields": [],
+    "required": [],
+    "sample": "*✦『 🍀︙قَوانيــن مَمْلَكَــة 』✦*\n*⟐━─⧉━⌬〔🍀〕⌬━⧉─━⟐*\n\n*『 المخـالفــات ( الإنــذارات ) 』*\n\n> 1 ┇ إرسال 3 ملصقات وراء بعض بشكل متكرر.\n> ┇ ممنوع إرسال 7 رسائل متتالية دون فائدة.\n> 3┇ ممنوع استخدام أي تشفير / سبام / لغة غير مفهومة.\n> 4┇ منع الحديث عن الهنتاي – الايتشي – المحتوى +18.\n> 5┇ ممنوع أي عنصرية مثل: \"يا مصري\" ، \"يا أسود\"…\n> 6┇ ممنوع الإساءة لأي دولة أو طائفة دينية.\n> 7┇ ممنوع الاعتراض على قرارات المشرفين، وفي حال الظلم تواصل مع الرتب العليا.\n> 8┇ ممنوع طلب إشراف أو ترقية بشكل متكرر.\n> 9┇ ممنوع استخدام كلمات مسيئة مثل: عبد – زنجي.\n> ┇ ممنوع الصوتيات العالية أو المزعجة.\n> ┇ ممنوع البنات يرسلـون فويسات.\n> ┇ ممنوع إرسال صور بنات أو صور مخلة.\n> ┇ ممنوع نشر روابط جروبات أخرى.\n> ┇ ممنوع التحدث في السياسة.\n> ┇ ممنوع تهديد الأعضاء بالباند.\n\n*⟐━─⧉━⌬〔🍀〕⌬━⧉─━⟐*\n\n*『 قَوانيــن الطَّــرد المُـؤقّـت 🕐 』*\n\n> ┇ ممنوع الاتصال بأي نقابة / جروب.\n> ┇ منع حرق مانجا/أنمي/مانهوا.\n> ┇ ممنوع إرسال إيموجيات: 😘😽😗😙😚💋👄🫦👅\n> ┇ ممنوع استخدام: 🏳️‍🌈🏳‍⚧🇮🇱🖕💩👩‍❤️‍👨\n> ┇ ممنوع السب والشتم.\n> ┇ ممنوع إرسال تقطيم يحتوي صور +18.\n> ┇ ممنوع إرسال صورتك أو صورة صديقك.\n> ┇ ممنوع إرسال ملصقات +18 أو سب أو إيحاءات.\n> ┇ ممنوع السب بالأهل حتى مزاحًا.\n> ┇ ممنوع سبّ شخص بالخاص.\n> ┇ ممنوع دخول خاص البنات بدون موافقتها.\n\n*✦ تــحــذيــر!! ✦*\n*إذا تلقيت طردين متتاليين يتحول الطرد إلى مؤبّد فورًا!*\n\n*⟐━─⧉━⌬〔🍀〕⌬━⧉─━⟐*\n\n*『 قَوانيــن الطَّــرد المُـؤبّــد 』*\n> ┇ ممنوع التواجد في مملكتين بنفس الوقت.\n> ┇ نشر روابط جروبات أخرى (مؤبد مباشرة).\n> ┇ أي صور أو مقاطع +18.\n> ┇ ممنوع تهديد الأعضاء بأي شكل.\n> ┇ ممنوع الإساءة المباشرة أو غير المباشرة.\n> ┇ افتعال المشاكل بشكل متعمد.\n> ┇ تشغيل بوت في النقابة/الجروب.\n> ┇ الاتصال على المجموعة بشكل متعمد.\n> ┇ ممنوع الدخول بنية التعارف مع الجنس الآخر.\n\n*⟐━─⧉━⌬〔🍀〕⌬━⧉─━⟐*\n\n*『 تكرار الإنذارات 』*\n\n*إذا كررت نفس المخالفة اللي انذرت عليها سابقًا، يحق للمشرف طردك مؤبّد فورًا بدون تحذير إضافي.*\n\n*『 قوانين إضافية 』*\n\n*للمشرف الحق باتخاذ أي إجراء تجاه أي سلوك غير مذكور إذا كان يسبب فوضى — بهدف حماية راحة وأمن الجميع.*\n\n*↜ 3 إنذارات = طرد تأديبي 3 أيام*\n*↜ 3 إداري = إعفاء دائم*\n\n*⟐━─⧉━⌬〔🍀〕⌬━⧉─━⟐*\n\n*مــلاحـظــة :*\n> إذا حسّيت بأي ظلم أو عنصرية أو سوء معاملة… تواصل مع الرتب العليا وسيتم معاقبة المشرف المخالف.\n*⧉┋↯🍀 تم كتابتها بواسطة إمبراطور كلوفر العـظـيم Julius 👑 ┋⧉↯*\n\n⧉━─⟪ 🍀 ↯⧉┋ CLOVER ⟨🍀⟩ C•L•O ┋⧉↯ 🍀 ⟫─━⧉"
+  },
+  "reply_fa491b1695e1ca68": {
+    "title": "حدد العضو بمنشن مباشر أو رد على رسالته، وأنا أعمل المنشن فورًا.",
+    "file": "utils/samBotIntelligence.js",
+    "fields": [],
+    "required": [],
+    "sample": "حدد العضو بمنشن مباشر أو رد على رسالته، وأنا أعمل المنشن فورًا."
+  },
+  "reply_046a2188e9f1d0ac": {
+    "title": "تفضل، {value1}",
+    "file": "utils/samBotIntelligence.js",
+    "fields": [
+      "value1"
+    ],
+    "required": [
+      "value1"
+    ],
+    "sample": "تفضل، {value1}"
+  }
+}

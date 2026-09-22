@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import User from "../database/userModel.js";
 import stringSimilarity from "string-similarity";
 import { getKingdomIdFromGroupJid } from "../config.js";
@@ -276,27 +277,27 @@ const CHARACTERS_DB = [
 // بدء اللعبة
 export async function startGuessCharacter(sock, jid, sender) {
     if (activeCharacterGames[jid]) {
-        await sock.sendMessage(jid, { text: "🎮 هناك لعبة تعمل حالياً!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_9fde949a094756a7')(["🎮 هناك لعبة تعمل حالياً!"]) });
         return;
     }
 
     // التحقق من صلاحية المرسل (مشرف أو مالك)
     const isAdmin = await checkAdmin(sock, jid, sender);
     if (!isAdmin) {
-        await sock.sendMessage(jid, { text: "❌ هذا الأمر متاح للمشرفين فقط!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_31caf27244b1ff14')(["❌ هذا الأمر متاح للمشرفين فقط!"]) });
         return;
     }
 
     // إرسال رسالة اختيار الوضع
     await sock.sendMessage(jid, {
-        text: `🎭 لعبة تخمين الشخصيات\n\nاختر وضع اللعبة:\n1️⃣ لجميع الأعضاء\n2️⃣ لشخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب\n📌 لإيقاف اللعبة في أي وقت، استخدم /وقف`
+        text: dashboardReply('reply_5ad11957722fca77')`🎭 لعبة تخمين الشخصيات\n\nاختر وضع اللعبة:\n1️⃣ لجميع الأعضاء\n2️⃣ لشخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب\n📌 لإيقاف اللعبة في أي وقت، استخدم /وقف`
     });
 
     // وضع حالة الانتظار
     characterGameWaiting[jid] = {
         sender: sender,
         timeout: setTimeout(async () => {
-            await sock.sendMessage(jid, { text: "⏱ انتهى وقت الاختيار!" });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_6c7a95e5c1a3f39a')(["⏱ انتهى وقت الاختيار!"]) });
             delete characterGameWaiting[jid];
         }, 30000) // 30 ثانية للاختيار
     };
@@ -315,7 +316,7 @@ export async function handleGuessCharacterResponse(sock, jid, sender, text) {
     if (!userIsModerator) {
         clearTimeout(waiting.timeout);
         delete characterGameWaiting[jid];
-        await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_6d7ce06860c1871e')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
         return;
     }
 
@@ -330,14 +331,14 @@ export async function handleGuessCharacterResponse(sock, jid, sender, text) {
     } else if (choice === '2') {
         // وضع شخصين محددين
         await sock.sendMessage(jid, {
-            text: `👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):`
+            text: dashboardReply('reply_dcf1bf4d0cb5762e')`👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):`
         });
 
         characterGameWaiting[jid] = {
             sender: sender,
             mode: 'two_players',
             timeout: setTimeout(async () => {
-                await sock.sendMessage(jid, { text: "⏱ انتهى وقت اختيار المشاركين!" });
+                await sock.sendMessage(jid, { text: dashboardReply('reply_7784d3366ddf9d12')(["⏱ انتهى وقت اختيار المشاركين!"]) });
                 delete characterGameWaiting[jid];
             }, 30000)
         };
@@ -348,7 +349,7 @@ export async function handleGuessCharacterResponse(sock, jid, sender, text) {
         delete characterGameWaiting[jid];
         await startGuessCharacter(sock, jid, sender);
     } else {
-        await sock.sendMessage(jid, { text: "❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_586268b3d0f85c2b')(["❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط."]) });
     }
 }
 
@@ -365,7 +366,7 @@ export async function handleCharacterPlayersSelection(sock, jid, sender, text) {
     if (!userIsModerator) {
         clearTimeout(waiting.timeout);
         delete characterGameWaiting[jid];
-        await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_6d7ce06860c1871e')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
         return;
     }
 
@@ -375,20 +376,20 @@ export async function handleCharacterPlayersSelection(sock, jid, sender, text) {
         // اختيار اللاعب الأول
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' } });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_585e011036647bd7')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return;
         }
         waiting.player1 = user; // تخزين بيانات المستخدم الكاملة
-        await sock.sendMessage(jid, { text: '👤 أرسل اسم اللاعب الثاني (اللقب):' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_b1d5d92a48b8519b')(['👤 أرسل اسم اللاعب الثاني (اللقب):']) });
     } else {
         // اختيار اللاعب الثاني
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' } });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_585e011036647bd7')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return;
         }
         if (user.jid === waiting.player1.jid) {
-            await sock.sendMessage(jid, { text: '❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_99063f2ab909cfc1')(['❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:']) });
             return;
         }
         const players = [waiting.player1, user]; // تخزين بيانات المستخدمين الكاملة
@@ -399,7 +400,7 @@ export async function handleCharacterPlayersSelection(sock, jid, sender, text) {
 
 // دالة لعرض شرح لعبة تخمين الشخصيات
 async function showCharacterGameExplanation(sock, jid) {
-    const explanation = `
+    const explanation = dashboardReply('reply_dd5fc4982ae818a2')`
 ╔════════════════════════════════════╗
 ║  🎭 شرح لعبة تخمين الشخصيات         ║
 ╚════════════════════════════════════╝
@@ -491,7 +492,7 @@ async function startActualCharacterGame(sock, jid, players) {
             const randomHint = character.hints[Math.floor(Math.random() * character.hints.length)];
             game.usedHints.push(randomHint);
             await sock.sendMessage(jid, {
-                text: `💡 تلميح: ${randomHint}`
+                text: dashboardReply('reply_60cda0e6fd195b70')`💡 تلميح: ${randomHint}`
             });
         }
     }, 5000); // 5 ثواني للتلميح الأول
@@ -506,7 +507,7 @@ async function startActualCharacterGame(sock, jid, players) {
                 if (!Array.isArray(game.usedHints)) game.usedHints = [];
                 game.usedHints.push(randomHint);
                 await sock.sendMessage(jid, {
-                    text: `💡 تلميح إضافي: ${randomHint}`
+                    text: dashboardReply('reply_86483ba1ae0c978a')`💡 تلميح إضافي: ${randomHint}`
                 });
             }
         }
@@ -517,11 +518,11 @@ async function startActualCharacterGame(sock, jid, players) {
         const game = activeCharacterGames[jid];
         if (game && !game.answered) {
             await sock.sendMessage(jid, {
-                text: `⏱ انتهى الوقت!\nالإجابة الصحيحة: ${character.name}\nمن أنمي: ${character.anime}`
+                text: dashboardReply('reply_8031a39cd0bf767e')`⏱ انتهى الوقت!\nالإجابة الصحيحة: ${character.name}\nمن أنمي: ${character.anime}`
             });
             clearTimeout(game.hintTimeout);
             // إخطار بالجولة القادمة
-            await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 3 ثواني..." });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_277cdc011b1440a5')(["⏭️ جولة جديدة قادمة بعد 3 ثواني..."]) });
             
             const participants = game.players;
             
@@ -651,7 +652,7 @@ export async function checkCharacterGuess(sock, jid, sender, text) {
 
                     if (!userByJid) {
                         await sock.sendMessage(jid, {
-                            text: `✅ إجابة صحيحة!\nالإجابة: ${g.character.name}\nمن أنمي: ${g.character.anime}\nلكن لا يمكن احتساب النقاط لأنك غير مسجل.`
+                            text: dashboardReply('reply_8790dce44491452b')`✅ إجابة صحيحة!\nالإجابة: ${g.character.name}\nمن أنمي: ${g.character.anime}\nلكن لا يمكن احتساب النقاط لأنك غير مسجل.`
                         });
                     } else {
                         const user = await User.findOne({ nickname: userByJid.nickname, kingdom_id: kingdom });
@@ -660,7 +661,7 @@ export async function checkCharacterGuess(sock, jid, sender, text) {
                         await user.save();
 
                         await sock.sendMessage(jid, {
-                            text: `✅ إجابة صحيحة!\nالإجابة: ${g.character.name}\nمن أنمي: ${g.character.anime}\n+1 نقطة\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}\nمجموع نقاطك: 💰${user.points}`
+                            text: dashboardReply('reply_f572b7a9a6c672f1')`✅ إجابة صحيحة!\nالإجابة: ${g.character.name}\nمن أنمي: ${g.character.anime}\n+1 نقطة\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}\nمجموع نقاطك: 💰${user.points}`
                         });
                     }
 
@@ -680,7 +681,7 @@ export async function checkCharacterGuess(sock, jid, sender, text) {
                     players: participants
                 };
 
-                await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 3 ثواني..." });
+                await sock.sendMessage(jid, { text: dashboardReply('reply_277cdc011b1440a5')(["⏭️ جولة جديدة قادمة بعد 3 ثواني..."]) });
                 
                 setTimeout(async () => {
                     if (activeCharacterGames[jid] && activeCharacterGames[jid].state === 'interim') {
@@ -701,8 +702,8 @@ export async function stopGuessCharacter(sock, jid) {
         clearTimeout(activeCharacterGames[jid].hintTimeout);
         clearAnswerQueue('guessCharacter', jid);
         delete activeCharacterGames[jid];
-        await sock.sendMessage(jid, { text: "🛑 تم إيقاف لعبة تخمين الشخصيات!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_3ce8bf0cb7cbdc01')(["🛑 تم إيقاف لعبة تخمين الشخصيات!"]) });
     } else {
-        await sock.sendMessage(jid, { text: "❌ لا توجد لعبة تخمين شخصيات تعمل حالياً!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_2375034c4acb3f90')(["❌ لا توجد لعبة تخمين شخصيات تعمل حالياً!"]) });
     }
 }

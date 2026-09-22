@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import User from "../database/userModel.js";
 import { resolveMentionContext } from "../commands/adminSystem.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
@@ -399,7 +400,7 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
   if (!ambientSocial && isMentionRequest(text)) {
     const targetJid = getMentionRequestTarget(sock, msg, memory);
     if (!targetJid) {
-      const clarification = "حدد العضو بمنشن مباشر أو رد على رسالته، وأنا أعمل المنشن فورًا.";
+      const clarification = dashboardReply('reply_fa491b1695e1ca68')(["حدد العضو بمنشن مباشر أو رد على رسالته، وأنا أعمل المنشن فورًا."]);
       await sock.sendMessage(jid, { text: clarification, mentions: [sender] });
       await rememberSamBotTurn({
         memory,
@@ -415,7 +416,7 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     }
 
     const mentionContext = await resolveMentionContext(targetJid, kingdom);
-    const reply = `تفضل، ${mentionContext.text}`;
+    const reply = dashboardReply('reply_046a2188e9f1d0ac')`تفضل، ${mentionContext.text}`;
     await sock.sendMessage(jid, {
       text: reply,
       mentions: mentionContext.mentions

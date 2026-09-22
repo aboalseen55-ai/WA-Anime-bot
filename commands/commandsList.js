@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 // قائمة الأوامر التفاعلية بشكل مختصر ومرتب
 import { isAdmin, isModerator } from "./adminSystem.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
@@ -247,25 +248,25 @@ export async function handleCommandsChoice(sock, jid, sender, text) {
     await showBankCommands(sock, jid);
   } else if (choice === "4") {
     if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: "❌ هذه القائمة للمشرفين فقط." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_8060c526f9631159')(["❌ هذه القائمة للمشرفين فقط."]) });
       return;
     }
     await showModeratorCommands(sock, jid);
   } else if (choice === "5") {
     if (!userIsAdmin) {
-      await sock.sendMessage(jid, { text: "❌ هذه القائمة للأدمن فقط." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_77e41a5c17509111')(["❌ هذه القائمة للأدمن فقط."]) });
       return;
     }
     await showAdminCommands(sock, jid);
   } else if (choice === "6") {
     if (!userIsAdmin) {
-      await sock.sendMessage(jid, { text: "❌ هذه القائمة للأدمن فقط." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_77e41a5c17509111')(["❌ هذه القائمة للأدمن فقط."]) });
       return;
     }
     await showRanksSystem(sock, jid);
   } else if (choice === "7") {
     await showSearchCommands(sock, jid);
   } else {
-    await sock.sendMessage(jid, { text: "❌ اختيار غير صحيح. اكتب رقم من القائمة." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_8cb76eca086ba707')(["❌ اختيار غير صحيح. اكتب رقم من القائمة."]) });
   }
 }

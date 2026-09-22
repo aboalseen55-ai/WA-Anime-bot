@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import Kingdom from "../database/kingdomModel.js";
 import Bank from "../database/bankModel.js";
 import User from "../database/userModel.js";
@@ -99,22 +100,22 @@ export async function handleStartKingdomDelete(sock, jid, sender, trimmedText) {
   if (!DELETE_COMMANDS.has(command)) return false;
 
   if (!isPrivateChat(jid)) {
-    await sock.sendMessage(jid, { text: "🔐 للحذف بأمان، أرسل أمر /حذف_مملكة في خاص البوت فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_28a796ea71521c65')(["🔐 للحذف بأمان، أرسل أمر /حذف_مملكة في خاص البوت فقط."]) });
     return true;
   }
 
   if (!isDeveloper(sender)) {
-    await sock.sendMessage(jid, { text: "❌ هذا الأمر خاص بالمطور فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_85374e93b8bb0e00')(["❌ هذا الأمر خاص بالمطور فقط."]) });
     return true;
   }
 
   if (!ADMIN_PASSWORD_CONFIGURED) {
-    await sock.sendMessage(jid, { text: "❌ ADMIN_PASSWORD غير مضبوط في Railway variables." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_92f9a0cb6e9c4faa')(["❌ ADMIN_PASSWORD غير مضبوط في Railway variables."]) });
     return true;
   }
 
   deleteSessions.set(sender, { stage: "password", startedAt: Date.now() });
-  await sock.sendMessage(jid, { text: "🔐 أرسل كلمة مرور الأدمن لبدء حذف مملكة.\nللإلغاء اكتب: إلغاء" });
+  await sock.sendMessage(jid, { text: dashboardReply('reply_3ef60938f02c8a85')(["🔐 أرسل كلمة مرور الأدمن لبدء حذف مملكة.\nللإلغاء اكتب: إلغاء"]) });
   return true;
 }
 
@@ -123,7 +124,7 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
   if (!session) return false;
 
   if (!isPrivateChat(jid)) {
-    await sock.sendMessage(jid, { text: "🔐 أكمل حذف المملكة في الخاص فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_21ae751a6a62fb66')(["🔐 أكمل حذف المملكة في الخاص فقط."]) });
     return true;
   }
 
@@ -132,21 +133,21 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
 
   if (CANCEL_PATTERN.test(trimmed)) {
     deleteSessions.delete(sender);
-    await sock.sendMessage(jid, { text: "✅ تم إلغاء حذف المملكة." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_d7ee39463e103c0e')(["✅ تم إلغاء حذف المملكة."]) });
     return true;
   }
 
   if (session.stage === "password") {
     if (trimmed !== ADMIN_PASSWORD) {
       deleteSessions.delete(sender);
-      await sock.sendMessage(jid, { text: "❌ كلمة المرور غير صحيحة. تم إلغاء العملية." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_0d85ac1da583b567')(["❌ كلمة المرور غير صحيحة. تم إلغاء العملية."]) });
       return true;
     }
 
     const kingdoms = await loadKingdomChoices();
     if (!kingdoms.length) {
       deleteSessions.delete(sender);
-      await sock.sendMessage(jid, { text: "لا توجد ممالك في قاعدة البيانات لحذفها." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_2bb5761676eb3f31')(["لا توجد ممالك في قاعدة البيانات لحذفها."]) });
       return true;
     }
 
@@ -158,7 +159,7 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
     deleteSessions.set(sender, session);
 
     await sock.sendMessage(jid, {
-      text: `✅ تم قبول كلمة المرور.\n\nاختر المملكة المراد حذفها بإرسال الرقم أو المعرف:\n${formatKingdomChoiceList(session.kingdoms)}\n\nللإلغاء اكتب: إلغاء`
+      text: dashboardReply('reply_831afb143f09ecba')`✅ تم قبول كلمة المرور.\n\nاختر المملكة المراد حذفها بإرسال الرقم أو المعرف:\n${formatKingdomChoiceList(session.kingdoms)}\n\nللإلغاء اكتب: إلغاء`
     });
     return true;
   }
@@ -166,13 +167,13 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
   if (session.stage === "select") {
     const selected = await selectKingdom(session, trimmed);
     if (!selected) {
-      await sock.sendMessage(jid, { text: `❌ لم أجد هذا الاختيار. أرسل رقمًا من القائمة أو معرف المملكة:\n${formatKingdomChoiceList(session.kingdoms)}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_d24d7b29aebb0b39')`❌ لم أجد هذا الاختيار. أرسل رقمًا من القائمة أو معرف المملكة:\n${formatKingdomChoiceList(session.kingdoms)}` });
       return true;
     }
 
     if (selected.ambiguous) {
       await sock.sendMessage(jid, {
-        text: `وجدت أكثر من مملكة بهذا الاسم. اختر بالرقم أو المعرف:\n${formatKingdomChoiceList(selected.matches)}`
+        text: dashboardReply('reply_802e033378a6e683')`وجدت أكثر من مملكة بهذا الاسم. اختر بالرقم أو المعرف:\n${formatKingdomChoiceList(selected.matches)}`
       });
       return true;
     }
@@ -180,7 +181,7 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
     const freshKingdom = await Kingdom.findOne({ id: selected.id }).lean();
     if (!freshKingdom) {
       deleteSessions.delete(sender);
-      await sock.sendMessage(jid, { text: "❌ لم أعد أجد هذه المملكة. أعد المحاولة." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_aa27a1a45e31184c')(["❌ لم أعد أجد هذه المملكة. أعد المحاولة."]) });
       return true;
     }
 
@@ -197,7 +198,7 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
     const match = trimmed.match(CONFIRM_PREFIX_PATTERN);
     if (!match || match[2].toLowerCase() !== session.kingdomId) {
       await sock.sendMessage(jid, {
-        text: `للتأكيد اكتب بالضبط:\nحذف ${session.kingdomId}\n\nللإلغاء اكتب: إلغاء`
+        text: dashboardReply('reply_4c2e7656e0077e83')`للتأكيد اكتب بالضبط:\nحذف ${session.kingdomId}\n\nللإلغاء اكتب: إلغاء`
       });
       return true;
     }
@@ -207,7 +208,7 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
       deleteSessions.delete(sender);
       const actor = await resolveMentionContext(sender, result.kingdom.id);
 
-      const message = `✅ تم حذف المملكة بنجاح.
+      const message = dashboardReply('reply_b20bf799b58db73f')`✅ تم حذف المملكة بنجاح.
 
 المملكة: ${result.kingdom.name} (${result.kingdom.id})
 الأعضاء المحذوفون: ${result.deleted.users}
@@ -217,12 +218,12 @@ export async function handleKingdomDeleteStep(sock, jid, sender, text) {
 
       await sock.sendMessage(jid, { text: message });
       await sock.sendMessage(DEVELOPER_JID, {
-        text: `🗑️ تم حذف مملكة\nالمملكة: ${result.kingdom.name} (${result.kingdom.id})\nبواسطة: ${actor.text}`,
+        text: dashboardReply('reply_e655c8ce4df20ca9')`🗑️ تم حذف مملكة\nالمملكة: ${result.kingdom.name} (${result.kingdom.id})\nبواسطة: ${actor.text}`,
         mentions: actor.mentions
       });
     } catch (error) {
       deleteSessions.delete(sender);
-      await sock.sendMessage(jid, { text: `❌ فشل حذف المملكة: ${error.message}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_e5053bfe1b27da26')`❌ فشل حذف المملكة: ${error.message}` });
     }
     return true;
   }

@@ -1,6 +1,7 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 // نظام القوانين والتذكيرات الدورية
 
-export const RULES_TEXT = `*✦『 🍀︙قَوانيــن مَمْلَكَــة 』✦*
+export const RULES_TEXT = dashboardReply('reply_16ef39a20b83dd02')`*✦『 🍀︙قَوانيــن مَمْلَكَــة 』✦*
 *⟐━─⧉━⌬〔🍀〕⌬━⧉─━⟐*
 
 *『 المخـالفــات ( الإنــذارات ) 』*
@@ -74,7 +75,7 @@ export const RULES_TEXT = `*✦『 🍀︙قَوانيــن مَمْلَكَـ�
 
 ⧉━─⟪ 🍀 ↯⧉┋ CLOVER ⟨🍀⟩ C•L•O ┋⧉↯ 🍀 ⟫─━⧉`;
 
-export const REMINDER_MESSAGE = `📢 *تذكير مهم* 📢
+export const REMINDER_MESSAGE = dashboardReply('reply_9a1246cf0092c960')`📢 *تذكير مهم* 📢
 
 ━━━━━━━━━━━━━━━━━━━━━
 

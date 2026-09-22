@@ -17,6 +17,7 @@ import { scheduleDailyQuranReminders } from "./utils/quran.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
+import { refreshDashboardTemplates } from './services/dashboardTemplates.js';
 
 // Connect to MongoDB with better error handling
 try {
@@ -33,6 +34,7 @@ try {
   });
   console.log("✅ MongoDB connected successfully");
   await initializeKingdomSystem();
+  await refreshDashboardTemplates();
   console.log("✅ Kingdom system initialized from database");
 } catch (error) {
   console.error("❌ MongoDB Connection Error:");
@@ -121,10 +123,17 @@ const DEFAULT_WHATSAPP_WEB_VERSION = [2, 3000, 1043857760];
 const WHATSAPP_VERSION_FETCH_TIMEOUT_MS = 10000;
 
 startDashboardServer({
+  getGroups: async () => Object.values(await activeSock.groupFetchAllParticipating()).map(group => ({ id: group.id, name: group.subject || group.id })),
   getBotStatus: () => ({
     connected: whatsappConnectionState === "open" && Boolean(activeSock),
     connection: whatsappConnectionState
-  })
+  }),
+  onKingdomChange: () => {
+    if (activeSock && whatsappConnectionState === 'open') {
+      scheduleDailyReports(activeSock);
+      scheduleDailyQuranReminders(activeSock);
+    }
+  }
 });
 
 function getDisconnectStatusCode(error) {

@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import Kingdom from "../database/kingdomModel.js";
 import KingdomRegistrationSession from "../database/kingdomRegistrationSessionModel.js";
 import { resolveMentionContext } from "../commands/adminSystem.js";
@@ -213,7 +214,7 @@ ${formatGroupLines(data)}
 
 async function sendDeveloperCode(sock, generatedByJid, reason, mentions = []) {
   const { code } = await generateKingdomAccessCode(generatedByJid);
-  const detailsText = `🔐 رمز فتح مملكة جديد\n\nالسبب: ${reason}\n\nالرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه.`;
+  const detailsText = dashboardReply('reply_c8636d3970b9d077')`🔐 رمز فتح مملكة جديد\n\nالسبب: ${reason}\n\nالرمز لا ينتهي بالوقت، لكنه يُستهلك عند استخدامه.`;
 
   for (const recipientJid of KINGDOM_CODE_RECIPIENT_JIDS) {
     await sock.sendMessage(recipientJid, { text: code });
@@ -296,14 +297,14 @@ export async function handleDeveloperKingdomCommand(sock, jid, sender, trimmedTe
   if (!developerCommands.includes(command)) return false;
 
   if (!isDeveloper(sender)) {
-    await sock.sendMessage(jid, { text: "❌ هذا الأمر خاص بالمطور فقط." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_5645d6a7db7134c5')(["❌ هذا الأمر خاص بالمطور فقط."]) });
     return true;
   }
 
   if (command === "/رمز_مملكة" || command === "/رمز_نقابة") {
     await sendDeveloperCode(sock, sender, "طلب مباشر من المطور");
     if (jid !== DEVELOPER_JID) {
-      await sock.sendMessage(jid, { text: `✅ تم إرسال رمز فتح المملكة إلى ${KINGDOM_CODE_RECIPIENT_JIDS.length} مستلم/مستلمين.` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_ad6ee467c105136b')`✅ تم إرسال رمز فتح المملكة إلى ${KINGDOM_CODE_RECIPIENT_JIDS.length} مستلم/مستلمين.` });
     }
     return true;
   }
@@ -311,7 +312,7 @@ export async function handleDeveloperKingdomCommand(sock, jid, sender, trimmedTe
   if (command === "/مستلمي_رمز_مملكة") {
     const list = KINGDOM_CODE_RECIPIENT_JIDS.map((recipientJid, index) => `${index + 1}. ${recipientJid}`).join("\n");
     await sock.sendMessage(jid, {
-      text: `🔐 مستلمو رموز فتح المملكة:\n\n${list}\n\nلإضافة مستلم جديد أضف JID في Railway داخل KINGDOM_CODE_RECIPIENT_JIDS مفصولًا بفاصلة.`
+      text: dashboardReply('reply_0f7e2e2dfa5c52d2')`🔐 مستلمو رموز فتح المملكة:\n\n${list}\n\nلإضافة مستلم جديد أضف JID في Railway داخل KINGDOM_CODE_RECIPIENT_JIDS مفصولًا بفاصلة.`
     });
     return true;
   }
@@ -330,20 +331,20 @@ export async function handleStartKingdomRegistration(sock, jid, sender, trimmedT
 
   const code = parts[1];
   if (!code) {
-    await sock.sendMessage(jid, { text: "❌ استخدم: /فتح_مملكة <الرمز>" });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_ec78dafbdf14a6e7')(["❌ استخدم: /فتح_مملكة <الرمز>"]) });
     return true;
   }
 
   const existingSession = await KingdomRegistrationSession.findOne({ requesterJid: sender, status: "collecting" });
   if (existingSession) {
     const prompt = STEPS[existingSession.currentStep]?.prompt || "اكتب إلغاء ثم ابدأ من جديد.";
-    await sock.sendMessage(jid, { text: `⚠️ لديك عملية فتح مملكة غير مكتملة.\n${prompt}` });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_633616cbfc23ffa0')`⚠️ لديك عملية فتح مملكة غير مكتملة.\n${prompt}` });
     return true;
   }
 
   const codeDoc = await consumeKingdomAccessCode(code, sender);
   if (!codeDoc) {
-    await sock.sendMessage(jid, { text: "❌ الرمز غير صحيح أو تم استخدامه مسبقًا." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_927b6e0ef169b7aa')(["❌ الرمز غير صحيح أو تم استخدامه مسبقًا."]) });
     return true;
   }
 
@@ -362,7 +363,7 @@ export async function handleStartKingdomRegistration(sock, jid, sender, trimmedT
   });
 
   await sock.sendMessage(jid, {
-    text: `✅ تم قبول الرمز وبدأت عملية فتح المملكة.\n\n${STEPS.name.prompt}\n\nلإلغاء العملية اكتب: إلغاء`
+    text: dashboardReply('reply_5bf17cc4b0e74b5c')`✅ تم قبول الرمز وبدأت عملية فتح المملكة.\n\n${STEPS.name.prompt}\n\nلإلغاء العملية اكتب: إلغاء`
   });
   return true;
 }
@@ -377,7 +378,7 @@ export async function handleKingdomRegistrationStep(sock, jid, sender, text) {
   if (/^(إلغاء|الغاء|cancel)$/i.test(trimmed)) {
     session.status = "cancelled";
     await session.save();
-    await sock.sendMessage(jid, { text: "✅ تم إلغاء عملية فتح المملكة." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_2ebf924c2d69e6a4')(["✅ تم إلغاء عملية فتح المملكة."]) });
     return true;
   }
 
@@ -392,7 +393,7 @@ export async function handleKingdomRegistrationStep(sock, jid, sender, text) {
 
     const failedCheck = accessChecks.find((check) => !check.ok);
     if (failedCheck) {
-      await sock.sendMessage(jid, { text: `❌ لا يمكن إنشاء المملكة الآن.\n${failedCheck.message}\n\nتأكد أن البوت مضاف في القروبات ثم اكتب تأكيد مرة أخرى.` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_105586a28d10ef52')`❌ لا يمكن إنشاء المملكة الآن.\n${failedCheck.message}\n\nتأكد أن البوت مضاف في القروبات ثم اكتب تأكيد مرة أخرى.` });
       return true;
     }
 
@@ -402,14 +403,14 @@ export async function handleKingdomRegistrationStep(sock, jid, sender, text) {
       session.completedAt = new Date();
       await session.save();
 
-      await sock.sendMessage(jid, { text: `✅ تم إنشاء ${kingdom.name} بنجاح.\nالمعرف: ${kingdom.id}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_4d416ae1d51dd30a')`✅ تم إنشاء ${kingdom.name} بنجاح.\nالمعرف: ${kingdom.id}` });
       const creator = await resolveMentionContext(sender, kingdom.id);
       await sock.sendMessage(DEVELOPER_JID, {
-        text: `🏰 تم إنشاء مملكة جديدة\nالاسم: ${kingdom.name}\nالمعرف: ${kingdom.id}\nبواسطة: ${creator.text}`,
+        text: dashboardReply('reply_759b8df33844f182')`🏰 تم إنشاء مملكة جديدة\nالاسم: ${kingdom.name}\nالمعرف: ${kingdom.id}\nبواسطة: ${creator.text}`,
         mentions: creator.mentions
       });
     } catch (error) {
-      await sock.sendMessage(jid, { text: `❌ فشل إنشاء المملكة: ${error.message}` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_e97f715ff96ef856')`❌ فشل إنشاء المملكة: ${error.message}` });
     }
     return true;
   }
@@ -421,7 +422,7 @@ export async function handleKingdomRegistrationStep(sock, jid, sender, text) {
     : await validateSessionValue(step, trimmed);
   if (!validation.ok) {
     const retryPrompt = step === "groupRoles" ? buildGroupRolesPrompt(data.groupCount) : STEPS[step].prompt;
-    await sock.sendMessage(jid, { text: `${validation.message}\n\n${retryPrompt}` });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_c7d2aa64e0c088ff')`${validation.message}\n\n${retryPrompt}` });
     return true;
   }
 
@@ -434,7 +435,7 @@ export async function handleKingdomRegistrationStep(sock, jid, sender, text) {
     await session.save();
 
     const role = getCurrentGroupRole(data);
-    await sock.sendMessage(jid, { text: `✅ تم حفظ أنواع القروبات.\n\n${role.prompt}` });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_ffafcd8618301229')`✅ تم حفظ أنواع القروبات.\n\n${role.prompt}` });
     return true;
   }
 
@@ -445,7 +446,7 @@ export async function handleKingdomRegistrationStep(sock, jid, sender, text) {
     } else {
       const existingInSession = getAllGroupJids(data).includes(validation.value);
       if (existingInSession) {
-        await sock.sendMessage(jid, { text: `❌ هذا الـ JID مكرر داخل نفس المملكة.\n\n${role.prompt}` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_f8e787fef712fd44')`❌ هذا الـ JID مكرر داخل نفس المملكة.\n\n${role.prompt}` });
         return true;
       }
 
@@ -462,7 +463,7 @@ export async function handleKingdomRegistrationStep(sock, jid, sender, text) {
         session.data = data;
         session.markModified("data");
         await session.save();
-        await sock.sendMessage(jid, { text: `✅ تم حفظ ${role.label}.\n\n${nextRole.prompt}` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_a7248af4f2c0afa1')`✅ تم حفظ ${role.label}.\n\n${nextRole.prompt}` });
         return true;
       }
 
@@ -483,6 +484,6 @@ export async function handleKingdomRegistrationStep(sock, jid, sender, text) {
   }
 
   const nextPrompt = session.currentStep === "groupRoles" ? buildGroupRolesPrompt(data.groupCount) : STEPS[session.currentStep].prompt;
-  await sock.sendMessage(jid, { text: `✅ تم حفظ ${STEPS[step].label}.\n\n${nextPrompt}` });
+  await sock.sendMessage(jid, { text: dashboardReply('reply_375c7fcaeef816e5')`✅ تم حفظ ${STEPS[step].label}.\n\n${nextPrompt}` });
   return true;
 }

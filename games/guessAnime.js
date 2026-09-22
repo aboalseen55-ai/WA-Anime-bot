@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import Anime from "../database/animeModel.js";
 import User from "../database/userModel.js";
 import stringSimilarity from "string-similarity";
@@ -17,7 +18,7 @@ const ANILIST_API = "https://graphql.anilist.co";
 
 // دالة لعرض شرح اللعبة
 async function showGameExplanation(sock, jid) {
-    const explanation = `
+    const explanation = dashboardReply('reply_647493423f98af5a')`
 ╔════════════════════════════════════╗
 ║  🎬 شرح لعبة تخمين الأنمي           ║
 ╚════════════════════════════════════╝
@@ -250,13 +251,13 @@ async function pickAnimeWithImage() {
 // بدء اللعبة
 export async function startGuessAnime(sock, jid) {
     if (activeGames[jid]) {
-        await sock.sendMessage(jid, { text: "🎮 هناك لعبة تعمل حالياً!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_57f4dd27416f46f1')(["🎮 هناك لعبة تعمل حالياً!"]) });
         return;
     }
 
     // إرسال خيارات اللعبة
     await sock.sendMessage(jid, {
-        text: `🎮 اختر نوع لعبة تخمين الأنمي:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.\n📌 لإيقاف اللعبة في أي وقت استخدم الأمر /وقف` }
+        text: dashboardReply('reply_862f4d06f5ba373f')`🎮 اختر نوع لعبة تخمين الأنمي:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.\n📌 لإيقاف اللعبة في أي وقت استخدم الأمر /وقف` }
     );
 
     // انتظار الرد
@@ -287,13 +288,13 @@ async function startActualGame(sock, jid) {
     // اختيار أنمي عشوائي من DB مع التأكد من توفر صورة قابلة للإرسال
     const { count, anime, imageUrl } = await pickAnimeWithImage();
     if (!count) {
-        await sock.sendMessage(jid, { text: "❌ لا يوجد أنميات عربية في قاعدة البيانات" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_6f7b0f072c868ad3')(["❌ لا يوجد أنميات عربية في قاعدة البيانات"]) });
         delete activeGames[jid];
         return;
     }
 
     if (!anime) {
-        await sock.sendMessage(jid, { text: "❌ تعذر العثور على صورة مناسبة للأنمي الآن. جرّب مرة أخرى بعد قليل." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_2c18ebcc0ef4a503')(["❌ تعذر العثور على صورة مناسبة للأنمي الآن. جرّب مرة أخرى بعد قليل."]) });
         delete activeGames[jid];
         return;
     }
@@ -303,7 +304,7 @@ async function startActualGame(sock, jid) {
     const searchTitles = getAnimeSearchTitles(anime);
 
     if (!arabicName || !searchTitles.length) {
-        await sock.sendMessage(jid, { text: "❌ خطأ في تحميل اللعبة، الأنمي غير مكتمل في قاعدة البيانات." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_dd08c9f567307091')(["❌ خطأ في تحميل اللعبة، الأنمي غير مكتمل في قاعدة البيانات."]) });
         delete activeGames[jid];
         return;
     }
@@ -334,7 +335,7 @@ async function startActualGame(sock, jid) {
         await anime.save().catch((error) => {
             console.warn(`⚠️ تعذر مسح رابط صورة الأنمي المعطوب ${anime.title}: ${error.message}`);
         });
-        await sock.sendMessage(jid, { text: "❌ فشل إرسال صورة الأنمي. سأبدأ جولة جديدة بعد قليل." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_fbe3e90965dbc507')(["❌ فشل إرسال صورة الأنمي. سأبدأ جولة جديدة بعد قليل."]) });
         activeGames[jid] = {
             state: 'interim',
             participants: game.participants
@@ -353,7 +354,7 @@ async function startActualGame(sock, jid) {
         if (game && !game.hintSent) {
             game.hintSent = true;
             await sock.sendMessage(jid, {
-                text: `💡 تلميح: ${arabicName.slice(0, 3)}...`
+                text: dashboardReply('reply_d6bf0b3a513e895e')`💡 تلميح: ${arabicName.slice(0, 3)}...`
             });
         }
     }, HINT_TIME);
@@ -363,12 +364,12 @@ async function startActualGame(sock, jid) {
         const game = activeGames[jid];
         if (game && !game.answered) {
             await sock.sendMessage(jid, {
-                text: `⏱ انتهى الوقت!\nالأنمي هو: ${arabicName}`
+                text: dashboardReply('reply_cd2d95e32942a626')`⏱ انتهى الوقت!\nالأنمي هو: ${arabicName}`
             });
             clearTimeout(game.hintTimeout);
 
             // إخطار بالجولة القادمة 
-            await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 3 ثواني..." });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_ca6064ee5746ff62')(["⏭️ جولة جديدة قادمة بعد 3 ثواني..."]) });
             
             // حفظ إعدادات اللعبة قبل إعادة التعيين
             const participants = game.participants;
@@ -407,7 +408,7 @@ export async function handleGuessAnimeResponse(sock, jid, sender, text) {
         } else if (text === '2') {
             // بين شخصين
             game.state = 'waiting_for_player1';
-            await sock.sendMessage(jid, { text: '👤 أرسل اسم اللاعب الأول (اللقب):' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_27a77313a88f7d31')(['👤 أرسل اسم اللاعب الأول (اللقب):']) });
         } else if (text === '3') {
             // شرح اللعبة
             await showGameExplanation(sock, jid);
@@ -415,7 +416,7 @@ export async function handleGuessAnimeResponse(sock, jid, sender, text) {
             delete activeGames[jid];
             await startGuessAnime(sock, jid);
         } else {
-            await sock.sendMessage(jid, { text: '❌ اختر 1 أو 2 أو 3 فقط.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_f917f410793f70f7')(['❌ اختر 1 أو 2 أو 3 فقط.']) });
         }
         return true;
     }
@@ -424,12 +425,12 @@ export async function handleGuessAnimeResponse(sock, jid, sender, text) {
         const kingdom = getKingdomIdFromGroupJid(jid);
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' }, kingdom_id: kingdom });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_712da6b6863fb594')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return true;
         }
         game.player1 = user.jid;
         game.state = 'waiting_for_player2';
-        await sock.sendMessage(jid, { text: '👤 أرسل اسم اللاعب الثاني (اللقب):' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_a83b9f0e3abf8453')(['👤 أرسل اسم اللاعب الثاني (اللقب):']) });
         return true;
     }
 
@@ -437,11 +438,11 @@ export async function handleGuessAnimeResponse(sock, jid, sender, text) {
         const kingdom = getKingdomIdFromGroupJid(jid);
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' }, kingdom_id: kingdom });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_712da6b6863fb594')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return true;
         }
         if (user.jid === game.player1) {
-            await sock.sendMessage(jid, { text: '❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_d8d5a2b096f95548')(['❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:']) });
             return true;
         }
         game.player2 = user.jid;
@@ -493,11 +494,11 @@ export async function handleGuessAnimeResponse(sock, jid, sender, text) {
 
                             await user.save();
                             await sock.sendMessage(jid, {
-                                text: `🎉 أحسنت ${user.nickname}!\nالأنمي هو: ${g.answerVariants[0]}\n💰 +1 نقطة\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}`
+                                text: dashboardReply('reply_c450c5c5ee3ea05d')`🎉 أحسنت ${user.nickname}!\nالأنمي هو: ${g.answerVariants[0]}\n💰 +1 نقطة\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}`
                             });
                         } else {
                             await sock.sendMessage(jid, {
-                                text: `✅ إجابة صحيحة!\nالأنمي هو: ${g.answerVariants[0]}\nلكن لا يمكن احتساب النقاط لأنك غير مسجل.`
+                                text: dashboardReply('reply_622228bccd5a3332')`✅ إجابة صحيحة!\nالأنمي هو: ${g.answerVariants[0]}\nلكن لا يمكن احتساب النقاط لأنك غير مسجل.`
                             });
                         }
 
@@ -514,7 +515,7 @@ export async function handleGuessAnimeResponse(sock, jid, sender, text) {
                         participants
                     };
 
-                    await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 3 ثواني..." });
+                    await sock.sendMessage(jid, { text: dashboardReply('reply_ca6064ee5746ff62')(["⏭️ جولة جديدة قادمة بعد 3 ثواني..."]) });
                     
                     setTimeout(async () => {
                         if (activeGames[jid] && activeGames[jid].state === 'interim') {
@@ -535,13 +536,13 @@ export async function handleGuessAnimeResponse(sock, jid, sender, text) {
 export async function showLeaderboard(sock, jid) {
     const users = await User.find({ kingdom_id: getKingdomIdFromGroupJid(jid) }).sort({ points: -1 }).limit(10);
     if (!users.length) {
-        await sock.sendMessage(jid, { text: "لا يوجد لاعبين مسجلين بعد." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_c5f403209cc701dc')(["لا يوجد لاعبين مسجلين بعد."]) });
         return;
     }
 
-    let msg = "🏆 لوحة الترتيب الموحدة - أفضل اللاعبين:\n\n";
+    let msg = dashboardReply('reply_844fad1904725425')(["🏆 لوحة الترتيب الموحدة - أفضل اللاعبين:\n\n"]);
     users.forEach((u, i) => {
-        msg += `${i + 1}. ${u.nickname} - 💰${u.points || 0}\n`;
+        msg += dashboardReply('reply_fc5a55301f78cb9c')`${i + 1}. ${u.nickname} - 💰${u.points || 0}\n`;
     });
 
     await sock.sendMessage(jid, { text: msg });
@@ -554,8 +555,8 @@ export async function stopGuessAnime(sock, jid) {
         clearTimeout(activeGames[jid].hintTimeout);
         clearAnswerQueue('guessAnime', jid);
         delete activeGames[jid];
-        await sock.sendMessage(jid, { text: "🛑 تم إيقاف لعبة تخمين الأنمي!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_efb547ea24c55132')(["🛑 تم إيقاف لعبة تخمين الأنمي!"]) });
     } else {
-        await sock.sendMessage(jid, { text: "❌ لا توجد لعبة تخمين أنمي تعمل حالياً!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_9b47ffae994d4c08')(["❌ لا توجد لعبة تخمين أنمي تعمل حالياً!"]) });
     }
 }

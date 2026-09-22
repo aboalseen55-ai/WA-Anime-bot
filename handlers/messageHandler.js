@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import { userCommands } from "../commands/user.js";
 import { handleAdminCommands, handleWelcomeModeStep } from "../commands/adminCommands.js";
 import { showCommandsList, handleCommandsChoice } from "../commands/commandsList.js";
@@ -70,7 +71,7 @@ async function isParticipantInGroup(sock, groupJid, participantJid) {
 async function validateReceptionNickname(sock, jid, sender, nickname, kingdom) {
   if (!nickname || nickname.length < 2) {
     await sock.sendMessage(jid, {
-      text: 'اكتب لقب أو اسم أوضح شوي.',
+      text: dashboardReply('reply_c0d242e1eeaa3b8f')(['اكتب لقب أو اسم أوضح شوي.']),
       mentions: [sender]
     });
     return false;
@@ -78,7 +79,7 @@ async function validateReceptionNickname(sock, jid, sender, nickname, kingdom) {
 
   if (nickname.length > 30) {
     await sock.sendMessage(jid, {
-      text: 'اللقب طويل. خليه 30 حرف أو أقل.',
+      text: dashboardReply('reply_0fd3742cf18df010')(['اللقب طويل. خليه 30 حرف أو أقل.']),
       mentions: [sender]
     });
     return false;
@@ -91,7 +92,7 @@ async function validateReceptionNickname(sock, jid, sender, nickname, kingdom) {
 
   if (existingUser && existingUser.jid !== sender) {
     await sock.sendMessage(jid, {
-      text: 'هذا اللقب مستخدم. جرّب لقب ثاني.',
+      text: dashboardReply('reply_7cc75f67f1bb0f71')(['هذا اللقب مستخدم. جرّب لقب ثاني.']),
       mentions: [sender]
     });
     return false;
@@ -150,25 +151,25 @@ async function completeReceptionRegistration(sock, jid, sender, msg, userStage, 
   const inviteLink = await resolveMainGroupInviteLink(sock, kingdomData);
 
   await sock.sendMessage(jid, {
-    text: `تم تسجيلك يا ${originalNickname}. أرسلت لك رابط القروب الأساسي على الخاص.`,
+    text: dashboardReply('reply_8b9dba8ac6f6ce21')`تم تسجيلك يا ${originalNickname}. أرسلت لك رابط القروب الأساسي على الخاص.`,
     mentions: [sender]
   });
 
   if (inviteLink) {
     try {
       await sock.sendMessage(sender, {
-        text: `أهلًا ${originalNickname}.\nهذا رابط دخول ${kingdomName}:\n${inviteLink}`
+        text: dashboardReply('reply_0d387407a1af16d8')`أهلًا ${originalNickname}.\nهذا رابط دخول ${kingdomName}:\n${inviteLink}`
       });
     } catch (error) {
       console.warn(`⚠️ تعذر إرسال رابط الدعوة للخاص ${sender}: ${error.message}`);
       await sock.sendMessage(jid, {
-        text: `تم التسجيل، لكن ما قدرت أرسل الرابط على الخاص. افتح الخاص للبوت أو تواصل مع الإدارة.`,
+        text: dashboardReply('reply_46687aa97fe57087')`تم التسجيل، لكن ما قدرت أرسل الرابط على الخاص. افتح الخاص للبوت أو تواصل مع الإدارة.`,
         mentions: [sender]
       });
     }
   } else {
     await sock.sendMessage(jid, {
-      text: `تم التسجيل، لكن رابط القروب الأساسي غير مضبوط في بيانات المملكة.`,
+      text: dashboardReply('reply_2f64b979601e2b17')`تم التسجيل، لكن رابط القروب الأساسي غير مضبوط في بيانات المملكة.`,
       mentions: [sender]
     });
   }
@@ -176,7 +177,7 @@ async function completeReceptionRegistration(sock, jid, sender, msg, userStage, 
   const removed = await removeFromReceptionGroup(sock, jid, sender);
   if (!removed) {
     await sock.sendMessage(jid, {
-      text: `تم التسجيل، لكن لم أستطع إخراج العضو من الاستقبال. تأكد أن البوت أدمن.`,
+      text: dashboardReply('reply_fe59138dd97f6adc')`تم التسجيل، لكن لم أستطع إخراج العضو من الاستقبال. تأكد أن البوت أدمن.`,
       mentions: [sender]
     });
   }
@@ -231,7 +232,7 @@ async function checkAndSendMilestoneMessage(sock, jid, kingdom) {
     // إذا وصلنا إلى 50 عضو، أرسل الرسالة النهائية
     if (memberCount >= 50) {
       if (!milestoneMessagesSent.has(`${kingdom}_50_members`)) {
-        const encouragementMessage = `🎉 *مبروك! وصلتم إلى 50 عضو!*
+        const encouragementMessage = dashboardReply('reply_8e51e477ff1bb8b7')`🎉 *مبروك! وصلتم إلى 50 عضو!*
 
 تفاعل جميل من الجميع، وشغل مرتب من الإدارة.
 
@@ -481,12 +482,12 @@ export async function messageHandler(sock, msg) {
   if (trimmedText === "/ألعاب" || trimmedText === "/العاب") {
     const userIsModerator = await isModerator(sender, kingdom);
     if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_2cde6253a66bdae5')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
       return;
     }
 
     awaitingGameChoice.add(sender);
-    const gamesMenu = `*🎮 قائمة الألعاب*
+    const gamesMenu = dashboardReply('reply_b27508bd616fc1bc')`*🎮 قائمة الألعاب*
 اختر رقم اللعبة:
 
 🎬 1. تخمين الأنمي
@@ -521,7 +522,7 @@ export async function messageHandler(sock, msg) {
   if (trimmedText === "/انمي") {
     const userIsModerator = await isModerator(sender, kingdom);
     if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_05c4dfb7d205e2d2')(['❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!']) });
       return;
     }
     await startGameSession(sender, 'تخمين الأنمي', kingdom);
@@ -533,7 +534,7 @@ export async function messageHandler(sock, msg) {
   if (trimmedText === "/كلمات") {
     const userIsModerator = await isModerator(sender, kingdom);
     if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_05c4dfb7d205e2d2')(['❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!']) });
       return;
     }
     await startGameSession(sender, 'كتابة الكلمات', kingdom);
@@ -545,7 +546,7 @@ export async function messageHandler(sock, msg) {
   if (trimmedText === "/شخصيات") {
     const userIsModerator = await isModerator(sender, kingdom);
     if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_05c4dfb7d205e2d2')(['❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!']) });
       return;
     }
     await startGameSession(sender, 'تخمين الشخصيات', kingdom);
@@ -557,7 +558,7 @@ export async function messageHandler(sock, msg) {
   if (trimmedText === "/اعلام") {
     const userIsModerator = await isModerator(sender, kingdom);
     if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_05c4dfb7d205e2d2')(['❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!']) });
       return;
     }
     await startGameSession(sender, 'لعبة الأعلام', kingdom);
@@ -569,7 +570,7 @@ export async function messageHandler(sock, msg) {
   if (trimmedText === "/فك" || trimmedText === "/ترتيب_حروف") {
     const userIsModerator = await isModerator(sender, kingdom);
     if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_05c4dfb7d205e2d2')(['❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!']) });
       return;
     }
     await startGameSession(sender, 'ترتيب الحروف', kingdom);
@@ -581,7 +582,7 @@ export async function messageHandler(sock, msg) {
   if (trimmedText === "/تفكيك" || trimmedText === "/تفكيك_الكلمات") {
     const userIsModerator = await isModerator(sender, kingdom);
     if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_05c4dfb7d205e2d2')(['❌ فقط المشرفون والأدمن الأساسي يمكنهم بدء الألعاب!']) });
       return;
     }
     await startGameSession(sender, 'تفكيك الكلمات', kingdom);
@@ -599,7 +600,7 @@ export async function messageHandler(sock, msg) {
   if (trimmedText === "/وقف") {
     const userIsModerator = await isModerator(sender, kingdom);
     if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن الأساسي يمكنهم إيقاف الألعاب!' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_9d6d52e0724498b2')(['❌ فقط المشرفون والأدمن الأساسي يمكنهم إيقاف الألعاب!']) });
       return;
     }
     // إيقاف جميع الألعاب الممكنة
@@ -630,14 +631,14 @@ export async function messageHandler(sock, msg) {
       stoppedAny = true;
     }
     if (activeFlagGames[jid]) {
-      await sock.sendMessage(jid, { text: "🛑 تم إيقاف لعبة الأعلام!" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_f476b998baf36762')(["🛑 تم إيقاف لعبة الأعلام!"]) });
       clearAnswerQueue('flagGame', jid);
       await stopGameSession(sender, kingdom);
       delete activeFlagGames[jid];
       stoppedAny = true;
     }
     if (!stoppedAny) {
-      await sock.sendMessage(jid, { text: "❌ لا توجد ألعاب تعمل حالياً!" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_54c70184a6bde4d5')(["❌ لا توجد ألعاب تعمل حالياً!"]) });
     }
     return;
   }
@@ -729,7 +730,7 @@ export async function messageHandler(sock, msg) {
         pendingData.action = 'awaiting_report_reason'; // تغيير الحالة
 
         await sock.sendMessage(jid, {
-          text: `📝 *تم تحديد الشخص المسيء: ${realMention}*\n\n📋 الآن، الرجاء إرسال سبب التبليغ:\n\n💡 (وصف مختصر للإساءة أو السلوك غير المناسب)`
+          text: dashboardReply('reply_f00173bca4450e6a')`📝 *تم تحديد الشخص المسيء: ${realMention}*\n\n📋 الآن، الرجاء إرسال سبب التبليغ:\n\n💡 (وصف مختصر للإساءة أو السلوك غير المناسب)`
         });
 
         return;
@@ -826,16 +827,16 @@ export async function messageHandler(sock, msg) {
     const isModOrAdmin = admin && (isSuper || admin.role === 'admin' || admin.role === 'moderator');
     
     if (!isModOrAdmin) {
-      await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمنز يمكنهم الرد على هذا السؤال!' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_1f45fb8219da7caa')(['❌ فقط المشرفون والأدمنز يمكنهم الرد على هذا السؤال!']) });
       return;
     }
     
     if (trimmedText.toLowerCase() === 'نعم') {
       // حذف البيانات
       await deleteUser(sock, jid, kickData.userId, sender);
-      await sock.sendMessage(jid, { text: `✅ تم حذف بيانات ${kickData.nickname} من قاعدة البيانات!` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_ed705629dfd2c162')`✅ تم حذف بيانات ${kickData.nickname} من قاعدة البيانات!` });
     } else {
-      await sock.sendMessage(jid, { text: `ℹ️ تم الاحتفاظ ببيانات ${kickData.nickname}.` });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_06aa610196f3dd2f')`ℹ️ تم الاحتفاظ ببيانات ${kickData.nickname}.` });
     }
     
     delete pendingKick[jid];
@@ -857,7 +858,7 @@ export async function messageHandler(sock, msg) {
       const handledByAdmin = await handleAdminCommands(sock, jid, trimmedText, sender, msg);
 
       if (!handledByUser && !handledByAdmin) {
-        await sock.sendMessage(jid, { text: `❌ الأمر غير معروف: ${trimmedText}` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_e760c62a7333ac5c')`❌ الأمر غير معروف: ${trimmedText}` });
       }
     }
     return;
@@ -936,7 +937,7 @@ export async function messageHandler(sock, msg) {
       
       if (selectedIndex < 0 || selectedIndex >= welcomeImagesData.imageBuffers.length) {
         await sock.sendMessage(jid, {
-          text: `❌ اختيار غير صحيح! الرجاء اختيار رقم بين 1️⃣ و ${welcomeImagesData.imageBuffers.length}️⃣`
+          text: dashboardReply('reply_9a93ad4c91b9475d')`❌ اختيار غير صحيح! الرجاء اختيار رقم بين 1️⃣ و ${welcomeImagesData.imageBuffers.length}️⃣`
         });
         return;
       }
@@ -955,7 +956,7 @@ export async function messageHandler(sock, msg) {
 
         if (!memberExists) {
           // إعلام الأدمن بعدم وجود العضو في المجموعة الأساسية
-          const errorMessage = `❌ *خطأ في الترحيب*
+          const errorMessage = dashboardReply('reply_14489fb3a13a28e4')`❌ *خطأ في الترحيب*
 
 لم يتم العثور على العضو *${welcomeImagesData.nickname}* في المجموعة الأساسية.
 
@@ -993,7 +994,7 @@ export async function messageHandler(sock, msg) {
 
           // تأكيد للأدمن في مجموعة الاستقبال بنجاح الترحيب
           await sock.sendMessage(receptionGroupJid, {
-            text: `✅ *تم إرسال رسالة الترحيب بنجاح للعضو ${welcomeImagesData.nickname} إلى المجموعة الأساسية* ✨`,
+            text: dashboardReply('reply_f370b48298e1394c')`✅ *تم إرسال رسالة الترحيب بنجاح للعضو ${welcomeImagesData.nickname} إلى المجموعة الأساسية* ✨`,
             mentions: [welcomeImagesData.moderatorJid]
           });
           await recordSuccessfulWelcome(welcomeImagesData.moderatorJid, welcomeImagesData.kingdom);
@@ -1009,13 +1010,13 @@ export async function messageHandler(sock, msg) {
             console.log(`⚠️ تم إرسال ترحيب بدون صورة للعضو ${welcomeImagesData.nickname} إلى المجموعة الأساسية`);
 
             await sock.sendMessage(receptionGroupJid, {
-              text: `⚠️ *تم إرسال الترحيب بدون صورة للعضو ${welcomeImagesData.nickname}*\n\n📌 السبب: ${error.message}`,
+              text: dashboardReply('reply_28bc138e3781317c')`⚠️ *تم إرسال الترحيب بدون صورة للعضو ${welcomeImagesData.nickname}*\n\n📌 السبب: ${error.message}`,
               mentions: [welcomeImagesData.moderatorJid]
             });
             await recordSuccessfulWelcome(welcomeImagesData.moderatorJid, welcomeImagesData.kingdom);
           } catch (textError) {
             await sock.sendMessage(receptionGroupJid, {
-              text: `❌ *خطأ في إرسال رسالة الترحيب للعضو ${welcomeImagesData.nickname}*\n\n📌 الخطأ: ${textError.message}`,
+              text: dashboardReply('reply_8661ce481a0428cf')`❌ *خطأ في إرسال رسالة الترحيب للعضو ${welcomeImagesData.nickname}*\n\n📌 الخطأ: ${textError.message}`,
               mentions: [welcomeImagesData.moderatorJid]
             });
           }
@@ -1024,7 +1025,7 @@ export async function messageHandler(sock, msg) {
         console.error('❌ خطأ في الحصول على بيانات المجموعة الأساسية:', metadataError.message);
         
         await sock.sendMessage(receptionGroupJid, {
-          text: `❌ *خطأ في الترحيب - لم يتمكن من الوصول إلى المجموعة الأساسية*\n\n📌 الخطأ: ${metadataError.message}`,
+          text: dashboardReply('reply_7b6d42379b05cc83')`❌ *خطأ في الترحيب - لم يتمكن من الوصول إلى المجموعة الأساسية*\n\n📌 الخطأ: ${metadataError.message}`,
           mentions: [welcomeImagesData.moderatorJid]
         });
       }
@@ -1067,7 +1068,7 @@ export async function messageHandler(sock, msg) {
 
           if (!memberExists) {
             // إعلام الأدمن بعدم وجود العضو في المجموعة الأساسية
-            const errorMessage = `❌ *خطأ في الترحيب*
+            const errorMessage = dashboardReply('reply_bb87d374deafddc7')`❌ *خطأ في الترحيب*
 
 لم يتم العثور على العضو *${welcomeData.nickname}* في المجموعة الأساسية.
 
@@ -1104,14 +1105,14 @@ export async function messageHandler(sock, msg) {
 
             // تأكيد للأدمن في مجموعة الاستقبال بنجاح الترحيب
             await sock.sendMessage(receptionGroupJid, {
-              text: `✅ *تم إرسال رسالة الترحيب بنجاح للعضو ${welcomeData.nickname} إلى المجموعة الأساسية* ✨`,
+              text: dashboardReply('reply_92cfbfd5459d2bde')`✅ *تم إرسال رسالة الترحيب بنجاح للعضو ${welcomeData.nickname} إلى المجموعة الأساسية* ✨`,
               mentions: [welcomeData.moderatorJid]
             });
             await recordSuccessfulWelcome(welcomeData.moderatorJid, welcomeData.kingdom);
           } catch (error) {
             console.error('❌ خطأ في إرسال الترحيب:', error.message);
             await sock.sendMessage(receptionGroupJid, {
-              text: `❌ *خطأ في إرسال رسالة الترحيب للعضو ${welcomeData.nickname}*\n\n📌 الخطأ: ${error.message}`,
+              text: dashboardReply('reply_f9fb7e4ce5429843')`❌ *خطأ في إرسال رسالة الترحيب للعضو ${welcomeData.nickname}*\n\n📌 الخطأ: ${error.message}`,
               mentions: [welcomeData.moderatorJid]
             });
           }
@@ -1119,14 +1120,14 @@ export async function messageHandler(sock, msg) {
           console.error('❌ خطأ في الحصول على بيانات المجموعة الأساسية:', metadataError.message);
           
           await sock.sendMessage(receptionGroupJid, {
-            text: `❌ *خطأ في الترحيب - لم يتمكن من الوصول إلى المجموعة الأساسية*\n\n📌 الخطأ: ${metadataError.message}`,
+            text: dashboardReply('reply_7b6d42379b05cc83')`❌ *خطأ في الترحيب - لم يتمكن من الوصول إلى المجموعة الأساسية*\n\n📌 الخطأ: ${metadataError.message}`,
             mentions: [welcomeData.moderatorJid]
           });
         }
       } else if (text === '2') {
         // الرفض والإلغاء
         await sock.sendMessage(jid, {
-          text: `❌ *تم إلغاء ترحيب العضو ${welcomeData.nickname}*`
+          text: dashboardReply('reply_63cc3d123854a8fc')`❌ *تم إلغاء ترحيب العضو ${welcomeData.nickname}*`
         });
         console.log(`❌ تم إلغاء ترحيب ${welcomeData.nickname}`);
       }
@@ -1180,28 +1181,28 @@ export async function messageHandler(sock, msg) {
             const highestRank = getHighestRank(kingdom, rankStars);
             const kingdomRankDisplay = highestRank ? displayRank(kingdom, highestRank) : '❌ لا توجد رتبة';
 
-            let message = `${roleEmoji} معلومات ${targetUser.nickname}\n`;
-            message += `━━━━━━━━━━━━━━━━━\n`;
-            message += `📛 اللقب: ${targetUser.nickname}\n`;
-            message += `🎖️ الرتبة الإدارية: ${roleText}\n`;
-            message += `👑 رتبة المملكة: ${kingdomRankDisplay}\n`;
-            message += `✨ المستوى: ${targetUser.level || 0} (${targetUser.xp || 0} XP)\n`;
-            message += `💰 النقاط: ${targetUser.points || 0}\n`;
-            message += `🎖️ نجوم الرتب: ${rankStars}\n`;
-            message += `💰 العملات: ${targetUser.coins}\n`;
-            message += `🏦 البنك: ${targetUser.bankCoins || 0}\n`;
-            message += `📊 إجمالي الرسائل: ${targetUser.totalMessages || 0}\n`;
-            message += `📅 تاريخ الانضمام: ${targetUser.createdAt.toLocaleDateString('ar-EG')}\n`;
+            let message = dashboardReply('reply_60db564c72525f1b')`${roleEmoji} معلومات ${targetUser.nickname}\n`;
+            message += dashboardReply('reply_2001c0b8598cc96d')`━━━━━━━━━━━━━━━━━\n`;
+            message += dashboardReply('reply_2caada22edeff471')`📛 اللقب: ${targetUser.nickname}\n`;
+            message += dashboardReply('reply_b7b24e6eb8ff39cd')`🎖️ الرتبة الإدارية: ${roleText}\n`;
+            message += dashboardReply('reply_4b01dc17e4c5c9b8')`👑 رتبة المملكة: ${kingdomRankDisplay}\n`;
+            message += dashboardReply('reply_915d7d05a5aa92c2')`✨ المستوى: ${targetUser.level || 0} (${targetUser.xp || 0} XP)\n`;
+            message += dashboardReply('reply_1a58359ef430e494')`💰 النقاط: ${targetUser.points || 0}\n`;
+            message += dashboardReply('reply_70052430aa8c3037')`🎖️ نجوم الرتب: ${rankStars}\n`;
+            message += dashboardReply('reply_b21e9a811455a90c')`💰 العملات: ${targetUser.coins}\n`;
+            message += dashboardReply('reply_855356fc4b7d9131')`🏦 البنك: ${targetUser.bankCoins || 0}\n`;
+            message += dashboardReply('reply_3804823dac5811b4')`📊 إجمالي الرسائل: ${targetUser.totalMessages || 0}\n`;
+            message += dashboardReply('reply_e2d874839b236d38')`📅 تاريخ الانضمام: ${targetUser.createdAt.toLocaleDateString('ar-EG')}\n`;
 
             if (targetUser.isBanned) {
-              message += `🚫 محظور - السبب: ${targetUser.banReason}\n`;
+              message += dashboardReply('reply_2b232273a1306537')`🚫 محظور - السبب: ${targetUser.banReason}\n`;
             }
 
             await sock.sendMessage(jid, { text: message });
           }
         } catch (error) {
           console.error('خطأ في عرض المعلومات:', error);
-          await sock.sendMessage(jid, { text: '❌ حدث خطأ في عرض المعلومات!' });
+          await sock.sendMessage(jid, { text: dashboardReply('reply_87bd76f679e89ee2')(['❌ حدث خطأ في عرض المعلومات!']) });
         }
       } else if (text === '2') {
         // عرض الألعاب المبدوءة اليوم
@@ -1212,11 +1213,11 @@ export async function messageHandler(sock, msg) {
             
             if (sessionCount === 0) {
               await sock.sendMessage(jid, { 
-                text: `📊 *الألعاب المبدوءة من قبل ${profileData.nickname}*\n\n✅ لم يبدأ أي لعبة اليوم` 
+                text: dashboardReply('reply_a1b55ebedab8924f')`📊 *الألعاب المبدوءة من قبل ${profileData.nickname}*\n\n✅ لم يبدأ أي لعبة اليوم`
               });
             } else {
-              let report = `🎮 *الألعاب المبدوءة من قبل ${profileData.nickname}*\n\n`;
-              report += `📅 التاريخ: ${new Date().toLocaleDateString('ar-SA')}\n\n`;
+              let report = dashboardReply('reply_559e912cbcfe1b93')`🎮 *الألعاب المبدوءة من قبل ${profileData.nickname}*\n\n`;
+              report += dashboardReply('reply_acbe1b0d35a8d458')`📅 التاريخ: ${new Date().toLocaleDateString('ar-SA')}\n\n`;
 
               let gameIndex = 1;
               for (const [gameName, stats] of Object.entries(gameStats)) {
@@ -1229,9 +1230,9 @@ export async function messageHandler(sock, msg) {
                 if (minutes > 0) timeStr += `${minutes}د `;
                 if (seconds > 0 || timeStr === '') timeStr += `${seconds}ث`;
 
-                report += `${gameIndex}️⃣ *${gameName}*\n`;
-                report += `   • عدد الجلسات: ${stats.count}\n`;
-                report += `   • الوقت الإجمالي: ${timeStr}\n\n`;
+                report += dashboardReply('reply_f23f8a2807ccf4be')`${gameIndex}️⃣ *${gameName}*\n`;
+                report += dashboardReply('reply_d38aee45698f524c')`   • عدد الجلسات: ${stats.count}\n`;
+                report += dashboardReply('reply_fd32e654623a89ed')`   • الوقت الإجمالي: ${timeStr}\n\n`;
                 gameIndex++;
               }
 
@@ -1245,16 +1246,16 @@ export async function messageHandler(sock, msg) {
               if (totalMinutes > 0) totalTimeStr += `${totalMinutes}د `;
               if (totalSeconds > 0 || totalTimeStr === '') totalTimeStr += `${totalSeconds}ث`;
 
-              report += `⏱️ *الإجمالي*\n`;
-              report += `   • إجمالي الجلسات: ${sessionCount}\n`;
-              report += `   • الوقت الكلي: ${totalTimeStr}`;
+              report += dashboardReply('reply_420ee8eba5c787a6')`⏱️ *الإجمالي*\n`;
+              report += dashboardReply('reply_a781f3e20f4b732b')`   • إجمالي الجلسات: ${sessionCount}\n`;
+              report += dashboardReply('reply_50d4de67b2bc3ae7')`   • الوقت الكلي: ${totalTimeStr}`;
 
               await sock.sendMessage(jid, { text: report });
             }
           }
         } catch (error) {
           console.error('خطأ في عرض الألعاب:', error);
-          await sock.sendMessage(jid, { text: '❌ حدث خطأ في عرض الألعاب!' });
+          await sock.sendMessage(jid, { text: dashboardReply('reply_7e6b5f8582959039')(['❌ حدث خطأ في عرض الألعاب!']) });
         }
       }
 
@@ -1276,7 +1277,7 @@ export async function messageHandler(sock, msg) {
           await showUserStats(sock, jid, myProfileData.nickname, kingdom);
         } catch (error) {
           console.error('خطأ في عرض المعلومات الأساسية:', error);
-          await sock.sendMessage(jid, { text: '❌ حدث خطأ في عرض المعلومات الأساسية.' });
+          await sock.sendMessage(jid, { text: dashboardReply('reply_19814631abda7076')(['❌ حدث خطأ في عرض المعلومات الأساسية.']) });
         }
       } else if (text === '2') {
         // عرض الألعاب الخاصة بك
@@ -1287,11 +1288,11 @@ export async function messageHandler(sock, msg) {
             
             if (sessionCount === 0) {
               await sock.sendMessage(jid, { 
-                text: `📊 *جلسات الألعاب الخاصة بك*\n\n✅ لم تبدأ أي لعبة اليوم` 
+                text: dashboardReply('reply_376b781a98e231c3')`📊 *جلسات الألعاب الخاصة بك*\n\n✅ لم تبدأ أي لعبة اليوم`
               });
             } else {
-              let report = `🎮 *جلسات الألعاب الخاصة بك*\n\n`;
-              report += `📅 التاريخ: ${new Date().toLocaleDateString('ar-SA')}\n\n`;
+              let report = dashboardReply('reply_7ffad7424826c746')`🎮 *جلسات الألعاب الخاصة بك*\n\n`;
+              report += dashboardReply('reply_acbe1b0d35a8d458')`📅 التاريخ: ${new Date().toLocaleDateString('ar-SA')}\n\n`;
 
               let gameIndex = 1;
               for (const [gameName, stats] of Object.entries(gameStats)) {
@@ -1304,9 +1305,9 @@ export async function messageHandler(sock, msg) {
                 if (minutes > 0) timeStr += `${minutes}د `;
                 if (seconds > 0 || timeStr === '') timeStr += `${seconds}ث`;
 
-                report += `${gameIndex}️⃣ *${gameName}*\n`;
-                report += `   • عدد الجلسات: ${stats.count}\n`;
-                report += `   • الوقت الإجمالي: ${timeStr}\n\n`;
+                report += dashboardReply('reply_f23f8a2807ccf4be')`${gameIndex}️⃣ *${gameName}*\n`;
+                report += dashboardReply('reply_d38aee45698f524c')`   • عدد الجلسات: ${stats.count}\n`;
+                report += dashboardReply('reply_fd32e654623a89ed')`   • الوقت الإجمالي: ${timeStr}\n\n`;
                 gameIndex++;
               }
 
@@ -1320,16 +1321,16 @@ export async function messageHandler(sock, msg) {
               if (totalMinutes > 0) totalTimeStr += `${totalMinutes}د `;
               if (totalSeconds > 0 || totalTimeStr === '') totalTimeStr += `${totalSeconds}ث`;
 
-              report += `⏱️ *الإجمالي*\n`;
-              report += `   • إجمالي الجلسات: ${sessionCount}\n`;
-              report += `   • الوقت الكلي: ${totalTimeStr}`;
+              report += dashboardReply('reply_420ee8eba5c787a6')`⏱️ *الإجمالي*\n`;
+              report += dashboardReply('reply_a781f3e20f4b732b')`   • إجمالي الجلسات: ${sessionCount}\n`;
+              report += dashboardReply('reply_50d4de67b2bc3ae7')`   • الوقت الكلي: ${totalTimeStr}`;
 
               await sock.sendMessage(jid, { text: report });
             }
           }
         } catch (error) {
           console.error('خطأ في عرض الألعاب:', error);
-          await sock.sendMessage(jid, { text: '❌ حدث خطأ في عرض الألعاب!' });
+          await sock.sendMessage(jid, { text: dashboardReply('reply_7e6b5f8582959039')(['❌ حدث خطأ في عرض الألعاب!']) });
         }
       }
 
@@ -1346,7 +1347,7 @@ export async function messageHandler(sock, msg) {
 
     if (!reportReason) {
       await sock.sendMessage(jid, { 
-        text: '❌ الرجاء إرسال سبب التبليغ بشكل صحيح!' 
+        text: dashboardReply('reply_9992d425e73f89dc')(['❌ الرجاء إرسال سبب التبليغ بشكل صحيح!'])
       });
       return;
     }
@@ -1358,7 +1359,7 @@ export async function messageHandler(sock, msg) {
 
     if (!adminGroupJid) {
       await sock.sendMessage(jid, { 
-        text: '❌ خطأ: لم يتم تحديد مجموعة الإدارة!' 
+        text: dashboardReply('reply_1515b798e522c0f3')(['❌ خطأ: لم يتم تحديد مجموعة الإدارة!'])
       });
       delete pendingMentions[jid];
       return;
@@ -1373,7 +1374,7 @@ export async function messageHandler(sock, msg) {
     const accusedName = accused?.nickname || reportData.accusedMention || reportData.accusedJid.split('@')[0];
 
     // إنشاء رسالة التبليغ
-    const reportMessage = `📢 *تبليغ جديد عن إساءة* 📢
+    const reportMessage = dashboardReply('reply_83efd0a23755d397')`📢 *تبليغ جديد عن إساءة* 📢
 
 ━━━━━━━━━━━━━━━━━━━━━
 👤 **المبلِّغ:**
@@ -1403,14 +1404,14 @@ export async function messageHandler(sock, msg) {
 
       // تأكيد استلام التبليغ
       await sock.sendMessage(jid, {
-        text: `✅ *تم استلام تبليغك*\n\n🔔 تم إرسال التبليغ إلى الأداريين\n📋 سيتم النظر في الأمر في أقرب وقت\n\nشكراً لك على مساعدتك في الحفاظ على بيئة صحية! 🙏`
+        text: dashboardReply('reply_626e8423c26d6b59')`✅ *تم استلام تبليغك*\n\n🔔 تم إرسال التبليغ إلى الأداريين\n📋 سيتم النظر في الأمر في أقرب وقت\n\nشكراً لك على مساعدتك في الحفاظ على بيئة صحية! 🙏`
       });
 
       console.log(`📢 تبليغ جديد من ${reporterName} عن ${accusedName} - السبب: ${reportReason}`);
     } catch (error) {
       console.error('خطأ في إرسال التبليغ:', error);
       await sock.sendMessage(jid, {
-        text: '❌ حدث خطأ في إرسال التبليغ. الرجاء المحاولة لاحقاً.'
+        text: dashboardReply('reply_b800495d3ca38672')(['❌ حدث خطأ في إرسال التبليغ. الرجاء المحاولة لاحقاً.'])
       });
     }
 
@@ -1426,13 +1427,13 @@ export async function messageHandler(sock, msg) {
       // user asked for games list via /أوامر; provide the interactive menu
       const userIsModerator = await isModerator(sender, kingdom);
       if (!userIsModerator) {
-        await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_2cde6253a66bdae5')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
         awaitingCommandsChoice.delete(sender);
         return;
       }
       awaitingCommandsChoice.delete(sender);
       awaitingGameChoice.add(sender);
-      const gamesMenu = `*🎮 قائمة الألعاب*
+      const gamesMenu = dashboardReply('reply_b27508bd616fc1bc')`*🎮 قائمة الألعاب*
 اختر رقم اللعبة:
 
 🎬 1. تخمين الأنمي
@@ -1460,7 +1461,7 @@ export async function messageHandler(sock, msg) {
     // التحقق من كلمة السر
     const { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED } = await import('../config.js');
     if (!ADMIN_PASSWORD_CONFIGURED) {
-      await sock.sendMessage(sender, { text: '❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD. تم إلغاء العملية.' });
+      await sock.sendMessage(sender, { text: dashboardReply('reply_cd46f6729d92908e')(['❌ كلمة مرور الأدمن غير مضبوطة في ملف البيئة ADMIN_PASSWORD. تم إلغاء العملية.']) });
       return;
     }
 
@@ -1468,7 +1469,7 @@ export async function messageHandler(sock, msg) {
       // منح الرتبة
       await grantEmperorRankWithPassword(sock, data.groupJid, data.nickname, text.trim(), sender);
     } else {
-      await sock.sendMessage(sender, { text: '❌ كلمة المرور غير صحيحة! تم إلغاء العملية.' });
+      await sock.sendMessage(sender, { text: dashboardReply('reply_b8556ab18fcf5378')(['❌ كلمة المرور غير صحيحة! تم إلغاء العملية.']) });
     }
     return;
   }
@@ -1488,7 +1489,7 @@ export async function messageHandler(sock, msg) {
 
     // التحقق من أن الرسالة في مجموعة الاستقبال
     if (jid !== receptionJid) {
-      await sock.sendMessage(jid, { text: '❌ يرجى إرسال ردك في مجموعة الاستقبال فقط.' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_8772d83c4c95b3d7')(['❌ يرجى إرسال ردك في مجموعة الاستقبال فقط.']) });
       return;
     }
 
@@ -1500,7 +1501,7 @@ export async function messageHandler(sock, msg) {
       nicknameRegistrationStages[sender].stage = 'sourceInput';
 
       await sock.sendMessage(jid, {
-        text: 'تمام، مين اللي جابك أو من طرف مين دخلت؟',
+        text: dashboardReply('reply_161c2cb267140ae2')(['تمام، مين اللي جابك أو من طرف مين دخلت؟']),
         mentions: [sender]
       });
       return;
@@ -1517,7 +1518,7 @@ export async function messageHandler(sock, msg) {
 
       if (!info.source && isReceptionGreetingOnly(text)) {
         await sock.sendMessage(jid, {
-          text: 'أهلًا فيك. مين اللي دخلت من طرفه؟',
+          text: dashboardReply('reply_4cc2a281ba758cdb')(['أهلًا فيك. مين اللي دخلت من طرفه؟']),
           mentions: [sender]
         });
         return;
@@ -1525,7 +1526,7 @@ export async function messageHandler(sock, msg) {
 
       if (!enteringSource || enteringSource.length < 2) {
         await sock.sendMessage(jid, {
-          text: 'اكتب اسم الشخص اللي دخلت من طرفه.',
+          text: dashboardReply('reply_d56094136e92b65c')(['اكتب اسم الشخص اللي دخلت من طرفه.']),
           mentions: [sender]
         });
         return;
@@ -1533,7 +1534,7 @@ export async function messageHandler(sock, msg) {
 
       if (enteringSource.length > 50) {
         await sock.sendMessage(jid, {
-          text: 'الاسم طويل شوي. اكتب اسم الشخص فقط.',
+          text: dashboardReply('reply_2438bd567579a3cc')(['الاسم طويل شوي. اكتب اسم الشخص فقط.']),
           mentions: [sender]
         });
         return;
@@ -1547,7 +1548,7 @@ export async function messageHandler(sock, msg) {
         nicknameRegistrationStages[sender].stage = 'nicknameConfirmation';
         nicknameRegistrationStages[sender].nickname = info.nickname;
         await sock.sendMessage(jid, {
-          text: `لقبك هو: ${info.nickname}\nاكتبه مرة ثانية للتأكيد.`,
+          text: dashboardReply('reply_56397e6127002150')`لقبك هو: ${info.nickname}\nاكتبه مرة ثانية للتأكيد.`,
           mentions: [sender]
         });
         return;
@@ -1555,7 +1556,7 @@ export async function messageHandler(sock, msg) {
 
       nicknameRegistrationStages[sender].stage = 'nicknameInput';
       await sock.sendMessage(jid, {
-        text: 'تمام. شو اللقب اللي تحب نسجلك فيه؟',
+        text: dashboardReply('reply_a099bd0f5cec76de')(['تمام. شو اللقب اللي تحب نسجلك فيه؟']),
         mentions: [sender]
       });
       return;
@@ -1572,7 +1573,7 @@ export async function messageHandler(sock, msg) {
       const kingdom = getKingdomIdFromGroupJid(jid);
       if (!info.nickname && isReceptionGreetingOnly(text)) {
         await sock.sendMessage(jid, {
-          text: 'أهلًا. شو اللقب اللي نسجلك فيه؟',
+          text: dashboardReply('reply_9b00bb3b05002ee8')(['أهلًا. شو اللقب اللي نسجلك فيه؟']),
           mentions: [sender]
         });
         return;
@@ -1587,7 +1588,7 @@ export async function messageHandler(sock, msg) {
       nicknameRegistrationStages[sender].stage = 'nicknameConfirmation';
       nicknameRegistrationStages[sender].nickname = nickname;
 
-      const confirmationMessage = `لقبك هو: ${nickname}
+      const confirmationMessage = dashboardReply('reply_963a34dadd51d07c')`لقبك هو: ${nickname}
 اكتبه مرة ثانية للتأكيد.`;
 
       await sock.sendMessage(jid, {
@@ -1617,7 +1618,7 @@ export async function messageHandler(sock, msg) {
         nicknameRegistrationStages[sender].stage = 'enteringSource';
         nicknameRegistrationStages[sender].nickname = originalNickname;
 
-        const sourceMessage = `تمام. مين اللي جابك أو من طرف مين دخلت؟`;
+        const sourceMessage = dashboardReply('reply_e83278986b94ad29')`تمام. مين اللي جابك أو من طرف مين دخلت؟`;
 
         await sock.sendMessage(jid, {
           text: sourceMessage,
@@ -1630,7 +1631,7 @@ export async function messageHandler(sock, msg) {
         nicknameRegistrationStages[sender].stage = 'nicknameInput';
         delete nicknameRegistrationStages[sender].nickname;
 
-        const retryMessage = `ما طابق اللقب.
+        const retryMessage = dashboardReply('reply_e0ed501711b642c5')`ما طابق اللقب.
 اكتب لقبك من جديد.`;
 
         await sock.sendMessage(jid, {
@@ -1652,7 +1653,7 @@ export async function messageHandler(sock, msg) {
 
       if (!info.source && isReceptionGreetingOnly(text)) {
         await sock.sendMessage(jid, {
-          text: 'أهلًا فيك. مين اللي دخلت من طرفه؟',
+          text: dashboardReply('reply_4cc2a281ba758cdb')(['أهلًا فيك. مين اللي دخلت من طرفه؟']),
           mentions: [sender]
         });
         return;
@@ -1660,7 +1661,7 @@ export async function messageHandler(sock, msg) {
 
       if (!enteringSource || enteringSource.length < 2) {
         await sock.sendMessage(jid, {
-          text: 'اكتب اسم الشخص اللي دخلت من طرفه.',
+          text: dashboardReply('reply_d56094136e92b65c')(['اكتب اسم الشخص اللي دخلت من طرفه.']),
           mentions: [sender]
         });
         return;
@@ -1668,7 +1669,7 @@ export async function messageHandler(sock, msg) {
 
       if (enteringSource.length > 50) {
         await sock.sendMessage(jid, {
-          text: 'الاسم طويل شوي. اكتب اسم الشخص فقط.',
+          text: dashboardReply('reply_2438bd567579a3cc')(['الاسم طويل شوي. اكتب اسم الشخص فقط.']),
           mentions: [sender]
         });
         return;
@@ -1702,7 +1703,7 @@ export async function messageHandler(sock, msg) {
 async function handleGameChoice(sock, jid, sender, choice, kingdom) {
   const userIsModerator = await isModerator(sender, kingdom);
   if (!userIsModerator) {
-    await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_2cde6253a66bdae5')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
     return;
   }
 
@@ -1732,7 +1733,7 @@ async function handleGameChoice(sock, jid, sender, choice, kingdom) {
       await startFlagGame(sock, jid);
       break;
     default:
-      await sock.sendMessage(jid, { text: '❌ اختيار غير صحيح. أرسل رقمًا من 1 إلى 6.' });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_3618c46e5b137ac1')(['❌ اختيار غير صحيح. أرسل رقمًا من 1 إلى 6.']) });
       break;
   }
 }

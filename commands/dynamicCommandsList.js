@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 // قائمة ديناميكية مختصرة للأوامر
 import { COMMANDS_REGISTRY, formatCommandList } from "./commandsRegistry.js";
 import { isAdmin, isModerator } from "./adminSystem.js";
@@ -47,7 +48,7 @@ export async function showCategoryCommands(sock, jid, category, title, userPermi
   }
 
   if (!filteredCommands.length) {
-    await sock.sendMessage(jid, { text: "❌ لا تملك صلاحية لهذه القائمة." });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_ebcaa87d009e7fdd')(["❌ لا تملك صلاحية لهذه القائمة."]) });
     return;
   }
 
@@ -66,7 +67,7 @@ export async function searchInCommands(sock, jid, query, userPermissions = {}) {
   });
 
   if (!results.length) {
-    await sock.sendMessage(jid, { text: `❌ لم أجد أمرًا يطابق: ${query}` });
+    await sock.sendMessage(jid, { text: dashboardReply('reply_165840f461a66aa2')`❌ لم أجد أمرًا يطابق: ${query}` });
     return;
   }
 
@@ -102,21 +103,21 @@ export async function handleDynamicCommandsChoice(sock, jid, sender, text) {
       break;
     case "4":
       if (!userPermissions.isModerator) {
-        await sock.sendMessage(jid, { text: "❌ هذه القائمة للمشرفين فقط." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_0fd60d2ffb5ee292')(["❌ هذه القائمة للمشرفين فقط."]) });
         return;
       }
       await showCategoryCommands(sock, jid, "moderator", "🛡️ أوامر المشرفين", userPermissions);
       break;
     case "5":
       if (!userPermissions.isAdmin) {
-        await sock.sendMessage(jid, { text: "❌ هذه القائمة للأدمن فقط." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_e591b68d7be2344d')(["❌ هذه القائمة للأدمن فقط."]) });
         return;
       }
       await showCategoryCommands(sock, jid, "admin", "👑 أوامر الأدمن", userPermissions);
       break;
     case "6":
       if (!userPermissions.isAdmin) {
-        await sock.sendMessage(jid, { text: "❌ هذه القائمة للأدمن فقط." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_e591b68d7be2344d')(["❌ هذه القائمة للأدمن فقط."]) });
         return;
       }
       await showLegacyRanksSystem(sock, jid);
@@ -125,10 +126,10 @@ export async function handleDynamicCommandsChoice(sock, jid, sender, text) {
       await showCategoryCommands(sock, jid, "search", "🔎 البحث والمعلومات", userPermissions);
       break;
     case "8":
-      await sock.sendMessage(jid, { text: "*🔍 البحث في الأوامر*\nاكتب: بحث كلمة\nمثال: بحث نقاط" });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_b38e970965abf5b1')(["*🔍 البحث في الأوامر*\nاكتب: بحث كلمة\nمثال: بحث نقاط"]) });
       break;
     default:
-      await sock.sendMessage(jid, { text: "❌ اختيار غير صحيح. اكتب رقم من القائمة." });
+      await sock.sendMessage(jid, { text: dashboardReply('reply_c73303a8a8a002c3')(["❌ اختيار غير صحيح. اكتب رقم من القائمة."]) });
   }
 }
 

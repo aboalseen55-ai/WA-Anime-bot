@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import User from "../database/userModel.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { getCleanMentionTextForUser } from "../commands/adminSystem.js";
@@ -47,13 +48,13 @@ const phrases = [
 // بدء اللعبة
 export async function startWordSplitterGame(sock, jid, sender) {
     if (activeWordSplitterGames[jid]) {
-        await sock.sendMessage(jid, { text: "🎮 هناك لعبة تعمل حالياً!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_f53d85e7493d2939')(["🎮 هناك لعبة تعمل حالياً!"]) });
         return;
     }
 
     // إرسال خيارات اللعبة
     await sock.sendMessage(jid, {
-        text: `🎮 اختر نوع لعبة تفكيك الكلمات:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.`
+        text: dashboardReply('reply_12d8ab8faff322ce')`🎮 اختر نوع لعبة تفكيك الكلمات:\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.`
     });
 
     // انتظار الرد
@@ -76,7 +77,7 @@ export async function handleWordSplitterModeSelection(sock, jid, sender, text) {
     if (!userIsModerator) {
         clearTimeout(waiting.timeout);
         delete wordSplitterGameWaiting[jid];
-        await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_a85bb7cd0034b23c')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
         return;
     }
 
@@ -91,14 +92,14 @@ export async function handleWordSplitterModeSelection(sock, jid, sender, text) {
     } else if (mode === '2') {
         // بين شخصين
         await sock.sendMessage(jid, {
-            text: `👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):`
+            text: dashboardReply('reply_f28e1be74052a238')`👥 وضع لشخصين محددين\n\nأرسل اسم اللاعب الأول (اللقب):`
         });
 
         wordSplitterGameWaiting[jid] = {
             sender: sender,
             mode: 'two_players',
             timeout: setTimeout(async () => {
-                await sock.sendMessage(jid, { text: "⏱ انتهى وقت اختيار المشاركين!" });
+                await sock.sendMessage(jid, { text: dashboardReply('reply_806914f6fcd01a09')(["⏱ انتهى وقت اختيار المشاركين!"]) });
                 delete wordSplitterGameWaiting[jid];
             }, 30000)
         };
@@ -108,13 +109,13 @@ export async function handleWordSplitterModeSelection(sock, jid, sender, text) {
         delete wordSplitterGameWaiting[jid];
         await startWordSplitterGame(sock, jid, sender);
     } else {
-        await sock.sendMessage(jid, { text: "❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_b170e2aaf5195543')(["❌ اختيار غير صحيح! أرسل 1 أو 2 أو 3 فقط."]) });
     }
 }
 
 // دالة لعرض شرح لعبة تفكيك الكلمات
 async function showWordSplitterExplanation(sock, jid) {
-    const explanation = `
+    const explanation = dashboardReply('reply_b825a92fcf8daa35')`
 ╔════════════════════════════════════╗
 ║  ✂️ شرح لعبة فصل الكلمات          ║
 ╚════════════════════════════════════╝
@@ -175,7 +176,7 @@ export async function handleWordSplitterPlayersSelection(sock, jid, sender, text
     if (!userIsModerator) {
         clearTimeout(waiting.timeout);
         delete wordSplitterGameWaiting[jid];
-        await sock.sendMessage(jid, { text: '❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_a85bb7cd0034b23c')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
         return;
     }
 
@@ -185,20 +186,20 @@ export async function handleWordSplitterPlayersSelection(sock, jid, sender, text
         // اختيار اللاعب الأول
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' } });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_5ccbbc4fc1f9b3eb')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return;
         }
         waiting.player1 = user.jid;
-        await sock.sendMessage(jid, { text: '👤 أرسل اسم اللاعب الثاني (اللقب):' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_80a25fe458f45b0e')(['👤 أرسل اسم اللاعب الثاني (اللقب):']) });
     } else {
         // اختيار اللاعب الثاني
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' } });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_5ccbbc4fc1f9b3eb')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return;
         }
         if (user.jid === waiting.player1) {
-            await sock.sendMessage(jid, { text: '❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_9db17f84313d88fe')(['❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:']) });
             return;
         }
         const players = [waiting.player1, user.jid];
@@ -260,7 +261,7 @@ async function startActualWordSplitterGame(sock, jid, players) {
 
     let message;
     if (game.letterMode) {
-        message = `🎮 **لعبة تفكيك الحروف${players ? ' (ثنائي)' : ' (جماعي)'}**
+        message = dashboardReply('reply_55493a876a7bad44')`🎮 **لعبة تفكيك الحروف${players ? ' (ثنائي)' : ' (جماعي)'}**
 ━━━━━━━━━━━━━━━━━━━
 📝 ضع مسافة بين كل حرف من الكلمة التالية:
 
@@ -270,7 +271,7 @@ async function startActualWordSplitterGame(sock, jid, players) {
 💡 هل تستطيع؟
 📌 أرسل /وقف لإيقاف اللعبة`;
     } else {
-        message = `🎮 **لعبة تفكيك الكلمات${players ? ' (ثنائي)' : ' (جماعي)'}**
+        message = dashboardReply('reply_c0796f83bb432646')`🎮 **لعبة تفكيك الكلمات${players ? ' (ثنائي)' : ' (جماعي)'}**
 ━━━━━━━━━━━━━━━━━━━
 📝 فكك هذه الكلمات بوضع مسافات في الأماكن الصحيحة:
 
@@ -290,11 +291,11 @@ async function startActualWordSplitterGame(sock, jid, players) {
         const currentGame = activeWordSplitterGames[jid];
         if (!currentGame.answered) {
             await sock.sendMessage(jid, { 
-                text: `⏰ انتهى الوقت!\n\n✅ الإجابة الصحيحة:\n${currentGame.correct}` 
+                text: dashboardReply('reply_7efb5a9f6b27f5f6')`⏰ انتهى الوقت!\n\n✅ الإجابة الصحيحة:\n${currentGame.correct}`
             });
         }
         // إخطار بالجولة القادمة مع مهلة 5 ثواني
-        await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 5 ثواني..." });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_b8e97e7e2a5a5f29')(["⏭️ جولة جديدة قادمة بعد 5 ثواني..."]) });
         // جولة جديدة بعد 5 ثواني على الأقل
         setTimeout(() => {
             if (!activeWordSplitterGames[jid]) return;
@@ -353,7 +354,7 @@ export async function checkWordSplitterGuess(sock, jid, sender, text) {
             const xpResult = awardGameXp(player, 1);
             await player.save();
 
-            const winMessage = `🎉 **برافو ${player.nickname}!**
+            const winMessage = dashboardReply('reply_a4c8deb13e7945eb')`🎉 **برافو ${player.nickname}!**
 ━━━━━━━━━━━━━━━━━━━
 ✅ الإجابة صحيحة!
 🎯 الجملة: ${game.correct}
@@ -363,7 +364,7 @@ export async function checkWordSplitterGuess(sock, jid, sender, text) {
 
             await sock.sendMessage(jid, { text: winMessage, mentions: [sender] });
             // إخطار بالجولة القادمة مع مهلة 5 ثواني
-            await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 5 ثواني..." });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_b8e97e7e2a5a5f29')(["⏭️ جولة جديدة قادمة بعد 5 ثواني..."]) });
             // جولة جديدة بعد 5 ثواني على الأقل
             setTimeout(() => {
                 if (!activeWordSplitterGames[jid]) return;
@@ -395,7 +396,7 @@ export async function stopWordSplitterGame(sock, jid) {
         delete activeWordSplitterGames[jid];
         
         await sock.sendMessage(jid, { 
-            text: `🛑 تم إيقاف لعبة تفكيك الكلمات!\n\n✅ الإجابة الصحيحة:\n${game.correct}` 
+            text: dashboardReply('reply_917b8dedb06a9fc3')`🛑 تم إيقاف لعبة تفكيك الكلمات!\n\n✅ الإجابة الصحيحة:\n${game.correct}`
         });
     }
 }

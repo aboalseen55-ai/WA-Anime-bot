@@ -1,3 +1,4 @@
+import { dashboardReply } from '../services/dashboardTemplates.js';
 import Country from "../database/countryModel.js";
 import User from "../database/userModel.js";
 import stringSimilarity from "string-similarity";
@@ -76,7 +77,7 @@ const FAMOUS_COUNTRIES = [
 
 // دالة لعرض شرح اللعبة
 async function showGameExplanation(sock, jid) {
-    const explanation = `
+    const explanation = dashboardReply('reply_34d1105a1ea6c878')`
 ╔════════════════════════════════════╗
 ║  🚩 شرح لعبة الأعلام                ║
 ╚════════════════════════════════════╝
@@ -186,7 +187,7 @@ export async function checkGuess(sock, jid, sender, text) {
 
                 if (!userByJid) {
                     await sock.sendMessage(jid, {
-                        text: `✅ إجابة صحيحة!\nالدولة: ${g.answerVariants[0]}\nلكن لا يمكن احتساب النقاط لأنك غير مسجل.`
+                        text: dashboardReply('reply_29e13cd40eec80ba')`✅ إجابة صحيحة!\nالدولة: ${g.answerVariants[0]}\nلكن لا يمكن احتساب النقاط لأنك غير مسجل.`
                     });
                 } else {
                     const user = await User.findOne({ nickname: userByJid.nickname, kingdom_id: kingdom });
@@ -194,7 +195,7 @@ export async function checkGuess(sock, jid, sender, text) {
                     const xpResult = awardGameXp(user, 2);
                     await user.save();
                     await sock.sendMessage(jid, {
-                        text: `✅ إجابة صحيحة!\nالدولة: ${g.answerVariants[0]}\n+2 نقاط\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}\nمجموع نقاطك: 💰${user.points}`
+                        text: dashboardReply('reply_e77c8afdd8efcb5b')`✅ إجابة صحيحة!\nالدولة: ${g.answerVariants[0]}\n+2 نقاط\n✨ +${xpResult.awardedXp} XP${xpResult.leveledUp ? `\n🏅 وصلت للمستوى ${xpResult.newLevel}!` : ""}\nمجموع نقاطك: 💰${user.points}`
                     });
                 }
 
@@ -223,7 +224,7 @@ export async function checkGuess(sock, jid, sender, text) {
                 category: g.category
             };
 
-            await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 3 ثواني..." });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_68af1f24486da17b')(["⏭️ جولة جديدة قادمة بعد 3 ثواني..."]) });
 
             setTimeout(async () => {
                 if (activeGames[jid] && activeGames[jid].state === 'interim') {
@@ -238,13 +239,13 @@ export async function checkGuess(sock, jid, sender, text) {
 // بدء اللعبة
 export async function startFlagGame(sock, jid) {
     if (activeGames[jid]) {
-        await sock.sendMessage(jid, { text: "🎮 هناك لعبة تعمل حالياً!" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_2c96188a6ade9e42')(["🎮 هناك لعبة تعمل حالياً!"]) });
         return;
     }
 
     // إرسال خيارات تصنيف الدول
     await sock.sendMessage(jid, {
-        text: `🚩 اختر تصنيف الدول للعبة الأعلام:\n\n🌍 1️⃣ الدول العربية فقط\n⭐ 2️⃣ الدول المعروفة فقط\n🌐 3️⃣ جميع دول العالم\n\n📚 4️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.\n📌 لإيقاف اللعبة في أي وقت استخدم الأمر /وقف` }
+        text: dashboardReply('reply_a4eec916e4926443')`🚩 اختر تصنيف الدول للعبة الأعلام:\n\n🌍 1️⃣ الدول العربية فقط\n⭐ 2️⃣ الدول المعروفة فقط\n🌐 3️⃣ جميع دول العالم\n\n📚 4️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.\n📌 لإيقاف اللعبة في أي وقت استخدم الأمر /وقف` }
     );
 
     // انتظار الرد
@@ -278,7 +279,7 @@ async function startActualGame(sock, jid) {
     const count = await Country.countDocuments(query);
     if (!count) {
         const categoryName = game.category === 'arab' ? 'العربية' : game.category === 'famous' ? 'المعروفة' : 'جميع';
-        await sock.sendMessage(jid, { text: `❌ لا توجد أعلام متاحة للدول ${categoryName} في قاعدة البيانات.` });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_bc7a66f890c39685')`❌ لا توجد أعلام متاحة للدول ${categoryName} في قاعدة البيانات.` });
         delete activeGames[jid];
         return;
     }
@@ -287,7 +288,7 @@ async function startActualGame(sock, jid) {
     const country = await Country.findOne(query).skip(rand);
 
     if (!country || !country.flagUrl) {
-        await sock.sendMessage(jid, { text: "❌ فشل اختيار دولة" });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_f605107af9d16e49')(["❌ فشل اختيار دولة"]) });
         delete activeGames[jid];
         return;
     }
@@ -357,7 +358,7 @@ async function startActualGame(sock, jid) {
             // إذا فشل تحميل الصورة أيضاً، أرسل رسالة نصية فقط
             console.log(`❌ فشل إرسال صورة ${country.arabicName}:`, downloadError.message);
             await sock.sendMessage(jid, {
-                text: `🚩 لعبة الأعلام - ${country.englishName}\n⏱ لديك 10 ثواني\n💡 سيظهر تلميح بعد 2 ثانية\n\n(لم تتمكن من تحميل صورة العلم من الإنترنت)`
+                text: dashboardReply('reply_ec2803a9a7224221')`🚩 لعبة الأعلام - ${country.englishName}\n⏱ لديك 10 ثواني\n💡 سيظهر تلميح بعد 2 ثانية\n\n(لم تتمكن من تحميل صورة العلم من الإنترنت)`
             });
         }
     }
@@ -374,7 +375,7 @@ async function startActualGame(sock, jid) {
                 const hint = `${firstChar}${'.'.repeat(countryName.length - 2)}${lastChar}`;
                 
                 await sock.sendMessage(jid, {
-                    text: `💡 تلميح: ${hint}`
+                    text: dashboardReply('reply_d438f76e09d12189')`💡 تلميح: ${hint}`
                 });
             }
         }, HINT_TIME);
@@ -386,12 +387,12 @@ async function startActualGame(sock, jid) {
             const game = activeGames[jid];
             if (game && !game.answered) {
                 await sock.sendMessage(jid, {
-                    text: `⏱ انتهى الوقت!\nالدولة هي: ${country.arabicName}`
+                    text: dashboardReply('reply_d0a9f1a48d375e6a')`⏱ انتهى الوقت!\nالدولة هي: ${country.arabicName}`
                 });
                 clearTimeout(game.hintTimeout);
 
                 // إخطار بالجولة القادمة
-                await sock.sendMessage(jid, { text: "⏭️ جولة جديدة قادمة بعد 3 ثواني..." });
+                await sock.sendMessage(jid, { text: dashboardReply('reply_68af1f24486da17b')(["⏭️ جولة جديدة قادمة بعد 3 ثواني..."]) });
                 
                 // حفظ إعدادات اللعبة قبل إعادة التعيين
                 const participants = game.participants;
@@ -433,21 +434,21 @@ export async function handleFlagGameResponse(sock, jid, sender, text) {
             game.category = 'arab';
             game.state = 'waiting_for_mode';
             await sock.sendMessage(jid, {
-                text: `🚩 اختر نوع لعبة الأعلام (الدول العربية):\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.` }
+                text: dashboardReply('reply_0de4cb0bd24d460f')`🚩 اختر نوع لعبة الأعلام (الدول العربية):\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.` }
             );
         } else if (text === '2') {
             // الدول المعروفة
             game.category = 'famous';
             game.state = 'waiting_for_mode';
             await sock.sendMessage(jid, {
-                text: `🚩 اختر نوع لعبة الأعلام (الدول المعروفة):\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.` }
+                text: dashboardReply('reply_86bcd2e6b249d1e5')`🚩 اختر نوع لعبة الأعلام (الدول المعروفة):\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.` }
             );
         } else if (text === '3') {
             // جميع الدول
             game.category = 'all';
             game.state = 'waiting_for_mode';
             await sock.sendMessage(jid, {
-                text: `🚩 اختر نوع لعبة الأعلام (جميع الدول):\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.` }
+                text: dashboardReply('reply_6180cdbb0914f588')`🚩 اختر نوع لعبة الأعلام (جميع الدول):\n\n1️⃣ للجميع في المجموعة\n2️⃣ بين شخصين محددين\n3️⃣ شرح اللعبة\n\nأرسل الرقم المطلوب.` }
             );
         } else if (text === '4') {
             // شرح اللعبة
@@ -456,7 +457,7 @@ export async function handleFlagGameResponse(sock, jid, sender, text) {
             delete activeGames[jid];
             await startFlagGame(sock, jid);
         } else {
-            await sock.sendMessage(jid, { text: '❌ اختر 1 أو 2 أو 3 أو 4 فقط.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_1821fb49e4c4aef2')(['❌ اختر 1 أو 2 أو 3 أو 4 فقط.']) });
         }
         return true;
     }
@@ -471,7 +472,7 @@ export async function handleFlagGameResponse(sock, jid, sender, text) {
             // بين شخصين
             game.state = 'waiting_for_player1';
             game.mode = 'duo';
-            await sock.sendMessage(jid, { text: '👤 أرسل اسم اللاعب الأول (اللقب):' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_e493aed11d98aa11')(['👤 أرسل اسم اللاعب الأول (اللقب):']) });
         } else if (text === '3') {
             // شرح اللعبة
             await showGameExplanation(sock, jid);
@@ -479,7 +480,7 @@ export async function handleFlagGameResponse(sock, jid, sender, text) {
             delete activeGames[jid];
             await startFlagGame(sock, jid);
         } else {
-            await sock.sendMessage(jid, { text: '❌ اختر 1 أو 2 أو 3 فقط.' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_80473e3df9f02bb6')(['❌ اختر 1 أو 2 أو 3 فقط.']) });
         }
         return true;
     }
@@ -488,13 +489,13 @@ export async function handleFlagGameResponse(sock, jid, sender, text) {
         const kingdom = getKingdomIdFromGroupJid(jid);
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' }, kingdom_id: kingdom });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_df60ffa05cd2f2ea')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return true;
         }
         game.player1 = user.jid;
         game.player1Name = user.nickname;
         game.state = 'waiting_for_player2';
-        await sock.sendMessage(jid, { text: '👤 أرسل اسم اللاعب الثاني (اللقب):' });
+        await sock.sendMessage(jid, { text: dashboardReply('reply_ae0bf40a1e03f59c')(['👤 أرسل اسم اللاعب الثاني (اللقب):']) });
         return true;
     }
 
@@ -502,11 +503,11 @@ export async function handleFlagGameResponse(sock, jid, sender, text) {
         const kingdom = getKingdomIdFromGroupJid(jid);
         const user = await User.findOne({ nickname: { $regex: text.trim(), $options: 'i' }, kingdom_id: kingdom });
         if (!user) {
-            await sock.sendMessage(jid, { text: '❌ لم يتم العثور على اللاعب. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_df60ffa05cd2f2ea')(['❌ لم يتم العثور على اللاعب. أعد المحاولة:']) });
             return true;
         }
         if (user.jid === game.player1) {
-            await sock.sendMessage(jid, { text: '❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:' });
+            await sock.sendMessage(jid, { text: dashboardReply('reply_6575b9462f54f81c')(['❌ لا يمكن اختيار نفس اللاعب مرتين. أعد المحاولة:']) });
             return true;
         }
         game.player2 = user.jid;
