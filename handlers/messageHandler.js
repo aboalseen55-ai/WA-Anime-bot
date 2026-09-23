@@ -27,6 +27,7 @@ import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../ut
 import { extractReceptionOnboardingInfo, isReceptionGreetingOnly, resolveMainGroupInviteLink } from "../utils/receptionOnboarding.js";
 import { handleQuranCommand, isQuranCommand } from "../utils/quran.js";
 import { handleDashboardCommand } from "../services/dashboardRuntime.js";
+import { handleBotDeletion } from '../services/botMessageDeletion.js';
 
 // نظام الحالات - لتتبع الأوامر المعلقة التي تحتاج تأكيد منشن
 export const pendingMentions = {};
@@ -847,6 +848,7 @@ export async function messageHandler(sock, msg) {
   if (trimmedText.startsWith("/")) {
     console.log(`📥 [CMD] ${sender} -> ${trimmedText}`);
 
+    if (await handleBotDeletion(sock, jid, sender, trimmedText)) return;
     // Dashboard commands must run before the built-in unknown-command fallback.
     if (await handleDashboardCommand(sock, jid, sender, trimmedText, msg)) {
       return;

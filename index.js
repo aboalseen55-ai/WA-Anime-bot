@@ -18,6 +18,7 @@ import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
 import { refreshDashboardTemplates } from './services/dashboardTemplates.js';
+import { rememberBotMessage } from './services/botMessageDeletion.js';
 
 // Connect to MongoDB with better error handling
 try {
@@ -266,8 +267,10 @@ async function startBot() {
   isStartingBot = false;
 
   const originalSendMessage = sock.sendMessage.bind(sock);
-  sock.sendMessage = (jid, content, options) => {
-    return originalSendMessage(jid, normalizeOutgoingMessageContent(content), options);
+  sock.sendMessage = async (jid, content, options) => {
+    const sent = await originalSendMessage(jid, normalizeOutgoingMessageContent(content), options);
+    if (!content.delete && !content.react && !content.edit) await rememberBotMessage(sent);
+    return sent;
   };
 
   sock.ev.on("connection.update", async ({ qr, connection, lastDisconnect }) => {
@@ -424,6 +427,8 @@ async function startBot() {
   });
 
   sock.ev.on("messages.upsert", async (m) => {
+
+    for (const outgoing of m.messages) if (outgoing.key.fromMe) await rememberBotMessage(outgoing);
 
     const msg = m.messages[0];
 
