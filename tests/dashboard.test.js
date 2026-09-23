@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import dns from 'node:dns/promises';
+import axios from 'axios';
 import { Readable } from 'node:stream';
 import { createDashboardHandler, validateApi, validateCommand, readJson } from '../services/dashboardServer.js';
 import { isPublicAddress, validateEndpoint } from '../services/dashboardApiSafety.js';
@@ -13,7 +15,45 @@ import Audit from '../database/kingdomAuditLogModel.js';
 import Kingdom from '../database/kingdomModel.js';
 import User from '../database/userModel.js';
 import { decryptDashboardValue } from '../services/dashboardCrypto.js';
-import { handleDashboardCommand } from '../services/dashboardRuntime.js';
+import { handleDashboardCommand, setHttpClient } from '../services/dashboardRuntime.js';
+
+test('standalone image API ignores Mongoose default series settings', async t => {
+  const api = new Api({ name: 'images', endpoint: 'https://example.com/search', type: 'api', responseType: 'image_url' });
+  assert.ok(api.seriesConfig);
+  t.mock.method(dns, 'lookup', async () => [{ address: '8.8.8.8', family: 4 }]);
+  setHttpClient(async () => ({ data: { data: [{ thumbnail_url: 'https://example.com/cat.jpg' }] } }));
+  t.after(() => setHttpClient(axios));
+  t.mock.method(Command, 'findOne', () => ({ populate: async () => ({
+    permission: 'everyone', apiId: api, responsePath: 'data.0.thumbnail_url', responseTemplate: 'Cat'
+  }) }));
+  const sent = [];
+  await handleDashboardCommand({ sendMessage: async (_, value) => sent.push(value) },
+    '123@s.whatsapp.net', '123@s.whatsapp.net', '/custom_image_test cat', {});
+  assert.deepEqual(sent, [{ image: { url: 'https://example.com/cat.jpg' }, caption: 'Cat' }]);
+});
+
+test('series commands send numbered search results rather than binary media', async t => {
+  t.mock.method(dns, 'lookup', async () => [{ address: '8.8.8.8', family: 4 }]);
+  setHttpClient(async () => ({ data: { videos: [{ video_id: 'T5OlEM7pfC4', title: 'Example video' }] } }));
+  t.after(() => setHttpClient(axios));
+  t.mock.method(Command, 'findOne', () => ({ populate: async () => ({
+    _id: 'command', permission: 'everyone', apiId: { _id: 'series', enabled: true, type: 'series', seriesConfig: {
+      searchRequest: { endpoint: 'https://example.com/search' }, searchResponseMapping: { videoId: 'video_id', title: 'title' }
+    } }
+  }) }));
+  const sent = [];
+  await handleDashboardCommand({ sendMessage: async (_, value) => sent.push(value) }, 'chat', 'user', '/custom_series_test query', {});
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].text, /1\. Example video/);
+  assert.equal(sent[0].video, undefined);
+});
+
+test('saving standalone type overrides an earlier series type', () => {
+  const input = { name: 'images', endpoint: 'https://example.com', method: 'GET' };
+  assert.equal(validateApi({ ...input, type: 'api' }).type, 'api');
+  assert.equal(validateApi(input).type, 'api');
+  assert.throws(() => validateApi({ ...input, type: 'invalid' }));
+});
 
 test('custom text commands without a service send the personalized reply', async t => {
   t.mock.method(Command, 'findOne', () => ({ populate: async () => ({

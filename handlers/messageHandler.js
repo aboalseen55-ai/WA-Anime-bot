@@ -848,7 +848,7 @@ export async function messageHandler(sock, msg) {
   // الأوامر
   // If the user is sending a numeric selection and has an active series session, handle it here
   if (/^[1-9][0-9]*$/.test(trimmedText)) {
-    const session = getSeriesSession(sender);
+    const session = getSeriesSession(sender, jid);
     if (session) {
       const index = Number(trimmedText) - 1;
       try {

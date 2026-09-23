@@ -154,7 +154,7 @@ function editApi(row={}) {
   seriesSection.append(field('series_search_timeoutMs','Search timeout (ms)',row.seriesConfig?.searchRequest?.timeoutMs||12000,'number'));
   seriesSection.append(field('series_search_headers','Search Headers (JSON)',row.seriesConfig?.searchRequest? '':'','textarea'));
   seriesSection.append(field('series_search_body','Search Body (JSON)',row.seriesConfig?.searchRequest? '':'','textarea'));
-  seriesSection.append(field('series_search_responseMapping','Search response mapping (JSON)','sourceUrl=video_link\ntitle=title','textarea'));
+  seriesSection.append(field('series_search_responseMapping','Search response mapping',Object.entries(row.seriesConfig?.searchResponseMapping || {videoId:'video_id',title:'title'}).map(([key,value])=>`${key}=${value}`).join('\n'),'textarea'));
   seriesSection.append(e('h4','Download Request'));
   seriesSection.append(field('series_download_endpoint','Download Endpoint',row.seriesConfig?.downloadRequest?.endpoint||'','url'));
   seriesSection.append(field('series_download_queryTemplate','Download Query Template',row.seriesConfig?.downloadRequest?.queryTemplate||'','text'));
@@ -162,7 +162,7 @@ function editApi(row={}) {
   seriesSection.append(field('series_download_timeoutMs','Download timeout (ms)',row.seriesConfig?.downloadRequest?.timeoutMs||12000,'number'));
   seriesSection.append(field('series_download_headers','Download Headers (JSON)',row.seriesConfig?.downloadRequest? '':'','textarea'));
   seriesSection.append(field('series_download_body','Download Body (JSON)',row.seriesConfig?.downloadRequest? '':'','textarea'));
-  seriesSection.append(field('series_download_responseMapping','Download response mapping (JSON)','downloadUrl=url\nstatus=comment','textarea'));
+  seriesSection.append(field('series_download_responseMapping','Download response mapping',Object.entries(row.seriesConfig?.downloadResponseMapping || {downloadUrl:'file',backupUrl:'reserved_file'}).map(([key,value])=>`${key}=${value}`).join('\n'),'textarea'));
   seriesSection.append(e('h4','Processing'));
   seriesSection.append(field('series_processing_initialWaitMs','Initial wait (ms)',row.seriesConfig?.processing?.initialWaitMs||20000,'number'));
   seriesSection.append(field('series_processing_pollIntervalMs','Poll interval (ms)',row.seriesConfig?.processing?.pollIntervalMs||10000,'number'));

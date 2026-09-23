@@ -41,6 +41,8 @@ export function validateCommand(input) {
   return { trigger, title: String(input.title).trim(), responseTemplate: String(input.responseTemplate || ''), permission: input.permission, apiId: input.apiId || null, responsePath, enabled: input.enabled !== false };
 }
 export function validateApi(input) {
+  const type = input.type ?? 'api';
+  if (!['api', 'series'].includes(type)) throw new Error('نوع الخدمة غير صالح');
   let endpoint = String(input.endpoint || '');
   if (input.type !== 'series') {
     endpoint = validateEndpoint(endpoint).toString();
@@ -52,6 +54,7 @@ export function validateApi(input) {
   if (!name || name.length > 80) throw new Error('اسم الخدمة مطلوب وبحد أقصى 80 حرف');
   if (input.type !== 'series' && !['GET','POST'].includes(input.method)) throw new Error('طريقة الطلب غير صالحة');
   const result = { name, endpoint, queryTemplate: String(input.queryTemplate || '').trim(), method: input.method, responseType: input.responseType || 'text', timeoutMs: Math.max(1000, Math.min(30000, Number(input.timeoutMs) || 12000)), enabled: input.enabled !== false };
+  result.type = type;
   if (!['text','image','image_url','video','video_url','audio','audio_url'].includes(result.responseType)) throw new Error('نوع النتيجة غير صالح');
   for (const [field, destination] of [['headers','encryptedHeaders'],['body','encryptedBody']]) {
     if (Object.hasOwn(input, field)) {
@@ -92,8 +95,55 @@ export function validateApi(input) {
     }
     if (sc.downloadResponseMapping) result.seriesConfig.downloadResponseMapping = sc.downloadResponseMapping;
     result.seriesConfig.processing = sc.processing || {};
+    for (const step of ['searchRequest', 'downloadRequest']) {
+      const request = result.seriesConfig[step];
+      if (!request) throw new Error('إعدادات خطوات الخدمة مطلوبة');
+      for (const field of ['headers', 'body']) {
+        if (Object.hasOwn(sc[step], field) && (!sc[step][field] || typeof sc[step][field] !== 'object' || Array.isArray(sc[step][field]))) {
+          throw new Error('الحقول المتقدمة يجب أن تكون JSON object');
+        }
+      }
+      request.endpoint = validateEndpoint(request.endpoint).toString();
+      if (!['GET', 'POST'].includes(request.method)) throw new Error('طريقة الطلب غير صالحة');
+    }
+    const processing = result.seriesConfig.processing;
+    for (const [key, min, max, fallback] of [
+      ['initialWaitMs', 0, 300000, 20000], ['pollIntervalMs', 1000, 60000, 10000],
+      ['maxPreparationMs', 1000, 300000, 300000], ['generatedUrlLifetimeMs', 1000, 600000, 600000]
+    ]) {
+      const value = Number(processing[key] ?? fallback);
+      if (!Number.isFinite(value) || value < min || value > max) throw new Error('قيمة مدة غير صالحة: ' + key);
+      processing[key] = value;
+    }
+    result.seriesConfig.general.resultLimit = Math.max(1, Math.min(10, Number(sc.general?.resultLimit) || 6));
   }
   return result;
+}
+
+export function preserveSeriesSecrets(values, saved) {
+  if (!values.seriesConfig) return values;
+  for (const step of ['searchRequest', 'downloadRequest']) {
+    for (const secret of ['encryptedHeaders', 'encryptedBody']) {
+      if (values.seriesConfig[step]?.[secret] === undefined && saved?.seriesConfig?.[step]?.[secret]) {
+        values.seriesConfig[step][secret] = saved.seriesConfig[step][secret];
+      }
+    }
+  }
+  return values;
+}
+
+export function publicApiConfig(value) {
+  const { encryptedHeaders, encryptedBody, seriesConfig, ...api } = value;
+  const output = { ...api, hasHeaders: Boolean(encryptedHeaders), hasBody: Boolean(encryptedBody) };
+  if (seriesConfig) {
+    output.seriesConfig = { ...seriesConfig };
+    for (const step of ['searchRequest', 'downloadRequest']) {
+      if (!seriesConfig[step]) continue;
+      const { encryptedHeaders: headers, encryptedBody: body, ...request } = seriesConfig[step];
+      output.seriesConfig[step] = { ...request, hasHeaders: Boolean(headers), hasBody: Boolean(body) };
+    }
+  }
+  return output;
 }
 
 export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChange, onRestart, password = process.env.DASHBOARD_ADMIN_PASSWORD || '' }) {
@@ -162,7 +212,7 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
         if (route === 'groups') return json(res,200,{groups:getGroups?await getGroups():[]});
         if (route === 'state') {
           const [commands,apis] = await Promise.all([DashboardCommand.find({}).sort({trigger:1}).limit(1000).lean(),DashboardApi.find({}).sort({name:1}).limit(1000).lean()]);
-          return json(res,200,{csrf:session.csrf,status:getBotStatus(),commands,apis:apis.map(({encryptedHeaders,encryptedBody,...api})=>({...api,hasHeaders:Boolean(encryptedHeaders),hasBody:Boolean(encryptedBody)})),encryptionReady:isDashboardEncryptionConfigured()});
+          return json(res,200,{csrf:session.csrf,status:getBotStatus(),commands,apis:apis.map(publicApiConfig),encryptionReady:isDashboardEncryptionConfigured()});
         }
         if (route === 'templates') {
           const rows = await DashboardTemplate.find({}).lean(), edits = new Map(rows.map(r=>[r.key,r]));
@@ -189,6 +239,7 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
         } else {
           if(kind==='apis'&&!isDashboardEncryptionConfigured()) throw new Error('مفتاح تشفير الخدمات غير مضبوط');
           const values=kind==='commands'?validateCommand(input):validateApi(input);
+          if (kind === 'apis' && target) preserveSeriesSecrets(values, await Model.findById(target).lean());
           if(kind==='commands'&&values.apiId&&!await DashboardApi.exists({_id:values.apiId})) throw new Error('الخدمة غير موجودة');
           if(target) await Model.updateOne({_id:target},{$set:values},{runValidators:true}); else await Model.create(values);
         }

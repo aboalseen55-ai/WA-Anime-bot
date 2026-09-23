@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import Api from '../database/dashboardApiModel.js';
-import { validateApi } from '../services/dashboardServer.js';
+import { validateApi, preserveSeriesSecrets, publicApiConfig } from '../services/dashboardServer.js';
 import { decryptDashboardValue } from '../services/dashboardCrypto.js';
 
 test('create series service payload validation and encryption', t => {
@@ -28,4 +28,19 @@ test('create series service payload validation and encryption', t => {
   assert.ok(result.seriesConfig);
   assert.ok(result.seriesConfig.searchRequest.encryptedHeaders);
   assert.deepEqual(decryptDashboardValue(result.seriesConfig.searchRequest.encryptedHeaders), { 'x-rapidapi-key': 'secret' });
+  const edit = structuredClone(input);
+  delete edit.seriesConfig.searchRequest.headers;
+  delete edit.seriesConfig.downloadRequest.headers;
+  const updated = preserveSeriesSecrets(validateApi(edit), result);
+  assert.equal(updated.seriesConfig.searchRequest.encryptedHeaders, result.seriesConfig.searchRequest.encryptedHeaders);
+  assert.equal(updated.seriesConfig.downloadRequest.encryptedHeaders, result.seriesConfig.downloadRequest.encryptedHeaders);
+  const publicValue = publicApiConfig(updated);
+  assert.equal(publicValue.seriesConfig.searchRequest.hasHeaders, true);
+  assert.equal(JSON.stringify(publicValue).includes('encryptedHeaders'), false);
+  assert.ok(result.seriesConfig.searchRequest.encryptedHeaders);
+  edit.seriesConfig.searchRequest.headers = {};
+  const cleared = preserveSeriesSecrets(validateApi(edit), result);
+  assert.deepEqual(decryptDashboardValue(cleared.seriesConfig.searchRequest.encryptedHeaders), {});
+  edit.seriesConfig.searchRequest.endpoint = 'https://127.0.0.1/';
+  assert.throws(() => validateApi(edit));
 });
