@@ -132,14 +132,86 @@ function editCommand(row={}) {
   openEditor(row._id?'تعديل الأمر':'إضافة أمر',[grid,e('p','المتغيرات: {name} اسم المرسل، {api} نتيجة الخدمة','help')],async()=>{await request('commands'+(row._id?'/'+row._id:''),row._id?'PUT':'POST',values());await saved()});
 }
 function editApi(row={}) {
-  const grid=e('div',undefined,'form-grid');grid.append(field('name','اسم الخدمة',row.name),field('endpoint','رابط HTTPS — يدعم {query}',row.endpoint,'url'),field('queryTemplate','معاملات GET — مثال: q={query}&page=1',row.queryTemplate),field('method','طريقة الطلب',row.method||'GET','select',[['GET','GET'],['POST','POST']]),field('responseType','نوع النتيجة',row.responseType||'text','select',[['text','نص / JSON'],['image_url','رابط صورة داخل JSON'],['image','ملف صورة مباشر'],['video_url','رابط فيديو داخل JSON'],['video','ملف فيديو مباشر'],['audio_url','رابط صوت داخل JSON'],['audio','ملف صوت مباشر']]),field('timeoutMs','مهلة الطلب بالمللي ثانية',row.timeoutMs||12000,'number'),field('enabled','مفعّلة',row.enabled!==false,'checkbox'));
+  const grid=e('div',undefined,'form-grid');
+  const typeValue = row.type || 'api';
+  grid.append(field('name','اسم الخدمة',row.name),field('type','نوع الخدمة',typeValue,'select',[['api','Normal Service'],['series','Series Service']]),field('endpoint','رابط HTTPS — يدعم {query}',row.endpoint,'url'),field('queryTemplate','معاملات GET — مثال: q={query}&page=1',row.queryTemplate),field('method','طريقة الطلب',row.method||'GET','select',[['GET','GET'],['POST','POST']]),field('responseType','نوع النتيجة',row.responseType||'text','select',[['text','نص / JSON'],['image_url','رابط صورة داخل JSON'],['image','ملف صورة مباشر'],['video_url','رابط فيديو داخل JSON'],['video','ملف فيديو مباشر'],['audio_url','رابط صوت داخل JSON'],['audio','ملف صوت مباشر']]),field('timeoutMs','مهلة الطلب بالمللي ثانية',row.timeoutMs||12000,'number'),field('enabled','مفعّلة',row.enabled!==false,'checkbox'));
   const headerField=field('headers','Headers (JSON)','','textarea'),bodyField=field('body','Body (JSON)','','textarea');
   headerField.querySelector('textarea').placeholder=row.hasHeaders?'محفوظة ومشفّرة ✓ — اترك الحقل فارغًا للاحتفاظ بها':'مثال: {"Authorization":"Bearer ..."}';
   bodyField.querySelector('textarea').placeholder=row.hasBody?'محفوظ ومشفّر ✓ — اترك الحقل فارغًا للاحتفاظ به':'مثال: {"query":"{query}"}';
   const advanced=e('details');advanced.append(e('summary','الإعدادات المتقدمة'),e('p',row.hasHeaders||row.hasBody?'المفاتيح الحالية محفوظة ومشفّرة. اترك الحقل فارغًا للاحتفاظ بها، أو اكتب JSON جديدًا لاستبدالها. لفراغها نهائيًا اكتب {}.':'أضف Headers أو Body بصيغة JSON. ستُحفظ القيم الحساسة مشفّرة.','help'),headerField,bodyField);
   const testQuery=field('testQuery','قيمة اختبار', 'test'), testPath=field('testPath','مسار النتيجة (اختياري)','data.url'), testOutput=e('pre',undefined,'preview');
   const test=button('اختبار الخدمة','play',async()=>{test.disabled=true;testOutput.textContent='جارٍ اختبار الطلب...';try{const v=values();v.timeoutMs=Number(v.timeoutMs);for(const key of ['headers','body']){if(!v[key].trim())delete v[key];else {try{v[key]=JSON.parse(v[key])}catch{throw Error('تحقق من صيغة '+key)}}}const result=await request('apis/test','POST',{...v,apiId:row._id,testQuery:document.getElementById('field_testQuery').value,testPath:document.getElementById('field_testPath').value});testOutput.textContent='نجح الطلب ✓\n'+JSON.stringify(result,null,2);}catch(error){testOutput.textContent='فشل الطلب ✕\n'+error.message;}finally{test.disabled=false;}});
-  openEditor(row._id?'تعديل الخدمة':'إضافة خدمة',[grid,advanced,e('p','المتغيرات: {query} كل ما بعد الأمر، {arg1} أول كلمة، {args} كل الكلمات. في Body يمكن استخدامها مباشرة.','help'),e('h3','فحص قبل الحفظ'),testQuery,testPath,test,testOutput],async()=>{const v=values();v.timeoutMs=Number(v.timeoutMs);for(const key of ['headers','body']){if(!v[key].trim())delete v[key];else {try{v[key]=JSON.parse(v[key])}catch{throw Error('تحقق من صيغة '+key)}}}await request('apis'+(row._id?'/'+row._id:''),row._id?'PUT':'POST',v);await saved()});
+  // Series-specific fields
+  const seriesSection=e('div');
+  seriesSection.style.display = typeValue === 'series' ? 'block' : 'none';
+  seriesSection.append(e('h3','Series Service configuration'));
+  seriesSection.append(field('series_general_resultLimit','Result limit',row.seriesConfig?.general?.resultLimit||6,'number'));
+  seriesSection.append(field('series_general_targetQuality','Target quality',row.seriesConfig?.general?.targetQuality||'480'));
+  seriesSection.append(e('h4','Search Request'));
+  seriesSection.append(field('series_search_endpoint','Search Endpoint',row.seriesConfig?.searchRequest?.endpoint||row.endpoint||'','url'));
+  seriesSection.append(field('series_search_queryTemplate','Search Query Template',row.seriesConfig?.searchRequest?.queryTemplate||'','text'));
+  seriesSection.append(field('series_search_method','Search Method',row.seriesConfig?.searchRequest?.method||'GET','select',[['GET','GET'],['POST','POST']]));
+  seriesSection.append(field('series_search_timeoutMs','Search timeout (ms)',row.seriesConfig?.searchRequest?.timeoutMs||12000,'number'));
+  seriesSection.append(field('series_search_headers','Search Headers (JSON)',row.seriesConfig?.searchRequest? '':'','textarea'));
+  seriesSection.append(field('series_search_body','Search Body (JSON)',row.seriesConfig?.searchRequest? '':'','textarea'));
+  seriesSection.append(field('series_search_responseMapping','Search response mapping (JSON)','sourceUrl=video_link\ntitle=title','textarea'));
+  seriesSection.append(e('h4','Download Request'));
+  seriesSection.append(field('series_download_endpoint','Download Endpoint',row.seriesConfig?.downloadRequest?.endpoint||'','url'));
+  seriesSection.append(field('series_download_queryTemplate','Download Query Template',row.seriesConfig?.downloadRequest?.queryTemplate||'','text'));
+  seriesSection.append(field('series_download_method','Download Method',row.seriesConfig?.downloadRequest?.method||'GET','select',[['GET','GET'],['POST','POST']]));
+  seriesSection.append(field('series_download_timeoutMs','Download timeout (ms)',row.seriesConfig?.downloadRequest?.timeoutMs||12000,'number'));
+  seriesSection.append(field('series_download_headers','Download Headers (JSON)',row.seriesConfig?.downloadRequest? '':'','textarea'));
+  seriesSection.append(field('series_download_body','Download Body (JSON)',row.seriesConfig?.downloadRequest? '':'','textarea'));
+  seriesSection.append(field('series_download_responseMapping','Download response mapping (JSON)','downloadUrl=url\nstatus=comment','textarea'));
+  seriesSection.append(e('h4','Processing'));
+  seriesSection.append(field('series_processing_initialWaitMs','Initial wait (ms)',row.seriesConfig?.processing?.initialWaitMs||20000,'number'));
+  seriesSection.append(field('series_processing_pollIntervalMs','Poll interval (ms)',row.seriesConfig?.processing?.pollIntervalMs||10000,'number'));
+  seriesSection.append(field('series_processing_maxPreparationMs','Max preparation (ms)',row.seriesConfig?.processing?.maxPreparationMs||300000,'number'));
+  seriesSection.append(field('series_processing_generatedUrlLifetimeMs','Generated URL lifetime (ms)',row.seriesConfig?.processing?.generatedUrlLifetimeMs||600000,'number'));
+  seriesSection.append(field('series_processing_pendingStatusCodes','Pending status codes (comma separated)',(row.seriesConfig?.processing?.pendingStatusCodes||[404]).join(','),'text'));
+  seriesSection.append(field('series_processing_qualityMatchField','Quality match field',row.seriesConfig?.processing?.qualityMatchField||'id'));
+  grid.append(seriesSection);
+  // Toggle section visibility when type changes
+  setTimeout(()=>{
+    const typeSelect = document.getElementById('field_type');
+    if(typeSelect) typeSelect.addEventListener('change',()=>{ seriesSection.style.display = typeSelect.value === 'series' ? 'block' : 'none'; });
+  },0);
+
+  openEditor(row._id?'تعديل الخدمة':'إضافة خدمة',[grid,advanced,e('p','المتغيرات: {query} كل ما بعد الأمر، {arg1} أول كلمة، {args} كل الكلمات. في Body يمكن استخدامها مباشرة.','help'),e('h3','فحص قبل الحفظ'),testQuery,testPath,test,testOutput],async()=>{
+    const v=values();
+    v.timeoutMs=Number(v.timeoutMs);
+    // Top-level headers/body handling
+    for(const key of ['headers','body']){if(!v[key].trim())delete v[key];else {try{v[key]=JSON.parse(v[key])}catch{throw Error('تحقق من صيغة '+key)}}}
+    // If series type, build seriesConfig
+    if(v.type==='series'){
+      const sc = { general: {}, searchRequest: {}, downloadRequest: {}, processing: {} };
+      sc.general.resultLimit = Number(v.series_general_resultLimit) || 6;
+      sc.general.targetQuality = String(v.series_general_targetQuality || '480');
+      sc.searchRequest.endpoint = String(v.series_search_endpoint || '');
+      sc.searchRequest.queryTemplate = String(v.series_search_queryTemplate || '');
+      sc.searchRequest.method = String(v.series_search_method || 'GET');
+      sc.searchRequest.timeoutMs = Number(v.series_search_timeoutMs) || 12000;
+      if(v.series_search_headers && v.series_search_headers.trim()){ try{ sc.searchRequest.headers = JSON.parse(v.series_search_headers); }catch{ throw Error('تحقق من صيغة search headers'); } }
+      if(v.series_search_body && v.series_search_body.trim()){ try{ sc.searchRequest.body = JSON.parse(v.series_search_body); }catch{ throw Error('تحقق من صيغة search body'); } }
+      try{ sc.searchResponseMapping = Object.fromEntries(String(v.series_search_responseMapping||'').split(/\n|\r\n/).map(l=>l.trim()).filter(Boolean).map(l=>{const [k,...rest]=l.split('=');return [k.trim(),rest.join('=').trim()];})); }catch{ sc.searchResponseMapping = {}; }
+      sc.downloadRequest.endpoint = String(v.series_download_endpoint || '');
+      sc.downloadRequest.queryTemplate = String(v.series_download_queryTemplate || '');
+      sc.downloadRequest.method = String(v.series_download_method || 'GET');
+      sc.downloadRequest.timeoutMs = Number(v.series_download_timeoutMs) || 12000;
+      if(v.series_download_headers && v.series_download_headers.trim()){ try{ sc.downloadRequest.headers = JSON.parse(v.series_download_headers); }catch{ throw Error('تحقق من صيغة download headers'); } }
+      if(v.series_download_body && v.series_download_body.trim()){ try{ sc.downloadRequest.body = JSON.parse(v.series_download_body); }catch{ throw Error('تحقق من صيغة download body'); } }
+      try{ sc.downloadResponseMapping = Object.fromEntries(String(v.series_download_responseMapping||'').split(/\n|\r\n/).map(l=>l.trim()).filter(Boolean).map(l=>{const [k,...rest]=l.split('=');return [k.trim(),rest.join('=').trim()];})); }catch{ sc.downloadResponseMapping = {}; }
+      sc.processing.initialWaitMs = Number(v.series_processing_initialWaitMs) || 20000;
+      sc.processing.pollIntervalMs = Number(v.series_processing_pollIntervalMs) || 10000;
+      sc.processing.maxPreparationMs = Number(v.series_processing_maxPreparationMs) || 300000;
+      sc.processing.generatedUrlLifetimeMs = Number(v.series_processing_generatedUrlLifetimeMs) || 600000;
+      sc.processing.pendingStatusCodes = String(v.series_processing_pendingStatusCodes||'404').split(',').map(s=>Number(s.trim())).filter(Boolean);
+      sc.processing.qualityMatchField = String(v.series_processing_qualityMatchField||'id');
+      v.seriesConfig = sc;
+    }
+    await request('apis'+(row._id?'/'+row._id:''),row._id?'PUT':'POST',v);
+    await saved();
+  });
 }
 function editTemplate(row) {
   const input=field('text','نص الرد',row.text,'textarea'),tokens=e('div',undefined,'tokens'),preview=e('div',undefined,'preview');

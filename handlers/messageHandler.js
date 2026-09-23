@@ -26,7 +26,8 @@ import { buildLevelUpMessage, trackChatActivity } from "../utils/xpSystem.js";
 import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
 import { extractReceptionOnboardingInfo, isReceptionGreetingOnly, resolveMainGroupInviteLink } from "../utils/receptionOnboarding.js";
 import { handleQuranCommand, isQuranCommand } from "../utils/quran.js";
-import { handleDashboardCommand } from "../services/dashboardRuntime.js";
+import { handleDashboardCommand, getSeriesSession, selectSeriesResult } from "../services/dashboardRuntime.js";
+import { runSeriesService } from "../services/dashboardRuntime.js";
 import { handleBotDeletion } from '../services/botMessageDeletion.js';
 
 // نظام الحالات - لتتبع الأوامر المعلقة التي تحتاج تأكيد منشن
@@ -845,6 +846,21 @@ export async function messageHandler(sock, msg) {
   }
 
   // الأوامر
+  // If the user is sending a numeric selection and has an active series session, handle it here
+  if (/^[1-9][0-9]*$/.test(trimmedText)) {
+    const session = getSeriesSession(sender);
+    if (session) {
+      const index = Number(trimmedText) - 1;
+      try {
+        await selectSeriesResult(sender, index, sock, jid, msg);
+      } catch (err) {
+        console.warn('Series selection failed:', err.message);
+        await sock.sendMessage(jid, { text: 'اختيار غير صالح أو فشل التحميل.' });
+      }
+      return;
+    }
+  }
+
   if (trimmedText.startsWith("/")) {
     console.log(`📥 [CMD] ${sender} -> ${trimmedText}`);
 

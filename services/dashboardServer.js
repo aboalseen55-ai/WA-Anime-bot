@@ -41,10 +41,16 @@ export function validateCommand(input) {
   return { trigger, title: String(input.title).trim(), responseTemplate: String(input.responseTemplate || ''), permission: input.permission, apiId: input.apiId || null, responsePath, enabled: input.enabled !== false };
 }
 export function validateApi(input) {
-  const endpoint = validateEndpoint(String(input.endpoint || '')).toString();
+  let endpoint = String(input.endpoint || '');
+  if (input.type !== 'series') {
+    endpoint = validateEndpoint(endpoint).toString();
+  } else {
+    // for series services, endpoint may be provided per-step; keep base endpoint if present
+    if (endpoint) endpoint = validateEndpoint(endpoint).toString();
+  }
   const name = String(input.name || '').trim();
   if (!name || name.length > 80) throw new Error('اسم الخدمة مطلوب وبحد أقصى 80 حرف');
-  if (!['GET','POST'].includes(input.method)) throw new Error('طريقة الطلب غير صالحة');
+  if (input.type !== 'series' && !['GET','POST'].includes(input.method)) throw new Error('طريقة الطلب غير صالحة');
   const result = { name, endpoint, queryTemplate: String(input.queryTemplate || '').trim(), method: input.method, responseType: input.responseType || 'text', timeoutMs: Math.max(1000, Math.min(30000, Number(input.timeoutMs) || 12000)), enabled: input.enabled !== false };
   if (!['text','image','image_url','video','video_url','audio','audio_url'].includes(result.responseType)) throw new Error('نوع النتيجة غير صالح');
   for (const [field, destination] of [['headers','encryptedHeaders'],['body','encryptedBody']]) {
@@ -52,6 +58,40 @@ export function validateApi(input) {
       if (!input[field] || typeof input[field] !== 'object' || Array.isArray(input[field])) throw new Error('الحقول المتقدمة يجب أن تكون JSON object');
       result[destination] = encryptDashboardValue(input[field]);
     }
+  }
+  // Series service support
+  if (input.type === 'series') {
+    result.type = 'series';
+    result.seriesConfig = result.seriesConfig || {};
+    const sc = input.seriesConfig || {};
+    result.seriesConfig.general = sc.general || {};
+    // search request
+    if (sc.searchRequest) {
+      if (typeof sc.searchRequest !== 'object') throw new Error('searchRequest must be an object');
+      result.seriesConfig.searchRequest = {
+        endpoint: String(sc.searchRequest.endpoint || ''),
+        queryTemplate: String(sc.searchRequest.queryTemplate || ''),
+        method: sc.searchRequest.method || 'GET',
+        timeoutMs: Math.max(1000, Math.min(30000, Number(sc.searchRequest.timeoutMs) || 12000)),
+        encryptedHeaders: sc.searchRequest.headers ? encryptDashboardValue(sc.searchRequest.headers) : undefined,
+        encryptedBody: sc.searchRequest.body ? encryptDashboardValue(sc.searchRequest.body) : undefined
+      };
+    }
+    if (sc.searchResponseMapping) result.seriesConfig.searchResponseMapping = sc.searchResponseMapping;
+    // download request
+    if (sc.downloadRequest) {
+      if (typeof sc.downloadRequest !== 'object') throw new Error('downloadRequest must be an object');
+      result.seriesConfig.downloadRequest = {
+        endpoint: String(sc.downloadRequest.endpoint || ''),
+        queryTemplate: String(sc.downloadRequest.queryTemplate || ''),
+        method: sc.downloadRequest.method || 'GET',
+        timeoutMs: Math.max(1000, Math.min(30000, Number(sc.downloadRequest.timeoutMs) || 12000)),
+        encryptedHeaders: sc.downloadRequest.headers ? encryptDashboardValue(sc.downloadRequest.headers) : undefined,
+        encryptedBody: sc.downloadRequest.body ? encryptDashboardValue(sc.downloadRequest.body) : undefined
+      };
+    }
+    if (sc.downloadResponseMapping) result.seriesConfig.downloadResponseMapping = sc.downloadResponseMapping;
+    result.seriesConfig.processing = sc.processing || {};
   }
   return result;
 }
