@@ -1,6 +1,6 @@
 import axios from "axios";
 import { createWriteStream } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Transform } from 'node:stream';
@@ -205,8 +205,17 @@ export async function runSeriesService(service, variables, sessionStore = null, 
       const downloadUrl = normalizeMediaUrl(mapped.downloadUrl || mapped.url || raw?.file || raw?.url);
       if (!downloadUrl) throw new Error('Download URL not found in downloader response');
       await sock.sendMessage(jid, { text: 'جارٍ تجهيز الفيديو؛ قد يستغرق حتى خمس دقائق.' });
-      await sendPreparedSeriesVideo([downloadUrl, normalizeMediaUrl(mapped.backupUrl || raw?.reserved_file)].filter(Boolean), sc.processing, async path => {
-        await sock.sendMessage(jid, { video: { url: path }, mimetype: 'video/mp4', caption: String(selected.title || '').slice(0, 500) });
+      const outputType = ['video', 'audio', 'image', 'file'].includes(sc.general?.outputType) ? sc.general.outputType : 'video';
+      await sendPreparedSeriesMedia([downloadUrl, normalizeMediaUrl(mapped.backupUrl || raw?.reserved_file)].filter(Boolean), sc.processing, outputType, async path => {
+        const caption = String(selected.title || '').slice(0, 500);
+        // The provider URL can expire while WhatsApp is probing it. Read the fully
+        // downloaded, size-checked file so media metadata is generated from local bytes.
+        const media = await readFile(path);
+        const payload = outputType === 'video' ? { video: media, mimetype: 'video/mp4', caption }
+          : outputType === 'audio' ? { audio: media, mimetype: 'audio/mpeg', ptt: false }
+          : outputType === 'image' ? { image: media, caption }
+          : { document: media, mimetype: 'application/octet-stream', fileName: `${caption || 'download'}` };
+        await sock.sendMessage(jid, payload);
       });
       // cleanup session
       if (getSeriesSession(userId, jid) === session) seriesSessions.delete(JSON.stringify([jid, userId]));
@@ -214,7 +223,7 @@ export async function runSeriesService(service, variables, sessionStore = null, 
     } finally { agent.destroy(); }
   }
 
-export async function sendPreparedSeriesVideo(urls, processing = {}, send, maxBytes = 150 * 1024 * 1024) {
+export async function sendPreparedSeriesMedia(urls, processing = {}, outputType = 'video', send, maxBytes = 150 * 1024 * 1024) {
   const deadline = Date.now() + Math.min(300000, Math.max(1, processing.maxPreparationMs ?? 300000));
   const directory = await mkdtemp(join(tmpdir(), 'bot-video-'));
   const path = join(directory, 'video.mp4');
@@ -231,7 +240,12 @@ export async function sendPreparedSeriesVideo(urls, processing = {}, send, maxBy
             signal: AbortSignal.timeout(120000),
             responseType: 'stream', validateStatus: status => status === 404 || status === 200 });
           if (response.status === 404) { response.data.destroy(); continue; }
-          if (!String(response.headers?.['content-type'] || '').toLowerCase().startsWith('video/')) throw new Error('الاستجابة ليست ملف فيديو');
+          const contentType = String(response.headers?.['content-type'] || '').toLowerCase().split(';')[0];
+          const expected = { video: ['video/'], audio: ['audio/'], image: ['image/'], file: [] }[outputType] || ['video/'];
+          if (expected.length && !expected.some(prefix => contentType.startsWith(prefix))) {
+            const labels = { video: 'فيديو', audio: 'صوت', image: 'صورة' };
+            throw new Error(`الاستجابة ليست ملف ${labels[outputType] || outputType}`);
+          }
           if (Number(response.headers?.['content-length']) > maxBytes) throw new Error('الفيديو يتجاوز حد 150 ميجابايت');
           let bytes = 0;
           const limiter = new Transform({ transform(chunk, encoding, callback) {
@@ -251,6 +265,9 @@ export async function sendPreparedSeriesVideo(urls, processing = {}, send, maxBy
     throw new Error('انتهت مهلة تجهيز الفيديو؛ حاول لاحقًا');
   } finally { await rm(directory, { recursive: true, force: true }); }
 }
+
+export const sendPreparedSeriesVideo = (urls, processing, send, maxBytes) =>
+  sendPreparedSeriesMedia(urls, processing, 'video', send, maxBytes);
 
 export async function youtubeReplyPreview(reply, data, fetchThumbnail = async url => {
   const agent = await publicHttpsAgent(url);

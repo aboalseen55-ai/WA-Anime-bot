@@ -17,6 +17,7 @@ const dashboardApiSchema = new mongoose.Schema({
     general: {
       resultLimit: { type: Number, default: 6 },
       showThumbnails: { type: Boolean, default: false },
+      outputType: { type: String, enum: ['video', 'audio', 'image', 'file'], default: 'video' },
       targetQuality: { type: String, default: "480" }
     },
     searchRequest: {

@@ -4,7 +4,7 @@ import nock from 'nock';
 import dns from 'node:dns/promises';
 import { readFile, access } from 'node:fs/promises';
 import { Readable } from 'node:stream';
-import { sendPreparedSeriesVideo, seriesRequestUrl } from '../services/dashboardRuntime.js';
+import { sendPreparedSeriesVideo, sendPreparedSeriesMedia, seriesRequestUrl } from '../services/dashboardRuntime.js';
 import { runSeriesService, selectSeriesResult, getSeriesSession, setHttpClient } from '../services/dashboardRuntime.js';
 import DashboardApi from '../database/dashboardApiModel.js';
 import DashboardCommand from '../database/dashboardCommandModel.js';
@@ -46,7 +46,7 @@ test('series search then select and poll flow (mocked)', async t => {
   const sent = [];
   let mediaPath;
   const sock = { sendMessage: async (jid, content) => {
-    if (content.video) { mediaPath = content.video.url; assert.equal(await readFile(mediaPath, 'utf8'), 'test-video'); }
+    if (content.video) { assert.ok(Buffer.isBuffer(content.video)); assert.equal(content.video.toString(), 'test-video'); }
     sent.push({ jid, content });
   } };
 
@@ -56,7 +56,7 @@ test('series search then select and poll flow (mocked)', async t => {
   const out = await selectSeriesResult('user1', 0, sock, '123@g.us', { text: 'x' });
   assert.equal(out.ok, true);
   assert.equal(sent.length, 2);
-  await assert.rejects(access(mediaPath));
+  assert.equal(mediaPath, undefined);
   assert.ok(nock.isDone());
   assert.equal(getSeriesSession('user1', '123@g.us'), null);
 });
@@ -80,4 +80,14 @@ test('prepared video rejects HTML and oversize streams, times out pending files'
   await assert.rejects(sendPreparedSeriesVideo(['https://example.com/a'], {}, send, 10), /150/);
   setHttpClient(async () => ({status:404,headers:{},data:Readable.from([])}));
   await assert.rejects(sendPreparedSeriesVideo(['https://example.com/a'], {maxPreparationMs:20,initialWaitMs:1,pollIntervalMs:1}, send), /مهلة/);
+});
+
+test('prepared audio accepts an audio response', async t => {
+  t.mock.method(dns, 'lookup', async () => [{address:'93.184.216.34',family:4}]);
+  t.after(async () => setHttpClient((await import('axios')).default));
+  setHttpClient(async () => ({status:200,headers:{'content-type':'audio/mpeg'},data:Readable.from([Buffer.from('audio')])}));
+  let sentPath;
+  await sendPreparedSeriesMedia(['https://example.com/audio.mp3'], {maxPreparationMs:100}, 'audio', async path => { sentPath = path; });
+  assert.ok(sentPath);
+  await assert.rejects(access(sentPath));
 });

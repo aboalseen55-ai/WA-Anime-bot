@@ -69,6 +69,7 @@ export function validateApi(input) {
     const sc = input.seriesConfig || {};
     result.seriesConfig.general = sc.general || {};
     result.seriesConfig.general.showThumbnails = sc.general?.showThumbnails === true;
+    result.seriesConfig.general.outputType = ['video', 'audio', 'image', 'file'].includes(sc.general?.outputType) ? sc.general.outputType : 'video';
     // search request
     if (sc.searchRequest) {
       if (typeof sc.searchRequest !== 'object') throw new Error('searchRequest must be an object');
@@ -229,6 +230,18 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
       }
       const input = ['POST','PUT','DELETE'].includes(req.method) ? await readJson(req) : {};
       const data = await dashboardWrite(route,req.method,input,onKingdomChange,getGroups); if(data) return json(res,200,data);
+      const duplicateApi = /^apis\/([a-f0-9]{24})\/duplicate$/.exec(route);
+      if (duplicateApi && req.method === 'POST') {
+        if (!isDashboardEncryptionConfigured()) throw new Error('مفتاح تشفير الخدمات غير مضبوط');
+        const source = await DashboardApi.findById(duplicateApi[1]).lean();
+        if (!source) return json(res,404,{error:'الخدمة غير موجودة'});
+        const { _id, createdAt, updatedAt, ...copy } = source;
+        copy.name = String(input.name || `${source.name} - نسخة`).trim().slice(0, 80);
+        copy.createdBy = 'dashboard'; copy.updatedBy = 'dashboard';
+        const created = await DashboardApi.create(copy);
+        await audit('apis_post', created.name);
+        return json(res,200,{ok:true,id:created._id});
+      }
       const template = /^templates\/([a-zA-Z0-9_]+)$/.exec(route);
       if (template && ['PUT','DELETE'].includes(req.method)) {
         const key = template[1]; if(!TEMPLATE_DEFINITIONS[key]) throw new Error('القالب غير موجود');

@@ -95,9 +95,18 @@ function members(data) {
   function draw(){results.replaceChildren(table(['العضو','الصلاحية','المستوى','XP','النجوم','الحالة',''],data.users.map(u=>[u.nickname,roleNames[u.role],number(u.level),number(u.xp),number(u.rankStarsByKingdom?.[u.kingdom_id]),u.isBanned?'محظور':'نشط',rowsActions([['contact','تفاصيل العضو',()=>editMember(u)]])])),pager(data.total));title.querySelector('p').textContent=number(data.total)+' عضو';}
   draw();
 }
-function services() {
+async function duplicateService(api) { const name = prompt('اسم النسخة', `${api.name} - نسخة`); if (name) { await request('apis/'+api._id+'/duplicate','POST',{name}); await saved(); } }
+function legacyServices() {
   const root=$('content'),title=heading('الخدمات المرتبطة',state.encryptionReady?'المفاتيح محفوظة بتشفير':'أضف مفتاح التشفير في إعدادات الخادم أولًا');title.append(button('إضافة خدمة','plus',()=>editApi(),'primary'));root.append(title);
   root.append(table(['الخدمة','الطريقة','الحالة',''],state.apis.map(api=>[api.name,api.method,api.enabled?'مفعّلة':'متوقفة',rowsActions([['pencil','تعديل الخدمة',()=>editApi(api)],['trash-2','حذف الخدمة',()=>remove('apis/'+api._id,api.name)]])])));
+}
+function services() {
+  const root=$('content'), title=heading('الخدمات المرتبطة',state.encryptionReady?'المفاتيح محفوظة بتشفير':'أضف مفتاح التشفير في إعدادات الخادم أولًا');
+  title.append(button('إضافة خدمة','plus',()=>editApi(),'primary')); root.append(title);
+  root.append(table(['الخدمة','الطريقة','الحالة',''],state.apis.map(api=>[
+    api.name,api.method,api.enabled?'مفعّلة':'متوقفة',
+    rowsActions([['pencil','تعديل الخدمة',()=>editApi(api)],['copy','نسخ الخدمة',()=>duplicateService(api)],['trash-2','حذف الخدمة',()=>remove('apis/'+api._id,api.name)]])
+  ])));
 }
 function dataList(data) {
   const root=$('content');
@@ -147,6 +156,7 @@ function editApi(row={}) {
   seriesSection.append(e('h3','Series Service configuration'));
   seriesSection.append(field('series_general_resultLimit','Result limit',row.seriesConfig?.general?.resultLimit||6,'number'));
   seriesSection.append(field('series_general_showThumbnails','صورة مصغّرة لكل نتيجة',row.seriesConfig?.general?.showThumbnails === true,'checkbox'));
+  seriesSection.append(field('series_general_outputType','نوع الإخراج',row.seriesConfig?.general?.outputType||'video','select',[['video','فيديو'],['audio','صوت'],['image','صورة'],['file','ملف']]));
   seriesSection.append(field('series_general_targetQuality','Target quality',row.seriesConfig?.general?.targetQuality||'480'));
   seriesSection.append(e('h4','Search Request'));
   seriesSection.append(field('series_search_endpoint','Search Endpoint',row.seriesConfig?.searchRequest?.endpoint||row.endpoint||'','url'));
@@ -188,6 +198,7 @@ function editApi(row={}) {
       const sc = { general: {}, searchRequest: {}, downloadRequest: {}, processing: {} };
       sc.general.resultLimit = Number(v.series_general_resultLimit) || 6;
       sc.general.showThumbnails = v.series_general_showThumbnails === true;
+      sc.general.outputType = String(v.series_general_outputType || 'video');
       sc.general.targetQuality = String(v.series_general_targetQuality || '480');
       sc.searchRequest.endpoint = String(v.series_search_endpoint || '');
       sc.searchRequest.queryTemplate = String(v.series_search_queryTemplate || '');
