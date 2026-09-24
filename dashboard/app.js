@@ -146,6 +146,7 @@ function editApi(row={}) {
   seriesSection.style.display = typeValue === 'series' ? 'block' : 'none';
   seriesSection.append(e('h3','Series Service configuration'));
   seriesSection.append(field('series_general_resultLimit','Result limit',row.seriesConfig?.general?.resultLimit||6,'number'));
+  seriesSection.append(field('series_general_showThumbnails','صورة مصغّرة لكل نتيجة',row.seriesConfig?.general?.showThumbnails === true,'checkbox'));
   seriesSection.append(field('series_general_targetQuality','Target quality',row.seriesConfig?.general?.targetQuality||'480'));
   seriesSection.append(e('h4','Search Request'));
   seriesSection.append(field('series_search_endpoint','Search Endpoint',row.seriesConfig?.searchRequest?.endpoint||row.endpoint||'','url'));
@@ -186,6 +187,7 @@ function editApi(row={}) {
     if(v.type==='series'){
       const sc = { general: {}, searchRequest: {}, downloadRequest: {}, processing: {} };
       sc.general.resultLimit = Number(v.series_general_resultLimit) || 6;
+      sc.general.showThumbnails = v.series_general_showThumbnails === true;
       sc.general.targetQuality = String(v.series_general_targetQuality || '480');
       sc.searchRequest.endpoint = String(v.series_search_endpoint || '');
       sc.searchRequest.queryTemplate = String(v.series_search_queryTemplate || '');

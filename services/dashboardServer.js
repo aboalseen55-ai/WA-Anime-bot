@@ -68,6 +68,7 @@ export function validateApi(input) {
     result.seriesConfig = result.seriesConfig || {};
     const sc = input.seriesConfig || {};
     result.seriesConfig.general = sc.general || {};
+    result.seriesConfig.general.showThumbnails = sc.general?.showThumbnails === true;
     // search request
     if (sc.searchRequest) {
       if (typeof sc.searchRequest !== 'object') throw new Error('searchRequest must be an object');

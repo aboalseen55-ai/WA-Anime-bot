@@ -16,6 +16,7 @@ const dashboardApiSchema = new mongoose.Schema({
   seriesConfig: {
     general: {
       resultLimit: { type: Number, default: 6 },
+      showThumbnails: { type: Boolean, default: false },
       targetQuality: { type: String, default: "480" }
     },
     searchRequest: {

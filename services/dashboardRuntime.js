@@ -274,6 +274,39 @@ export async function youtubeReplyPreview(reply, data, fetchThumbnail = async ur
   return preview;
 }
 
+export async function sendSeriesResults(sock, jid, results, showThumbnails) {
+  if (!showThumbnails || !results.length) {
+    const list = results.map((item, index) => `${index + 1}. ${String(item.title || 'Video').slice(0, 200)}`).join('\n');
+    await sock.sendMessage(jid, { text: list ? `${list}\n\nأرسل رقم الفيديو لتنزيله.` : 'لم أجد نتائج.' });
+    return;
+  }
+  for (const [index, item] of results.entries()) {
+    const caption = `${index + 1}. ${String(item.title || 'Video').slice(0, 200)}`;
+    let bytes;
+    if (typeof item.thumbnail === 'string' && item.thumbnail.trim()) {
+      let agent;
+      try {
+        const url = normalizeMediaUrl(item.thumbnail);
+        agent = await publicHttpsAgent(url);
+        const response = await httpClient({ method: 'GET', url, httpsAgent: agent, proxy: false,
+          maxRedirects: 0, timeout: 5000, signal: AbortSignal.timeout(5000), responseType: 'arraybuffer',
+          maxContentLength: 2 * 1024 * 1024, validateStatus: status => status === 200 });
+        if (/^image\/(jpeg|png|webp)(?:;|$)/i.test(String(response.headers?.['content-type'] || ''))) {
+          const data = Buffer.from(response.data);
+          if (data.length && data.length <= 2 * 1024 * 1024) bytes = data;
+        }
+      } catch { /* A missing preview must not hide a selectable result. */ }
+      finally { agent?.destroy(); }
+    }
+    if (bytes) {
+      try { await sock.sendMessage(jid, { image: bytes, caption }); continue; }
+      catch { /* Fall back to the same numbered title if image delivery fails. */ }
+    }
+    await sock.sendMessage(jid, { text: caption });
+  }
+  await sock.sendMessage(jid, { text: 'أرسل رقم الفيديو لتنزيله.' });
+}
+
 export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   if (!String(text || "").startsWith("/")) return false;
   const trigger = String(text).trim().split(/\s+/)[0].toLowerCase();
@@ -304,8 +337,7 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
       }
     }
     if (apiResult?.step === 'search') {
-      const list = apiResult.results.map((item, index) => `${index + 1}. ${String(item.title || 'Video').slice(0, 200)}`).join('\n');
-      await sock.sendMessage(jid, { text: list ? `${list}\n\nأرسل رقم الفيديو لتنزيله.` : 'لم أجد نتائج.' });
+      await sendSeriesResults(sock, jid, apiResult.results, command.apiId.seriesConfig?.general?.showThumbnails === true);
       return true;
     }
     const rawData = ["text", "image_url", "video_url", "audio_url"].includes(apiResult?.responseType) ? apiResult.data : null;

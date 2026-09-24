@@ -15,7 +15,36 @@ import Audit from '../database/kingdomAuditLogModel.js';
 import Kingdom from '../database/kingdomModel.js';
 import User from '../database/userModel.js';
 import { decryptDashboardValue, encryptDashboardValue } from '../services/dashboardCrypto.js';
-import { handleDashboardCommand, setHttpClient } from '../services/dashboardRuntime.js';
+import { handleDashboardCommand, setHttpClient, sendSeriesResults } from '../services/dashboardRuntime.js';
+
+test('series thumbnails preserve numbering with safe text fallbacks', async t => {
+  t.mock.method(dns, 'lookup', async () => [{address:'8.8.8.8',family:4}]);
+  t.after(() => setHttpClient(axios));
+  let fetched = 0;
+  setHttpClient(async options => {
+    fetched++;
+    assert.equal(options.maxRedirects, 0);
+    assert.equal(options.headers, undefined);
+    assert.equal(options.maxContentLength, 2 * 1024 * 1024);
+    if (options.url.endsWith('bad')) throw new Error('unavailable');
+    return {headers:{'content-type': options.url.endsWith('html') ? 'text/html' : 'image/jpeg'}, data:Buffer.from([255,216,255,217])};
+  });
+  const sent = [];
+  await sendSeriesResults({sendMessage:async (_, payload) => {
+    if (payload.image && payload.caption.startsWith('6.')) throw new Error('send failed');
+    sent.push(payload);
+  }}, 'chat', [
+    {title:'A',thumbnail:'https://example.com/image'},
+    {title:'B',thumbnail:'https://example.com/bad'},
+    {title:'C'}, {title:'D',thumbnail:'https://127.0.0.1/private'},
+    {title:'E',thumbnail:'https://example.com/html'}, {title:'F',thumbnail:'https://example.com/image'}
+  ], true);
+  assert.equal(fetched, 4);
+  assert.ok(Buffer.isBuffer(sent[0].image));
+  assert.equal(sent[0].caption, '1. A');
+  assert.deepEqual(sent.slice(1,6).map(item=>item.text), ['2. B','3. C','4. D','5. E','6. F']);
+  assert.equal(sent.length, 7);
+});
 
 test('standalone image API ignores Mongoose default series settings', async t => {
   const api = new Api({ name: 'images', endpoint: 'https://example.com/search', type: 'api', responseType: 'image_url' });
