@@ -8,7 +8,7 @@ import { encryptDashboardValue, isDashboardEncryptionConfigured } from './dashbo
 import { dashboardRead, dashboardWrite, isReservedCommand, audit } from './dashboardData.js';
 import { TEMPLATE_DEFINITIONS, validateTemplate, refreshDashboardTemplates } from './dashboardTemplates.js';
 import { validateEndpoint } from './dashboardApiSafety.js';
-import { runConfiguredApi, readDashboardPath } from './dashboardRuntime.js';
+import { runConfiguredApi, runSeriesService, readDashboardPath } from './dashboardRuntime.js';
 
 const assets = new Map([
   ['/dashboard', ['../dashboard/index.html', 'text/html']],
@@ -198,7 +198,13 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
         const api = validateApi(input);
         if (input.encryptedHeaders && !api.encryptedHeaders) api.encryptedHeaders = input.encryptedHeaders;
         if (input.encryptedBody && !api.encryptedBody) api.encryptedBody = input.encryptedBody;
-        const result = await runConfiguredApi(api, { query: String(body.testQuery || 'test'), args: String(body.testQuery || 'test').split(/\s+/).filter(Boolean) });
+        const variables = { query: String(body.testQuery || 'test'), args: String(body.testQuery || 'test').split(/\s+/).filter(Boolean) };
+        if (api.type === 'series') {
+          preserveSeriesSecrets(api, saved);
+          const result = await runSeriesService(api, variables);
+          return json(res, 200, { ok: true, step: 'search', downloadTested: false, preview: result.results });
+        }
+        const result = await runConfiguredApi(api, variables);
         const raw = ['text', 'image_url', 'video_url', 'audio_url'].includes(result.responseType) ? result.data : null;
         const selected = body.testPath ? readDashboardPath(raw, String(body.testPath)) : raw;
         const preview = Buffer.isBuffer(result.data)

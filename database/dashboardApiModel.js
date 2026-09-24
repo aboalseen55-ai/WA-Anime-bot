@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const dashboardApiSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true, trim: true, maxlength: 80 },
-  endpoint: { type: String, required: true, trim: true, maxlength: 1200 },
+  endpoint: { type: String, required: function () { return (this.type ?? this.get('type')) !== 'series'; }, trim: true, maxlength: 1200 },
   queryTemplate: { type: String, default: "", maxlength: 500 },
   method: { type: String, enum: ["GET", "POST"], default: "GET" },
   encryptedHeaders: { type: String, default: "" },

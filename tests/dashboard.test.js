@@ -14,7 +14,7 @@ import Api from '../database/dashboardApiModel.js';
 import Audit from '../database/kingdomAuditLogModel.js';
 import Kingdom from '../database/kingdomModel.js';
 import User from '../database/userModel.js';
-import { decryptDashboardValue } from '../services/dashboardCrypto.js';
+import { decryptDashboardValue, encryptDashboardValue } from '../services/dashboardCrypto.js';
 import { handleDashboardCommand, setHttpClient } from '../services/dashboardRuntime.js';
 
 test('standalone image API ignores Mongoose default series settings', async t => {
@@ -49,6 +49,8 @@ test('series commands send numbered search results rather than binary media', as
 });
 
 test('saving standalone type overrides an earlier series type', () => {
+  assert.equal(new Api({ name: 'chain', type: 'series' }).validateSync(), undefined);
+  assert.ok(new Api({ name: 'normal', type: 'api' }).validateSync()?.errors.endpoint);
   const input = { name: 'images', endpoint: 'https://example.com', method: 'GET' };
   assert.equal(validateApi({ ...input, type: 'api' }).type, 'api');
   assert.equal(validateApi(input).type, 'api');
@@ -157,6 +159,27 @@ test('HTTP authentication, CSRF, templates, assets and disconnected gate',async 
   assert.match(login.headers.get('set-cookie'),/HttpOnly; Secure; SameSite=Strict/);
   assert.equal((await fetch(base+'/api/templates/welcome',{method:'PUT',headers:{cookie},body:JSON.stringify({text:'Hi {mention}'})})).status,403);
   const headers={cookie,'x-dashboard-csrf':csrf};
+  const previousKey = process.env.DASHBOARD_ENCRYPTION_KEY;
+  process.env.DASHBOARD_ENCRYPTION_KEY = 'test-only-key';
+  t.after(() => { setHttpClient(axios); if (previousKey === undefined) delete process.env.DASHBOARD_ENCRYPTION_KEY; else process.env.DASHBOARD_ENCRYPTION_KEY = previousKey; });
+  t.mock.method(dns, 'lookup', async () => [{address:'8.8.8.8',family:4}]);
+  t.mock.method(Api, 'findById', () => chain({seriesConfig:{searchRequest:{encryptedHeaders:encryptDashboardValue({'x-test':'saved'})}}}));
+  let searchCalls = 0;
+  setHttpClient(async config => {
+    searchCalls++;
+    assert.equal(config.headers['x-test'], 'saved');
+    assert.equal(new URL(config.url).searchParams.get('query'), 'cat & dog');
+    return {data:{videos:[{video_id:'abcdefghijk',title:'Example'}]}};
+  });
+  const seriesTest = await fetch(base+'/api/apis/test', {method:'POST',headers,body:JSON.stringify({
+    apiId:'aaaaaaaaaaaaaaaaaaaaaaaa',type:'series',name:'Test chain',endpoint:'',testQuery:'cat & dog',testPath:'data.url',
+    seriesConfig:{searchRequest:{endpoint:'https://example.com/search',queryTemplate:'query={query}',method:'GET'},
+      downloadRequest:{endpoint:'https://example.com/download/{videoId}',method:'GET'},
+      searchResponseMapping:{videoId:'video_id',title:'title'}}
+  })});
+  assert.equal(seriesTest.status, 200);
+  assert.deepEqual(await seriesTest.json(), {ok:true,step:'search',downloadTested:false,preview:[{videoId:'abcdefghijk',title:'Example'}]});
+  assert.equal(searchCalls, 1);
   assert.equal((await fetch(base+'/api/templates/welcome',{method:'PUT',headers,body:JSON.stringify({text:'Hi {mention}'})})).status,200);
   assert.equal(renderBotTemplate('welcome',{mention:'@123'},'original'),'Hi @123');
   assert.equal((await fetch(base+'/api/templates/welcome',{method:'DELETE',headers})).status,200);

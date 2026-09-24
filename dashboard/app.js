@@ -140,7 +140,7 @@ function editApi(row={}) {
   bodyField.querySelector('textarea').placeholder=row.hasBody?'محفوظ ومشفّر ✓ — اترك الحقل فارغًا للاحتفاظ به':'مثال: {"query":"{query}"}';
   const advanced=e('details');advanced.append(e('summary','الإعدادات المتقدمة'),e('p',row.hasHeaders||row.hasBody?'المفاتيح الحالية محفوظة ومشفّرة. اترك الحقل فارغًا للاحتفاظ بها، أو اكتب JSON جديدًا لاستبدالها. لفراغها نهائيًا اكتب {}.':'أضف Headers أو Body بصيغة JSON. ستُحفظ القيم الحساسة مشفّرة.','help'),headerField,bodyField);
   const testQuery=field('testQuery','قيمة اختبار', 'test'), testPath=field('testPath','مسار النتيجة (اختياري)','data.url'), testOutput=e('pre',undefined,'preview');
-  const test=button('اختبار الخدمة','play',async()=>{test.disabled=true;testOutput.textContent='جارٍ اختبار الطلب...';try{const v=values();v.timeoutMs=Number(v.timeoutMs);for(const key of ['headers','body']){if(!v[key].trim())delete v[key];else {try{v[key]=JSON.parse(v[key])}catch{throw Error('تحقق من صيغة '+key)}}}const result=await request('apis/test','POST',{...v,apiId:row._id,testQuery:document.getElementById('field_testQuery').value,testPath:document.getElementById('field_testPath').value});testOutput.textContent='نجح الطلب ✓\n'+JSON.stringify(result,null,2);}catch(error){testOutput.textContent='فشل الطلب ✕\n'+error.message;}finally{test.disabled=false;}});
+  const test=button('اختبار الخدمة','play',async()=>{test.disabled=true;testOutput.textContent='جارٍ اختبار الطلب...';try{const v=apiValues();const result=await request('apis/test','POST',{...v,apiId:row._id,testQuery:document.getElementById('field_testQuery').value,testPath:document.getElementById('field_testPath').value});testOutput.textContent=(v.type==='series'?'نجح اختبار البحث فقط؛ لم يُختبر التنزيل.':'نجح الطلب ✓')+'\n'+JSON.stringify(result,null,2);}catch(error){testOutput.textContent='فشل الطلب ✕\n'+error.message;}finally{test.disabled=false;}});
   // Series-specific fields
   const seriesSection=e('div');
   seriesSection.style.display = typeValue === 'series' ? 'block' : 'none';
@@ -177,7 +177,7 @@ function editApi(row={}) {
     if(typeSelect) typeSelect.addEventListener('change',()=>{ seriesSection.style.display = typeSelect.value === 'series' ? 'block' : 'none'; });
   },0);
 
-  openEditor(row._id?'تعديل الخدمة':'إضافة خدمة',[grid,advanced,e('p','المتغيرات: {query} كل ما بعد الأمر، {arg1} أول كلمة، {args} كل الكلمات. في Body يمكن استخدامها مباشرة.','help'),e('h3','فحص قبل الحفظ'),testQuery,testPath,test,testOutput],async()=>{
+  function apiValues() {
     const v=values();
     v.timeoutMs=Number(v.timeoutMs);
     // Top-level headers/body handling
@@ -209,7 +209,10 @@ function editApi(row={}) {
       sc.processing.qualityMatchField = String(v.series_processing_qualityMatchField||'id');
       v.seriesConfig = sc;
     }
-    await request('apis'+(row._id?'/'+row._id:''),row._id?'PUT':'POST',v);
+    return v;
+  }
+  openEditor(row._id?'تعديل الخدمة':'إضافة خدمة',[grid,advanced,e('p','المتغيرات: {query} كل ما بعد الأمر، {arg1} أول كلمة، {args} كل الكلمات. في Body يمكن استخدامها مباشرة.','help'),e('h3','فحص قبل الحفظ'),testQuery,testPath,test,testOutput],async()=>{
+    await request('apis'+(row._id?'/'+row._id:''),row._id?'PUT':'POST',apiValues());
     await saved();
   });
 }
