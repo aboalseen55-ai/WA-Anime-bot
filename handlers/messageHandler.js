@@ -21,6 +21,7 @@ import { handleKingdomDeleteStep, handleStartKingdomDelete } from "../utils/king
 import { handleKingdomEditStep, handleStartKingdomEdit } from "../utils/kingdomEdit.js";
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
+import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js';
 import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../utils/samBotUsage.js";
 import { buildLevelUpMessage, trackChatActivity } from "../utils/xpSystem.js";
 import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
@@ -305,11 +306,13 @@ function getMotivationalMessage(currentCount, remaining, kingdom) {
 }
 
 export async function messageHandler(sock, msg) {
+  if (!featureEnabled('replies')) return;
   if (!msg.message) return;
 
   const jid = msg.key.remoteJid;
   const sender = msg.key.participant || msg.key.remoteJid;
   const text = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+  if (await denyCommandIfPaused(sock, jid, sender, text)) return;
 
   // حفظ رسالة في الـ cache لاستخدامها في حذف مجموعة رسائل لاحقاً
   addRecentMessage(jid, msg.key);
@@ -334,7 +337,7 @@ export async function messageHandler(sock, msg) {
     console.log(`[DEBUG] من مجموعة رئيسية؟ ${kingdomData && kingdomData.mainGroup === jid}`);
 
     // تتبع الرسائل من المجموعة الرئيسية فقط
-    if (kingdomData && kingdomData.mainGroup === jid && !msg.key.fromMe) {
+    if (featureEnabled('tracking') && kingdomData && kingdomData.mainGroup === jid && !msg.key.fromMe) {
       console.log(`[DEBUG] تطابق! بدء تتبع الرسالة...`);
       try {
         let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
@@ -894,6 +897,7 @@ export async function messageHandler(sock, msg) {
 
   const smartCommandRoute = await classifySmartCommandRequest(trimmedText);
   if (smartCommandRoute.intent !== "none") {
+    if (smartCommandRoute.command && await denyCommandIfPaused(sock, jid, sender, smartCommandRoute.command)) return;
     console.log(`🧭 [SMART_CMD:${smartCommandRoute.source}] ${sender} -> ${smartCommandRoute.intent} (${smartCommandRoute.command || "-"})`);
 
     if (smartCommandRoute.intent === "show_profile") {
@@ -1700,7 +1704,7 @@ export async function messageHandler(sock, msg) {
   }
 
   // تفاعل سام بوت الذكي: يرد فقط إذا الكلام موجه له أو في الخاص أو بالرد على رسالته.
-  const smartInteractionHandled = await handleSamBotInteraction(sock, jid, sender, text, msg);
+  const smartInteractionHandled = featureEnabled('ai') && await handleSamBotInteraction(sock, jid, sender, text, msg);
   if (smartInteractionHandled) {
     return;
   }

@@ -5,3 +5,7 @@ logs/
 temp_*
 *.log
 .npm-cache/
+
+# Separate local project kept outside the bot repo
+arabic-tokenization/
+deps/

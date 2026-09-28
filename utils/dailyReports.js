@@ -1,4 +1,5 @@
 import { dashboardReply } from '../services/dashboardTemplates.js';
+import { featureEnabled, withBotContext } from '../services/botControls.js';
 import User from "../database/userModel.js";
 import { KINGDOMS } from "../config.js";
 import { sendAdminsDailyReports, resetDailyGameStats } from "../commands/adminSystem.js";
@@ -201,7 +202,9 @@ export function scheduleDailyReports(sock) {
 
       const timer = setTimeout(async () => {
         console.log(`🔔 بدء إرسال التقارير اليومية لمملكة ${kingdomId}...`);
-        await runKingdomDailyReports(sock, kingdomId);
+        try {
+          if (featureEnabled('automatic') && featureEnabled('reports')) await withBotContext('automatic', () => runKingdomDailyReports(sock, kingdomId));
+        } catch (error) { console.warn('Daily report interrupted:', error.message); }
         console.log(`✅ انتهى إرسال التقارير اليومية لمملكة ${kingdomId}`);
         scheduledReportTimers.delete(kingdomId);
         scheduleNextReport(kingdomId);

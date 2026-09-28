@@ -1,4 +1,5 @@
 import { dashboardReply } from '../services/dashboardTemplates.js';
+import { featureEnabled, withBotContext } from '../services/botControls.js';
 import QuranReminderLog from "../database/quranReminderLogModel.js";
 import { KINGDOMS } from "../config.js";
 
@@ -544,7 +545,9 @@ export function scheduleDailyQuranReminders(sock) {
     console.log(`Quran reminder next run for ${timerKey}: ${nextDate.toLocaleString("ar-EG", { timeZone })} (${timeZone})`);
 
     const timer = setTimeout(async () => {
-      await runReminder();
+      try {
+        if (featureEnabled('automatic') && featureEnabled('reminders')) await withBotContext('automatic', runReminder);
+      } catch (error) { console.warn('Reminder interrupted:', error.message); }
       quranReminderTimers.delete(timerKey);
       scheduleNext(timerKey, timeZone, runReminder);
     }, delay);

@@ -4,6 +4,7 @@ const dashboardApiSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true, trim: true, maxlength: 80 },
   endpoint: { type: String, required: function () { return (this.type ?? this.get('type')) !== 'series'; }, trim: true, maxlength: 1200 },
   queryTemplate: { type: String, default: "", maxlength: 500 },
+  fieldOptions: { type: mongoose.Schema.Types.Mixed, default: {} },
   method: { type: String, enum: ["GET", "POST"], default: "GET" },
   encryptedHeaders: { type: String, default: "" },
   encryptedBody: { type: String, default: "" },
@@ -21,6 +22,7 @@ const dashboardApiSchema = new mongoose.Schema({
       targetQuality: { type: String, default: "480" }
     },
     searchRequest: {
+      fieldOptions: { type: mongoose.Schema.Types.Mixed, default: {} },
       endpoint: { type: String, default: "" },
       queryTemplate: { type: String, default: "" },
       method: { type: String, enum: ["GET", "POST"], default: "GET" },
@@ -30,6 +32,7 @@ const dashboardApiSchema = new mongoose.Schema({
     },
     searchResponseMapping: { type: Object, default: {} },
     downloadRequest: {
+      fieldOptions: { type: mongoose.Schema.Types.Mixed, default: {} },
       endpoint: { type: String, default: "" },
       queryTemplate: { type: String, default: "" },
       method: { type: String, enum: ["GET", "POST"], default: "GET" },

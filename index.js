@@ -19,6 +19,7 @@ import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
 import { refreshDashboardTemplates } from './services/dashboardTemplates.js';
 import { rememberBotMessage } from './services/botMessageDeletion.js';
+import { loadBotControls, featureEnabled, outgoingAllowed, withBotContext } from './services/botControls.js';
 
 // Connect to MongoDB with better error handling
 try {
@@ -36,6 +37,7 @@ try {
   console.log("✅ MongoDB connected successfully");
   await initializeKingdomSystem();
   await refreshDashboardTemplates();
+  await loadBotControls();
   console.log("✅ Kingdom system initialized from database");
 } catch (error) {
   console.error("❌ MongoDB Connection Error:");
@@ -268,9 +270,16 @@ async function startBot() {
 
   const originalSendMessage = sock.sendMessage.bind(sock);
   sock.sendMessage = async (jid, content, options) => {
+    if (!outgoingAllowed()) throw new Error('BOT_PAUSED');
     const sent = await originalSendMessage(jid, normalizeOutgoingMessageContent(content), options);
     if (!content.delete && !content.react && !content.edit) await rememberBotMessage(sent);
     return sent;
+  };
+
+  const originalRelayMessage = sock.relayMessage.bind(sock);
+  sock.relayMessage = async (...args) => {
+    if (!outgoingAllowed()) throw new Error('BOT_PAUSED');
+    return originalRelayMessage(...args);
   };
 
   sock.ev.on("connection.update", async ({ qr, connection, lastDisconnect }) => {
@@ -351,6 +360,7 @@ async function startBot() {
 
   // نظام تسجيل الألقاب التلقائي في مجموعة الاستقبال
   sock.ev.on("group-participants.update", async (update) => {
+    if (!featureEnabled('automatic') || !featureEnabled('welcome')) return;
     const { id, participants, action } = update;
     const kingdom = getKingdomFromGroupJid(id);
     const receptionJid = kingdom?.receptionGroup || id;
@@ -435,7 +445,7 @@ async function startBot() {
     if (!msg.key.fromMe) {
       try {
         const { messageHandler } = await import("./handlers/messageHandler.js");
-        await messageHandler(sock, msg);
+        await withBotContext('reply', () => messageHandler(sock, msg));
       } catch (err) {
         console.error("❌ خطأ في معالجة الرسالة:", err);
       }

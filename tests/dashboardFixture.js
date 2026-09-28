@@ -10,6 +10,13 @@ import Audit from '../database/kingdomAuditLogModel.js';
 import Usage from '../database/samBotUsageModel.js';
 import Mafia from '../database/mafiaSessionModel.js';
 import Bank from '../database/bankModel.js';
+import BotControl from '../database/botControlModel.js';
+const fixtureControls=new Map();
+BotControl.findOneAndUpdate=(query,update)=>({lean:async()=>{
+  const prior=fixtureControls.get(query.key)||{revision:0,history:[]};
+  if(prior.revision!==query.revision)return null;
+  const value={key:query.key,...update.$set,revision:prior.revision+1,history:[...prior.history,...update.$push.history.$each]};fixtureControls.set(query.key,value);return value;
+}});
 
 const chain=value=>{const result={lean:async()=>value};for(const name of ['sort','limit','skip','select'])result[name]=()=>result;return result};
 const kingdom={_id:'100000000000000000000001',id:'demo',name:'مملكة الاختبار',mainGroup:'123@g.us',adminGroup:'456@g.us',receptionGroup:'789@g.us',workGroup:'987@g.us',groupIds:['123@g.us','456@g.us','789@g.us','987@g.us'],admins:['123@lid'],isActive:true,timeZone:'Asia/Amman',updatedAt:new Date().toISOString()};

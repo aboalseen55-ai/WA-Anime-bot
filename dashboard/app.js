@@ -3,6 +3,7 @@ const $ = id => document.getElementById(id);
 const labels = { overview:'نظرة عامة', commands:'الأوامر والردود', kingdoms:'الممالك', members:'الأعضاء', reports:'إنجازات الإدارة', games:'الألعاب', banks:'البنوك', services:'الخدمات', usage:'استهلاك الذكاء', audit:'سجل التغييرات' };
 const icons = {overview:'layout-dashboard',commands:'message-square-text',kingdoms:'crown',members:'users',reports:'chart-no-axes-combined',games:'gamepad-2',banks:'landmark',services:'plug',usage:'sparkles',audit:'history'};
 const roleNames = {member:'عضو',moderator:'مشرف',admin:'أدمن',super_admin:'أدمن رئيسي',everyone:'الجميع',developer:'المطور'};
+labels.controls='التحكم والصيانة'; icons.controls='settings-2';
 let csrf='', state={commands:[],apis:[]}, kingdoms=[], templates=[], catalog=[], section='overview', tab='builtin', page=1, query='', version=0, saveAction=null, toastTimer;
 const e = (tag, text, className) => { const node=document.createElement(tag); if(text!==undefined)node.textContent=text; if(className)node.className=className; return node; };
 const icon = name => { const node=e('i');node.dataset.lucide=name;return node; };
@@ -42,7 +43,7 @@ function sourceLabel(file){if(!file)return 'النماذج الأساسية';if(
 async function load() {
   const token=++version;const root=$('content');root.replaceChildren(e('p','جارٍ تحميل البيانات…','loading'));
   $('pageTitle').textContent=labels[section];document.querySelectorAll('.nav-link').forEach(a=>{a.classList.toggle('active',a.dataset.section===section);if(a.dataset.section===section)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
-  $('scope').hidden=['commands','services','usage'].includes(section);
+  $('scope').hidden=['commands','services','usage','controls'].includes(section);
   try {
     let render;
     if(section==='overview') {const data=await request(scoped('overview'));render=()=>overview(data);}
@@ -50,9 +51,48 @@ async function load() {
     else if(section==='kingdoms') {kingdoms=(await request('kingdoms')).kingdoms;render=kingdomList;}
     else if(section==='members') {const data=await request(scoped('members'));render=()=>members(data);}
     else if(section==='services') render=services;
+    else if(section==='controls') {
+      const data=await request('controls');
+      state=await request('state');
+      if(!catalog.length)catalog=(await request('catalog')).commands;
+      render=()=>renderControls(data);
+    }
     else {const data=await request(scoped(section));render=()=>dataList(data);}
     if(token!==version)return;root.replaceChildren();render();$('updated').textContent='آخر تحديث '+new Date().toLocaleTimeString('ar-JO');paintIcons();
   } catch(error) {if(token!==version)return;root.replaceChildren(e('p',error.message,'error-state'),button('إعادة المحاولة','refresh-cw',load));paintIcons();}
+}
+function renderControls(data) {
+  const root=$('content');root.append(heading('التحكم والصيانة'));
+  const entries = [
+    ...Object.entries(data.labels).map(([key,name])=>({key,name,kind:'قسم'})),
+    ...[...new Set([...catalog.map(row=>row.command.split(/\s/)[0].toLowerCase()),...state.commands.map(row=>row.trigger)])].map(name=>({key:'command:'+name,name,kind:'أمر'})),
+    ...state.apis.map(api=>({key:'service:'+api._id,name:api.name,kind:'خدمة',api}))
+  ];
+  const area=e('div');root.append(searchBar('ابحث عن أمر أو خدمة',draw),area);
+  function draw() {
+    const rows=entries.filter(row=>(row.name+' '+row.kind).includes(query));
+    area.replaceChildren(table(['العنصر','النوع','الحالة','العودة التلقائية',''],rows.map(row=>{
+      const rule=data.controls.find(item=>item.key===row.key);
+      const controlOff=rule?.enabled===false && (!rule.until || new Date(rule.until)>new Date());
+      const apiOff=row.api?.enabled===false;
+      const off=controlOff || apiOff;
+      const toggle=e('input');toggle.type='checkbox';toggle.checked=!off;toggle.setAttribute('aria-label',row.name);
+      toggle.disabled=apiOff && !rule;
+      toggle.title=apiOff && !rule?'الخدمة متوقفة من إعدادات الخدمات':'تعديل حالة التحكم';
+      toggle.addEventListener('change',()=>{const enabled=toggle.checked;toggle.checked=!off;editControl(row,rule,enabled)});
+      const actions=rowsActions([['settings-2','إعدادات '+row.name,()=>editControl(row,rule,!off)]]);actions.prepend(toggle);
+      return [row.name,row.kind,apiOff&&!controlOff?'متوقف من إعداد الخدمة':off?'متوقف مؤقتًا':'مفعّل',controlOff&&rule.until?date(rule.until):'—',actions];
+    })));
+    // Switches use the same editor so duration and reason accompany each change.
+  }
+  function editControl(row, rule={}, enabled=true) {
+    const history=e('div');
+    history.append(table(['التاريخ','الحالة','السبب','المسؤول'],(rule.history||[]).slice().reverse().map(item=>[date(item.at),item.enabled?'تشغيل':'إيقاف',item.reason||'—',item.actor])));
+    openEditor(row.name,[field('enabled','مفعّل',enabled,'checkbox'),field('minutes','مدة الإيقاف',0,'select',[[0,'حتى إعادة التشغيل يدويًا'],[10,'10 دقائق'],[60,'ساعة'],[1440,'يوم']]),field('message','رسالة الصيانة',rule.message||'هذا الأمر متوقف مؤقتًا للصيانة. جرّب لاحقًا.','textarea'),field('reason','سبب داخلي',rule.reason||'','textarea'),history],async()=>{
+      await request('controls','PUT',{...values(),key:row.key,revision:rule.revision||0});await saved();
+    });
+  }
+  draw();
 }
 function overview(data) {
   const root=$('content'),stats=e('div',undefined,'metrics');
@@ -141,6 +181,31 @@ function editCommand(row={}) {
   openEditor(row._id?'تعديل الأمر':'إضافة أمر',[grid,e('p','المتغيرات: {name} اسم المرسل، {api} نتيجة الخدمة','help')],async()=>{await request('commands'+(row._id?'/'+row._id:''),row._id?'PUT':'POST',values());await saved()});
 }
 function editApi(row={}) {
+  const fieldControllers = {};
+  function attachFieldBlocks(prefix, config, host) {
+    const options=structuredClone(config.fieldOptions||{});
+    fieldControllers[prefix]=options;
+    for (const [kind,label,suffix] of [['query','معاملات الطلب','queryTemplate'],['headers','Headers','headers'],['body','Body','body']]) {
+      const area=e('fieldset'),legend=e('legend',label),toggle=e('input');toggle.type='checkbox';toggle.checked=options[kind]!==false;toggle.setAttribute('aria-label','تفعيل '+label);legend.prepend(toggle);area.append(legend);
+      const list=e('div');area.append(list);host.append(area);
+      const source=$('field_'+prefix+suffix);
+      const disabled=new Set(options['disabled'+kind]||[]);
+      function redraw() {
+        let keys=config.fieldNames?.[kind]||[];
+        try {
+          if(kind==='query')keys=[...new URLSearchParams(source?.value||'').keys()];
+          else if(source?.value.trim())keys=Object.keys(JSON.parse(source.value));
+        } catch { return; }
+        list.replaceChildren();
+        for(const key of new Set([...keys,...disabled])) {
+          const line=e('label'),check=e('input');check.type='checkbox';check.checked=!disabled.has(key);check.disabled=!toggle.checked;
+          check.addEventListener('change',()=>{check.checked?disabled.delete(key):disabled.add(key);options['disabled'+kind]=[...disabled]});
+          line.append(check,e('span',key));list.append(line);
+        }
+      }
+      toggle.addEventListener('change',()=>{options[kind]=toggle.checked;redraw()});source?.addEventListener('change',redraw);redraw();
+    }
+  }
   const grid=e('div',undefined,'form-grid');
   const typeValue = row.type || 'api';
   grid.append(field('name','اسم الخدمة',row.name),field('type','نوع الخدمة',typeValue,'select',[['api','Normal Service'],['series','Series Service']]),field('endpoint','رابط HTTPS — يدعم {query}',row.endpoint,'url'),field('queryTemplate','معاملات GET — مثال: q={query}&page=1',row.queryTemplate),field('method','طريقة الطلب',row.method||'GET','select',[['GET','GET'],['POST','POST']]),field('responseType','نوع النتيجة',row.responseType||'text','select',[['text','نص / JSON'],['image_url','رابط صورة داخل JSON'],['image','ملف صورة مباشر'],['video_url','رابط فيديو داخل JSON'],['video','ملف فيديو مباشر'],['audio_url','رابط صوت داخل JSON'],['audio','ملف صوت مباشر']]),field('timeoutMs','مهلة الطلب بالمللي ثانية',row.timeoutMs||12000,'number'),field('enabled','مفعّلة',row.enabled!==false,'checkbox'));
@@ -185,17 +250,28 @@ function editApi(row={}) {
   // Toggle section visibility when type changes
   setTimeout(()=>{
     const typeSelect = document.getElementById('field_type');
-    if(typeSelect) typeSelect.addEventListener('change',()=>{ seriesSection.style.display = typeSelect.value === 'series' ? 'block' : 'none'; });
+    const normalBlocks=e('div'),searchBlocks=e('div'),downloadBlocks=e('div');
+    advanced.append(normalBlocks);seriesSection.append(e('h4','حقول طلب البحث'),searchBlocks,e('h4','حقول طلب التنزيل'),downloadBlocks);
+    attachFieldBlocks('',row,normalBlocks);attachFieldBlocks('series_search_',row.seriesConfig?.searchRequest||{},searchBlocks);attachFieldBlocks('series_download_',row.seriesConfig?.downloadRequest||{},downloadBlocks);
+    function toggleType() {
+      const series=typeSelect.value==='series';seriesSection.style.display=series?'block':'none';advanced.hidden=series;testPath.hidden=series;
+      for(const name of ['endpoint','queryTemplate','method','responseType','timeoutMs'])$('field_'+name).parentElement.hidden=series;
+      for(const name of ['series_general_targetQuality','series_processing_generatedUrlLifetimeMs','series_processing_qualityMatchField'])$('field_'+name).parentElement.hidden=true;
+    }
+    if(typeSelect) {typeSelect.addEventListener('change',toggleType);toggleType();}
   },0);
 
   function apiValues() {
     const v=values();
     v.timeoutMs=Number(v.timeoutMs);
+    v.fieldOptions=fieldControllers['']||row.fieldOptions||{};
     // Top-level headers/body handling
     for(const key of ['headers','body']){if(!v[key].trim())delete v[key];else {try{v[key]=JSON.parse(v[key])}catch{throw Error('تحقق من صيغة '+key)}}}
     // If series type, build seriesConfig
     if(v.type==='series'){
       const sc = { general: {}, searchRequest: {}, downloadRequest: {}, processing: {} };
+      sc.searchRequest.fieldOptions=fieldControllers.series_search_||row.seriesConfig?.searchRequest?.fieldOptions||{};
+      sc.downloadRequest.fieldOptions=fieldControllers.series_download_||row.seriesConfig?.downloadRequest?.fieldOptions||{};
       sc.general.resultLimit = Number(v.series_general_resultLimit) || 6;
       sc.general.showThumbnails = v.series_general_showThumbnails === true;
       sc.general.outputType = String(v.series_general_outputType || 'video');

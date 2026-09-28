@@ -1,4 +1,6 @@
 import axios from "axios";
+import { filterRequestFields } from './apiRequestFields.js';
+import { featureEnabled, controlBlocked, maintenanceMessage, denyCommandIfPaused } from './botControls.js';
 import { createWriteStream } from 'node:fs';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -64,21 +66,21 @@ export function seriesRequestUrl(request, variables) {
     Array.isArray(value) ? value.map(item => encodeURIComponent(item)) : encodeURIComponent(value || '')]));
   const template = request.endpoint.replace(/%7B(query|args|sourceUrl|videoId|arg\d+)%7D/gi, '{$1}');
   const endpoint = new URL(interpolate(template, encoded));
-  for (const [key, value] of new URLSearchParams(request.queryTemplate || '')) {
+  for (const [key, value] of new URLSearchParams(filterRequestFields(request,'query',request.queryTemplate))) {
     endpoint.searchParams.set(key, interpolate(value, variables));
   }
   return endpoint;
 }
 
 export async function runConfiguredApi(api, variables) {
+  if (!featureEnabled('services') || controlBlocked(`service:${api?._id}`)) throw new Error(maintenanceMessage);
   if (!api?.enabled) throw new Error("واجهة API غير مفعلة");
   // Support both normal APIs and series services
   if (api.type !== 'series') {
-    const endpoint = new URL(interpolate(api.endpoint, variables));
-    if (api.queryTemplate) for (const [key, value] of new URLSearchParams(interpolate(api.queryTemplate, variables))) endpoint.searchParams.set(key, value);
+    const endpoint = seriesRequestUrl(api, variables);
     if (endpoint.protocol !== "https:") throw new Error("يسمح فقط بروابط HTTPS");
-    const headers = decryptDashboardValue(api.encryptedHeaders) || {};
-    const data = interpolate(decryptDashboardValue(api.encryptedBody) || undefined, variables);
+    const headers = filterRequestFields(api,'headers',decryptDashboardValue(api.encryptedHeaders) || {});
+    const data = interpolate(filterRequestFields(api,'body',decryptDashboardValue(api.encryptedBody) || undefined), variables);
     const agent = await publicHttpsAgent(endpoint.toString());
     try {
         const response = await httpClient({
@@ -112,12 +114,13 @@ export function mapResponseFields(item, mapping) {
 }
 
 export async function runSeriesService(service, variables, sessionStore = null, userId, chatId, commandId) {
+  if (!featureEnabled('services') || controlBlocked(`service:${service?._id}`)) throw new Error(maintenanceMessage);
   if (!service?.enabled || service.type !== 'series' || !service.seriesConfig) throw new Error('خدمة سلسلة غير مفعلة أو غير صالحة');
   const sc = service.seriesConfig;
   // Step 1: Search
   const searchEndpoint = seriesRequestUrl({ ...sc.searchRequest, endpoint: sc.searchRequest.endpoint || service.endpoint }, variables);
-  const headers = decryptDashboardValue(sc.searchRequest.encryptedHeaders) || {};
-  const data = interpolate(decryptDashboardValue(sc.searchRequest.encryptedBody) || undefined, variables);
+  const headers = filterRequestFields(sc.searchRequest,'headers',decryptDashboardValue(sc.searchRequest.encryptedHeaders) || {});
+  const data = interpolate(filterRequestFields(sc.searchRequest,'body',decryptDashboardValue(sc.searchRequest.encryptedBody) || undefined), variables);
   const agent = await publicHttpsAgent(searchEndpoint.toString());
   try {
       const searchResp = await httpClient({ maxRedirects: 0, maxContentLength: 1024 * 1024, maxBodyLength: 120000, method: sc.searchRequest.method || 'GET', url: searchEndpoint.toString(), headers, data, timeout: sc.searchRequest.timeoutMs || service.timeoutMs, httpsAgent: agent, proxy: false, validateStatus: s => s >= 200 && s < 300, responseType: 'json' });
@@ -170,6 +173,8 @@ export async function runSeriesService(service, variables, sessionStore = null, 
     if (!session) throw new Error('No active series session');
     const command = session.commandId && await DashboardCommand.findById(session.commandId);
     if (!command?.enabled || String(command.apiId) !== String(session.serviceId)) throw new Error('الأمر غير متاح');
+    if (!featureEnabled('services') || !featureEnabled('replies') || controlBlocked(`service:${session.serviceId}`)) throw new Error(maintenanceMessage);
+    if (await denyCommandIfPaused(sock, jid, userId, command.trigger)) return;
     if (command.permission === 'developer' && !isDeveloper(userId)) throw new Error('الأمر خاص بالمطور');
     if (command.permission === 'moderator' && !isDeveloper(userId) && !(await isModerator(userId, getKingdomIdFromGroupJid(jid)))) throw new Error('الأمر للمشرفين');
     const serviceId = session.serviceId;
@@ -194,8 +199,8 @@ export async function runSeriesService(service, variables, sessionStore = null, 
 
     // Prepare download endpoint and params
     const downloadEndpoint = seriesRequestUrl({ ...sc.downloadRequest, endpoint: sc.downloadRequest.endpoint || service.endpoint }, variables);
-    const headers = decryptDashboardValue(sc.downloadRequest.encryptedHeaders) || {};
-    const data = interpolate(decryptDashboardValue(sc.downloadRequest.encryptedBody) || undefined, variables);
+    const headers = filterRequestFields(sc.downloadRequest,'headers',decryptDashboardValue(sc.downloadRequest.encryptedHeaders) || {});
+    const data = interpolate(filterRequestFields(sc.downloadRequest,'body',decryptDashboardValue(sc.downloadRequest.encryptedBody) || undefined), variables);
     const agent = await publicHttpsAgent(downloadEndpoint.toString());
     try {
       const resp = await httpClient({ maxRedirects: 0, maxContentLength: 1024 * 1024, maxBodyLength: 120000, method: sc.downloadRequest.method || 'GET', url: downloadEndpoint.toString(), headers, data, timeout: sc.downloadRequest.timeoutMs || service.timeoutMs || 12000, httpsAgent: agent, proxy: false, validateStatus: s => s >= 200 && s < 300, responseType: 'json' });
@@ -330,8 +335,12 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   const args = String(text).trim().split(/\s+/).slice(1);
   const query = args.join(" ");
   if (isReservedCommand(trigger)) return false;
-  const command = await DashboardCommand.findOne({ trigger, enabled: true }).populate("apiId");
+  const command = await DashboardCommand.findOne({ trigger }).populate("apiId");
   if (!command) return false;
+  if (command.enabled === false || (command.apiId && (command.apiId.enabled === false || !featureEnabled('services') || controlBlocked(`service:${command.apiId._id}`)))) {
+    await sock.sendMessage(jid, {text: controlBlocked(`service:${command.apiId?._id}`)?.message || maintenanceMessage});
+    return true;
+  }
 
   const kingdom = getKingdomIdFromGroupJid(jid);
   if (command.permission === "developer" && !isDeveloper(sender)) {

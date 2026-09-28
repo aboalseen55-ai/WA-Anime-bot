@@ -1,10 +1,12 @@
 import http from 'node:http';
+import { CONTROL_LABELS, controlSnapshot, saveBotControl } from './botControls.js';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import DashboardCommand from '../database/dashboardCommandModel.js';
 import DashboardApi from '../database/dashboardApiModel.js';
 import DashboardTemplate from '../database/dashboardTemplateModel.js';
-import { encryptDashboardValue, isDashboardEncryptionConfigured } from './dashboardCrypto.js';
+import { encryptDashboardValue, decryptDashboardValue, isDashboardEncryptionConfigured } from './dashboardCrypto.js';
+import { validateRequestFields } from './apiRequestFields.js';
 import { dashboardRead, dashboardWrite, isReservedCommand, audit } from './dashboardData.js';
 import { TEMPLATE_DEFINITIONS, validateTemplate, refreshDashboardTemplates } from './dashboardTemplates.js';
 import { validateEndpoint } from './dashboardApiSafety.js';
@@ -55,6 +57,7 @@ export function validateApi(input) {
   if (input.type !== 'series' && !['GET','POST'].includes(input.method)) throw new Error('طريقة الطلب غير صالحة');
   const result = { name, endpoint, queryTemplate: String(input.queryTemplate || '').trim(), method: input.method, responseType: input.responseType || 'text', timeoutMs: Math.max(1000, Math.min(30000, Number(input.timeoutMs) || 12000)), enabled: input.enabled !== false };
   result.type = type;
+  result.fieldOptions = validateRequestFields(input.fieldOptions);
   if (!['text','image','image_url','video','video_url','audio','audio_url'].includes(result.responseType)) throw new Error('نوع النتيجة غير صالح');
   for (const [field, destination] of [['headers','encryptedHeaders'],['body','encryptedBody']]) {
     if (Object.hasOwn(input, field)) {
@@ -100,6 +103,7 @@ export function validateApi(input) {
     for (const step of ['searchRequest', 'downloadRequest']) {
       const request = result.seriesConfig[step];
       if (!request) throw new Error('إعدادات خطوات الخدمة مطلوبة');
+      request.fieldOptions = validateRequestFields(sc[step].fieldOptions);
       for (const field of ['headers', 'body']) {
         if (Object.hasOwn(sc[step], field) && (!sc[step][field] || typeof sc[step][field] !== 'object' || Array.isArray(sc[step][field]))) {
           throw new Error('الحقول المتقدمة يجب أن تكون JSON object');
@@ -137,12 +141,15 @@ export function preserveSeriesSecrets(values, saved) {
 export function publicApiConfig(value) {
   const { encryptedHeaders, encryptedBody, seriesConfig, ...api } = value;
   const output = { ...api, hasHeaders: Boolean(encryptedHeaders), hasBody: Boolean(encryptedBody) };
+  const fieldNames = (headers,body) => ({headers:Object.keys(decryptDashboardValue(headers)||{}),body:Object.keys(decryptDashboardValue(body)||{})});
+  output.fieldNames = fieldNames(encryptedHeaders,encryptedBody);
   if (seriesConfig) {
     output.seriesConfig = { ...seriesConfig };
     for (const step of ['searchRequest', 'downloadRequest']) {
       if (!seriesConfig[step]) continue;
       const { encryptedHeaders: headers, encryptedBody: body, ...request } = seriesConfig[step];
       output.seriesConfig[step] = { ...request, hasHeaders: Boolean(headers), hasBody: Boolean(body) };
+      output.seriesConfig[step].fieldNames = fieldNames(headers,body);
     }
   }
   return output;
@@ -183,6 +190,16 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
       if (!session) return json(res,401,{error:'يلزم تسجيل الدخول'});
       if (req.method !== 'GET' && req.headers['x-dashboard-csrf'] !== session.csrf) return json(res,403,{error:'انتهت صلاحية الطلب؛ حدّث الصفحة'});
       if (route === 'logout' && req.method === 'POST') { sessions.delete(id); res.setHeader('Set-Cookie','sam_dashboard_session=; Path=/dashboard; HttpOnly; Secure; SameSite=Strict; Max-Age=0'); return json(res,200,{ok:true}); }
+      if (route === 'controls' && req.method === 'GET') return json(res,200,{ labels: CONTROL_LABELS, controls: controlSnapshot() });
+      if (route === 'controls' && req.method === 'PUT') {
+        const body = await readJson(req);
+        const key = String(body.key || '');
+        const command = key.startsWith('command:') ? key.slice(8) : '';
+        const service = key.startsWith('service:') ? key.slice(8) : '';
+        const valid = Object.hasOwn(CONTROL_LABELS,key) || (command && (isReservedCommand(command) || await DashboardCommand.exists({trigger:command}))) || (/^[a-f0-9]{24}$/i.test(service) && await DashboardApi.exists({_id:service}));
+        if (!valid) throw new Error('عنصر تحكم غير صالح');
+        return json(res,200,{ok:true,control:await saveBotControl(key,body)});
+      }
       if (route === 'restart' && req.method === 'POST') {
         json(res,202,{ok:true,message:'سيُعاد تشغيل البوت الآن'});
         setTimeout(async () => {
