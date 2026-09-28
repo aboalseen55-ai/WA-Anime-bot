@@ -110,7 +110,7 @@ function commands() {
     results.replaceChildren();const source=tab==='builtin'?catalog:tab==='replies'?templates:state.commands;
     const list=source.filter(row=>JSON.stringify([row.command,row.title,row.description,row.text,row.trigger,row.file]).toLowerCase().includes(query.toLowerCase()));
     const visible=list.slice((page-1)*30,page*30);
-    if(tab==='builtin') {const items=e('div',undefined,'command-list');visible.forEach(row=>{const item=e('div',undefined,'command');item.append(e('h3',row.command),e('p',row.description),e('small',row.usage));items.append(item)});results.append(list.length?items:empty('لا توجد أوامر مطابقة'));}
+    if(tab==='builtin') {const items=e('div',undefined,'command-list');visible.forEach(row=>{const item=e('div',undefined,'command');item.append(e('h3',row.title||row.command),e('p',row.description),e('small',row.usage));item.append(rowsActions([['pencil','تعديل الأمر الأصلي',()=>editBuiltinCommand(row)]]));items.append(item)});results.append(list.length?items:empty('لا توجد أوامر مطابقة'));}
     if(tab==='replies') results.append(table(['الرد','القسم','الحالة',''],visible.map(row=>{const title=e('span',row.title);title.title=row.text;return [title,sourceLabel(row.file),row.customized?'معدّل':'الأصلي',rowsActions([['pencil','تعديل الرد',()=>editTemplate(row)]])]})));
     if(tab==='custom')results.append(table(['الأمر','الاسم','الصلاحية','الحالة',''],visible.map(row=>[row.trigger,row.title,roleNames[row.permission],row.enabled?'مفعّل':'متوقف',rowsActions([['pencil','تعديل الأمر',()=>editCommand(row)],['trash-2','حذف الأمر',()=>remove('commands/'+row._id,row.title)]])])));
     results.append(pager(list.length,renderList));paintIcons();
@@ -118,6 +118,12 @@ function commands() {
   renderList();
 }
 function commandsReset(){ $('content').replaceChildren();commands();paintIcons(); }
+function editBuiltinCommand(row) {
+  const key = btoa(unescape(encodeURIComponent(row.command))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const grid=e('div',undefined,'form-grid');
+  grid.append(field('title','اسم العرض',row.title||row.command),field('description','الوصف',row.description||''),field('usage','طريقة الاستخدام',row.usage||''));
+  openEditor('تعديل الأمر الأصلي '+row.command,[grid,e('p','هذا يعدل اسم الأمر ووصفه وطريقة عرضه في الداشبورد. لتعديل نصوص الردود استخدم قسم الردود والقوالب. منطق الأمر نفسه لا يتغير.','help')],async()=>{await request('builtin-commands/'+key,'PUT',values());catalog=[];await saved()});
+}
 function kingdomList() {
   const root=$('content'),title=heading('الممالك المسجّلة',number(kingdoms.length)+' مملكة');title.append(button('إضافة مملكة','plus',()=>editKingdom(),'primary'));root.append(title);
   const grid=e('div',undefined,'kingdom-grid');kingdoms.filter(k=>!$('scope').value||k.id===$('scope').value).forEach(k=>{
@@ -157,7 +163,7 @@ function dataList(data) {
   if(section==='banks') {root.append(heading('بنوك الممالك'),table(['المملكة','الرصيد'],data.banks.map(b=>[kingdoms.find(k=>k.id===b.kingdom)?.name||b.kingdom,number(b.totalCoins)])),heading('سجل العمليات'),table(['النوع','القيمة','التاريخ','المملكة'],data.rows.map(r=>[({deposit:'إيداع',withdraw:'سحب',transfer:'تحويل'})[r.transaction.type]||r.transaction.type,number(r.transaction.amount),date(r.transaction.timestamp),kingdoms.find(k=>k.id===r.kingdom)?.name||r.kingdom])));}
   root.append(pager(data.total));
 }
-function auditLabel(value){return ({dashboard_template_updated:'تعديل رد',dashboard_template_restored:'استرجاع الرد الأصلي',dashboard_kingdom_updated:'تعديل مملكة',dashboard_kingdom_created:'إضافة مملكة',dashboard_member_updated:'تعديل عضو',kingdom_deleted:'حذف مملكة',kingdom_created:'إنشاء مملكة',dashboard_commands_post:'إضافة أمر',dashboard_commands_put:'تعديل أمر',dashboard_commands_delete:'حذف أمر',dashboard_apis_post:'إضافة خدمة',dashboard_apis_put:'تعديل خدمة',dashboard_apis_delete:'حذف خدمة'})[value]||value;}
+function auditLabel(value){return ({dashboard_template_updated:'تعديل رد',dashboard_template_restored:'استرجاع الرد الأصلي',dashboard_builtin_command_updated:'تعديل أمر أصلي',dashboard_kingdom_updated:'تعديل مملكة',dashboard_kingdom_created:'إضافة مملكة',dashboard_member_updated:'تعديل عضو',kingdom_deleted:'حذف مملكة',kingdom_created:'إنشاء مملكة',dashboard_commands_post:'إضافة أمر',dashboard_commands_put:'تعديل أمر',dashboard_commands_delete:'حذف أمر',dashboard_apis_post:'إضافة خدمة',dashboard_apis_put:'تعديل خدمة',dashboard_apis_delete:'حذف خدمة'})[value]||value;}
 
 function field(name,label,value='',type='text',options) {
   const wrap=e('div',undefined,'form-field'+(type==='textarea'?' full':'')),id='field_'+name;

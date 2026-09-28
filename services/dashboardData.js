@@ -10,6 +10,7 @@ import Bank from '../database/bankModel.js';
 import { refreshKingdomCache, createKingdomFromRegistration, deleteKingdomById } from '../utils/kingdomService.js';
 import { DEVELOPER_JID } from '../config.js';
 import { getDailyGameStats, generateAdminDailyReport } from '../commands/adminSystem.js';
+import DashboardBuiltinCommand from '../database/dashboardBuiltinCommandModel.js';
 
 export const catalog = Object.entries(COMMANDS_REGISTRY).flatMap(([section, rows]) => rows.map(row => ({ ...row, section })));
 const known = new Set(catalog.map(row => row.command.split(/\s/)[0]));
@@ -47,7 +48,10 @@ export async function dashboardRead(url) {
   const route = url.pathname.replace('/dashboard/api/', '');
   const { page, limit } = pagination(url);
   const kingdom = String(url.searchParams.get('kingdom') || '');
-  if (route === 'catalog') return { commands: catalog };
+  if (route === 'catalog') {
+    const overrides = new Map((await DashboardBuiltinCommand.find({}).lean()).map(row => [row.command, row]));
+    return { commands: catalog.map(row => ({ ...row, ...(overrides.get(row.command) || {}) })) };
+  }
   if (route === 'kingdoms') return { kingdoms: await Kingdom.find({}).select(fields).sort({ name: 1 }).lean() };
   if (route === 'members') {
     if (!kingdom || !await Kingdom.exists({ id: kingdom })) return { users: [], total: 0, page };

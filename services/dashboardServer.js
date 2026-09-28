@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import DashboardCommand from '../database/dashboardCommandModel.js';
 import DashboardApi from '../database/dashboardApiModel.js';
 import DashboardTemplate from '../database/dashboardTemplateModel.js';
+import DashboardBuiltinCommand from '../database/dashboardBuiltinCommandModel.js';
 import { encryptDashboardValue, decryptDashboardValue, isDashboardEncryptionConfigured } from './dashboardCrypto.js';
 import { validateRequestFields } from './apiRequestFields.js';
 import { dashboardRead, dashboardWrite, isReservedCommand, audit } from './dashboardData.js';
@@ -20,6 +21,18 @@ const assets = new Map([
   ['/dashboard/icons.js', ['../node_modules/lucide/dist/umd/lucide.min.js', 'application/javascript']]
 ]);
 function json(res, status, body) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); }
+function decodeCommandKey(value) {
+  try { return Buffer.from(String(value), 'base64url').toString('utf8'); } catch { throw new Error('الأمر غير صالح'); }
+}
+export function validateBuiltinCommand(input) {
+  const result = {
+    title: String(input.title || '').trim().slice(0, 120),
+    description: String(input.description || '').trim().slice(0, 500),
+    usage: String(input.usage || '').trim().slice(0, 500)
+  };
+  if (!result.title && !result.description && !result.usage) throw new Error('أدخل قيمة واحدة على الأقل');
+  return result;
+}
 export function readJson(req) {
   return new Promise((resolve, reject) => {
     let size = 0, oversized = false; const chunks = [];
@@ -258,6 +271,15 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
         const created = await DashboardApi.create(copy);
         await audit('apis_post', created.name);
         return json(res,200,{ok:true,id:created._id});
+      }
+      const builtin = /^builtin-commands\/([A-Za-z0-9_-]+)$/.exec(route);
+      if (builtin && req.method === 'PUT') {
+        const command = decodeCommandKey(builtin[1]);
+        if (!isReservedCommand(command)) throw new Error('الأمر الأصلي غير موجود');
+        const values = validateBuiltinCommand(input);
+        await DashboardBuiltinCommand.updateOne({ command }, { $set: { command, ...values } }, { upsert: true, runValidators: true });
+        await audit('builtin_command_updated', command);
+        return json(res, 200, { ok: true });
       }
       const template = /^templates\/([a-zA-Z0-9_]+)$/.exec(route);
       if (template && ['PUT','DELETE'].includes(req.method)) {
