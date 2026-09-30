@@ -11,6 +11,9 @@ import Usage from '../database/samBotUsageModel.js';
 import Mafia from '../database/mafiaSessionModel.js';
 import Bank from '../database/bankModel.js';
 import BotControl from '../database/botControlModel.js';
+import BusinessSettings from '../database/businessSettingsModel.js';
+import BusinessOrder from '../database/businessOrderModel.js';
+import BusinessDailyStat from '../database/businessDailyStatModel.js';
 const fixtureControls=new Map();
 BotControl.findOneAndUpdate=(query,update)=>({lean:async()=>{
   const prior=fixtureControls.get(query.key)||{revision:0,history:[]};
@@ -35,6 +38,12 @@ for(const [Model,get,set] of [[Command,()=>commands,value=>commands=value],[Api,
   Model.updateOne=async({_id},update)=>{Object.assign(get().find(row=>row._id===_id),update.$set);return{matchedCount:1}};
   Model.deleteOne=async({_id})=>{set(get().filter(row=>row._id!==_id));return{deletedCount:1}};
 }
+let businessSettings={key:'main',enabled:true,businessName:'مقهى سام',ownerJids:['962700000009@s.whatsapp.net'],faq:[{question:'الأسعار',keywords:['سعر','اسعار'],answer:'القهوة 2 دينار والكيك 3 دنانير.',enabled:true},{question:'الموقع',keywords:['وين','موقع'],answer:'عمّان، شارع الرينبو.',enabled:true}]};
+const businessOrders=[{_id:'300000000000000000000001',ref:1001,label:'طلب',customerName:'لينا',customerPhone:'962700000001',answers:[{question:'شو حاب تطلب؟',answer:'كيكة شوكولاتة لـ 8 أشخاص'},{question:'ما اسمك؟',answer:'لينا'},{question:'الموعد؟',answer:'الخميس 5 مساءً'}],status:'new',note:'',createdAt:new Date()},{_id:'300000000000000000000002',ref:1000,label:'طلب',customerName:'عمر',customerPhone:'962700000002',answers:[{question:'شو حاب تطلب؟',answer:'2 قهوة عربية'}],status:'done',note:'',createdAt:new Date(Date.now()-86400000)}];
+BusinessSettings.findOne=()=>chain(businessSettings);BusinessSettings.findOneAndUpdate=(query,update)=>({lean:async()=>(businessSettings={...businessSettings,...update.$set})});
+BusinessOrder.find=()=>chain(businessOrders);BusinessOrder.countDocuments=async()=>businessOrders.filter(o=>o.status==='new').length;
+BusinessOrder.findByIdAndUpdate=(id,update)=>({lean:async()=>{const row=businessOrders.find(o=>o._id===id);if(row)Object.assign(row,update.$set);return row||null;}});
+BusinessDailyStat.findOne=()=>chain({messages:42,newContacts:7,faqHits:15,autoReplies:6,orders:1});
 const port=Number(process.env.DASHBOARD_FIXTURE_PORT||4187);
 process.env.DASHBOARD_ENCRYPTION_KEY='local-fixture-key-not-for-production';
 http.createServer(createDashboardHandler({getBotStatus:()=>({connected:true}),getGroups:async()=>[{id:'123@g.us',name:'المجموعة الأساسية'},{id:'456@g.us',name:'مجموعة الإدارة'},{id:'789@g.us',name:'الاستقبال'},{id:'987@g.us',name:'الوورك'}],password:'dashboard-test-only'})).listen(port,'127.0.0.1',()=>console.log('Fixture dashboard http://127.0.0.1:'+port+'/dashboard'));

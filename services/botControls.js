@@ -4,7 +4,8 @@ import BotControl from '../database/botControlModel.js';
 export const CONTROL_LABELS = {
   bot: 'تشغيل البوت', replies: 'الردود التفاعلية', automatic: 'الرسائل التلقائية',
   services: 'الخدمات الخارجية', ai: 'المحادثة الذكية', tracking: 'تتبع التفاعل',
-  welcome: 'الترحيب التلقائي', reports: 'التقارير المجدولة', reminders: 'التذكيرات المجدولة'
+  welcome: 'الترحيب التلقائي', reports: 'التقارير المجدولة', reminders: 'التذكيرات المجدولة',
+  business: 'وضع الأعمال'
 };
 const controls = new Map();
 const notices = new Map();
