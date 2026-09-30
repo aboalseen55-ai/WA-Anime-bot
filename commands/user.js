@@ -2,7 +2,7 @@ import { dashboardReply } from '../services/dashboardTemplates.js';
 import User from "../database/userModel.js";
 import { showBankBalance, depositToBank, withdrawFromBank, classifyIdentifier, isSuperAdminInKingdom, isAdmin, isModerator, findUserByNickname, findUserByNicknameOrPhone, getCleanMentionTextForUser } from "./adminSystem.js";
 import { getHighestRank, displayRank } from "./rankSystem.js";
-import { pendingMentions } from "../handlers/messageHandler.js";
+import { pendingMentions } from "../handlers/handlerState.js";
 import { ADMINS, getKingdomIdFromGroupJid, DEVELOPER_JIDS } from "../config.js";
 import { formatLevelProgress } from "../utils/xpSystem.js";
 
