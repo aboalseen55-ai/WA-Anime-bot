@@ -8,7 +8,7 @@ const QURAN_CDN_BASE = "https://cdn.islamic.network/quran";
 const DEFAULT_TEXT_EDITION = process.env.QURAN_TEXT_EDITION || "quran-uthmani";
 const DEFAULT_AUDIO_EDITION = process.env.QURAN_AUDIO_EDITION || "ar.alafasy";
 const DEFAULT_AUDIO_BITRATE = process.env.QURAN_AUDIO_BITRATE || "128";
-const DEFAULT_TIME_ZONE = process.env.QURAN_REMINDER_TIMEZONE || "Asia/Amman";
+export const DEFAULT_TIME_ZONE = process.env.QURAN_REMINDER_TIMEZONE || "Asia/Amman";
 const REMINDER_HOUR = Number(process.env.QURAN_REMINDER_HOUR ?? 9);
 const REMINDER_MINUTE = Number(process.env.QURAN_REMINDER_MINUTE ?? 0);
 const REMINDER_ENABLED = String(process.env.QURAN_REMINDER_ENABLED || "true").trim().toLowerCase() !== "false";
@@ -118,7 +118,7 @@ function removeQuranModeWords(normalized) {
   return normalizedWords(normalized).filter((word) => !QURAN_MODE_WORDS.has(word)).join(" ").trim();
 }
 
-function getTimeZoneParts(date, timeZone) {
+export function getTimeZoneParts(date, timeZone) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -139,7 +139,7 @@ function getTimeZoneOffsetMs(date, timeZone) {
   return localAsUtc - date.getTime();
 }
 
-function zonedTimeToUtc(year, month, day, hour, minute, second, timeZone) {
+export function zonedTimeToUtc(year, month, day, hour, minute, second, timeZone) {
   const utcGuess = Date.UTC(year, month - 1, day, hour, minute, second);
   const firstOffset = getTimeZoneOffsetMs(new Date(utcGuess), timeZone);
   const firstUtc = utcGuess - firstOffset;

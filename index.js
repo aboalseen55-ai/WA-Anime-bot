@@ -14,6 +14,7 @@ import { getHighestRank } from "./commands/rankSystem.js";
 import { getMentionFromJID } from "./commands/adminSystem.js";
 import { scheduleDailyReports } from "./utils/dailyReports.js";
 import { scheduleDailyQuranReminders } from "./utils/quran.js";
+import { schedulePersonalReminders } from "./utils/personalAssistant.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
@@ -326,6 +327,7 @@ async function startBot() {
       // 📊 تفعيل جدولة التقارير اليومية
       scheduleDailyReports(sock);
       scheduleDailyQuranReminders(sock);
+      schedulePersonalReminders(sock);
     }
 
     if (connection === "close") {

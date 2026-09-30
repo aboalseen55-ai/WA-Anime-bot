@@ -27,6 +27,7 @@ import { buildLevelUpMessage, trackChatActivity } from "../utils/xpSystem.js";
 import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
 import { extractReceptionOnboardingInfo, isReceptionGreetingOnly, resolveMainGroupInviteLink } from "../utils/receptionOnboarding.js";
 import { handleQuranCommand, isQuranCommand } from "../utils/quran.js";
+import { handlePersonalCommand } from "../utils/personalAssistant.js";
 import { handleDashboardCommand, getSeriesSession, selectSeriesResult } from "../services/dashboardRuntime.js";
 import { runSeriesService } from "../services/dashboardRuntime.js";
 import { handleBotDeletion } from '../services/botMessageDeletion.js';
@@ -877,6 +878,8 @@ export async function messageHandler(sock, msg) {
       await handleQuranCommand(sock, jid, trimmedText);
       return;
     }
+
+    if (await handlePersonalCommand(sock, jid, sender, trimmedText)) return;
 
     // إذا لم يكن أمر الأوامر (تمت معالجته أعلاه)
     if (!commandsTriggers.includes(trimmedText)) {
