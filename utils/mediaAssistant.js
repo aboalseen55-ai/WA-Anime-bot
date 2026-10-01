@@ -217,7 +217,7 @@ async function processMedia(sock, jid, sender, target, question, quoted) {
       await reply("❌ ما قدرت أفهم الفويس، جرب مرة ثانية.");
       return;
     }
-    await sendVoiceOrText(sock, jid, answer, { quoted });
+    await sendVoiceOrText(sock, jid, answer, { quoted, userJid: sender });
     return;
   }
 

@@ -89,3 +89,28 @@ test('createVoiceNote logs the ElevenLabs reason on failure', async (t) => {
   assert.equal(await createVoiceNote('مرحبا', { http }), null);
   assert.match(logged[0], /\(402\).*library voices/);
 });
+
+test('parseVoiceStyle maps Arabic words and keeps bracket tags', async () => {
+  const { parseVoiceStyle } = await import('../utils/voiceReplies.js');
+  assert.equal(parseVoiceStyle('ناعم وهادئ وأنثوي ورومانسي'), '[softly] [calm] [soft feminine tone] [romantic]');
+  assert.equal(parseVoiceStyle('[whispers] hello [warmly]'), '[whispers] [warmly]');
+  assert.equal(parseVoiceStyle('شي غريب'), '');
+});
+
+test('style tags are prepended only for v3 and v4 models', async (t) => {
+  const { applyStyleTags } = await import('../services/elevenLabsService.js');
+  assert.equal(applyStyleTags('أهلين', '[softly]', 'eleven_v4'), '[softly] أهلين');
+  assert.equal(applyStyleTags('أهلين', '[softly]', 'eleven_v3'), '[softly] أهلين');
+  assert.equal(applyStyleTags('أهلين', '[softly]', 'eleven_multilingual_v2'), 'أهلين');
+});
+
+test('/فويس اسلوب saves the parsed style and the voice note uses it', async (t) => {
+  withEnv(t, { ELEVENLABS_API_KEY: 'k', ELEVENLABS_VOICE_ID: 'v', ELEVENLABS_VOICE_PUBLIC: 'true', ELEVENLABS_MODEL_ID: 'eleven_v4' });
+  let saved = null;
+  t.mock.method(AssistantProfile, 'updateOne', async (q, u) => { saved = u.$set.voiceStyle; return { modifiedCount: 1 }; });
+  const sock = fakeSock();
+  assert.equal(await handleVoiceCommand(sock, USER, USER, '/فويس اسلوب ناعم هادي رومانسي'), true);
+  assert.equal(saved, '[softly] [calm] [romantic]');
+  assert.match(sock.sent[0].content.text, /\[softly\]/);
+  assert.doesNotMatch(sock.sent[0].content.text, /⚠️/);
+});

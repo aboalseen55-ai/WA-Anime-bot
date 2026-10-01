@@ -29,6 +29,11 @@ const assistantProfileSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // تاجز أسلوب الصوت لموديلات v3/v4، مثل "[softly] [warmly]". null = الافتراضي من ELEVENLABS_STYLE_TAGS
+  voiceStyle: {
+    type: String,
+    default: null
+  },
   // الملخص الصباحي
   brief: {
     enabled: { type: Boolean, default: false },

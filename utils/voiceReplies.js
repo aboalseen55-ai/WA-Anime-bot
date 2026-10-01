@@ -1,9 +1,50 @@
 // وضع المحادثة الصوتية: سام يرد بفويس (ElevenLabs) بدل النص في الخاص
 import AssistantProfile from "../database/assistantProfileModel.js";
-import { createVoiceNote, getVoiceMaxChars, isElevenLabsConfigured } from "../services/elevenLabsService.js";
+import { createVoiceNote, getVoiceMaxChars, isElevenLabsConfigured, modelSupportsAudioTags } from "../services/elevenLabsService.js";
 import { isUnlimitedUser } from "./assistantQuota.js";
 
 const VOICE_COMMANDS = new Set(["فويس", "صوتي", "رد صوتي"]);
+const MAX_STYLE_CHARS = 150;
+
+// كلمات عربية سهلة -> تاجز ElevenLabs
+const STYLE_WORDS = [
+  [["ناعم", "نعومه", "ناعمه"], "[softly]"],
+  [["هادي", "هادئ", "هاديه", "هادئه", "هدوء"], "[calm]"],
+  [["انثوي", "انثويه"], "[soft feminine tone]"],
+  [["رومانسي", "رومانسيه", "رومانسيا"], "[romantic]"],
+  [["دافي", "دافئ", "دافيه", "دافئه"], "[warmly]"],
+  [["حنون", "حنونه"], "[tender]"],
+  [["همس", "هامس", "وشوشه"], "[whispers]"],
+  [["حماسي", "متحمس", "حماس"], "[excited]"],
+  [["مرح", "مضحك", "ضاحك"], "[cheerfully]"]
+];
+
+/** "ناعم هادي رومانسي" -> "[softly] [calm] [romantic]"، والتاجز المكتوبة بين [] بتنقبل زي ما هي. */
+export function parseVoiceStyle(input) {
+  const raw = String(input || "").trim();
+  if (!raw) return "";
+  if (raw.includes("[")) {
+    return (raw.match(/\[[^\[\]\n]{1,40}\]/g) || []).join(" ").slice(0, MAX_STYLE_CHARS);
+  }
+  const words = normalize(raw).replace(/ة/g, "ه").split(/[\s،,]+/).filter(Boolean);
+  const tags = [];
+  for (const word of words) {
+    // "وهادي" -> "هادي"
+    const match = STYLE_WORDS.find(([keys]) => keys.includes(word) || keys.includes(word.replace(/^و/, "")));
+    if (match && !tags.includes(match[1])) tags.push(match[1]);
+  }
+  return tags.join(" ").slice(0, MAX_STYLE_CHARS);
+}
+
+function defaultStyle() {
+  return String(process.env.ELEVENLABS_STYLE_TAGS || "").trim();
+}
+
+async function getVoiceStyle(jid) {
+  if (!jid) return defaultStyle();
+  const profile = await AssistantProfile.findOne({ jid }, { voiceStyle: 1 }).lean().catch(() => null);
+  return profile?.voiceStyle ?? defaultStyle();
+}
 
 /** الصوت يكلف رصيد ElevenLabs، فافتراضيًا للمطور والأدمنز فقط. */
 export function canUseVoiceReplies(jid) {
@@ -34,7 +75,7 @@ export function toSpeakableText(text) {
  * يرسل الرد كفويس إذا أمكن، وإلا كنص.
  * الردود الطويلة جدًا (قوائم وشروحات) تضل نص لأنها أسهل بالقراءة.
  */
-export async function sendVoiceOrText(sock, jid, text, { quoted, mentions } = {}) {
+export async function sendVoiceOrText(sock, jid, text, { quoted, mentions, userJid } = {}) {
   const speakable = toSpeakableText(text);
   if (speakable && speakable.length <= getVoiceMaxChars()) {
     try {
@@ -42,7 +83,7 @@ export async function sendVoiceOrText(sock, jid, text, { quoted, mentions } = {}
     } catch {
       // اختياري
     }
-    const voice = await createVoiceNote(speakable);
+    const voice = await createVoiceNote(speakable, { styleTags: await getVoiceStyle(userJid || jid) });
     if (voice) {
       await sock.sendMessage(jid, { audio: voice.audio, mimetype: voice.mimetype, ptt: true }, quoted ? { quoted } : undefined);
       return "voice";
@@ -75,6 +116,31 @@ export async function handleVoiceCommand(sock, jid, sender, text) {
     return true;
   }
 
+  if (/^(اسلوب|ستايل|style)/.test(args)) {
+    const input = args.replace(/^(اسلوب|ستايل|style)\s*/, "");
+    const tagsNote = modelSupportsAudioTags()
+      ? ""
+      : "\n⚠️ الأسلوب بيشتغل بس مع موديل eleven_v3 أو eleven_v4 (ELEVENLABS_MODEL_ID).";
+    if (!input.trim()) {
+      const current = await getVoiceStyle(sender);
+      await reply(`🎭 أسلوب الصوت الحالي: ${current || "عادي"}\nللتغيير: /فويس اسلوب ناعم هادي رومانسي\nأو بتاجز ElevenLabs: /فويس اسلوب [softly] [warmly]\nللرجوع للعادي: /فويس اسلوب عادي${tagsNote}`);
+      return true;
+    }
+    if (/^(عادي|افتراضي|الغاء|reset|default)$/i.test(normalize(input))) {
+      await AssistantProfile.updateOne({ jid: sender }, { $set: { voiceStyle: null } }, { upsert: true });
+      await reply("🎭 رجع الصوت للأسلوب العادي.");
+      return true;
+    }
+    const style = parseVoiceStyle(input);
+    if (!style) {
+      await reply("🤔 ما فهمت الأسلوب. جرب كلمات مثل: ناعم، هادي، أنثوي، رومانسي، دافي، حنون، همس، حماسي، مرح\nأو تاجز بين قوسين: [softly] [warmly]");
+      return true;
+    }
+    await AssistantProfile.updateOne({ jid: sender }, { $set: { voiceStyle: style } }, { upsert: true });
+    await reply(`🎭 تمام! صار أسلوب الصوت: ${style}${tagsNote}`);
+    return true;
+  }
+
   if (/^(ايقاف|اوقف|وقف|الغاء|off|stop)/.test(args)) {
     await AssistantProfile.updateOne({ jid: sender }, { $set: { voiceReplies: false } }, { upsert: true });
     await reply("🔕 رجعت أرد عليك كتابة. ترجع الصوت بـ /فويس تشغيل");
@@ -88,7 +154,7 @@ export async function handleVoiceCommand(sock, jid, sender, text) {
 
   const enabled = await isVoiceReplyEnabled(sender);
   await reply(enabled
-    ? "🎙️ الردود الصوتية شغالة. للإيقاف: /فويس ايقاف"
+    ? "🎙️ الردود الصوتية شغالة. للإيقاف: /فويس ايقاف\n🎭 لتغيير أسلوب الصوت: /فويس اسلوب ناعم هادي"
     : "🎙️ بقدر أرد عليك بفويس بالخاص بدل الكتابة.\nللتشغيل: /فويس تشغيل");
   return true;
 }

@@ -457,7 +457,7 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     : "";
   const reply = repeatedReply || aiReply || buildReply(intent, nickname, text);
   if (aiReply && isPrivateChat(jid) && await isVoiceReplyEnabled(sender)) {
-    await sendVoiceOrText(sock, jid, reply, { mentions: [sender] });
+    await sendVoiceOrText(sock, jid, reply, { mentions: [sender], userJid: sender });
   } else {
     await sock.sendMessage(jid, {
       text: reply,

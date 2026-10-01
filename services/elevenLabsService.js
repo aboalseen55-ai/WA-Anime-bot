@@ -13,6 +13,21 @@ export function getVoiceMaxChars() {
   return Number.isFinite(value) && value > 0 ? value : 900;
 }
 
+export function getModelId() {
+  return env("ELEVENLABS_MODEL_ID", DEFAULT_MODEL);
+}
+
+/** موديلات v3 و v4 بتفهم تاجز الأسلوب مثل [softly] و[whispers]، الباقي بيقرأها بصوت عالي. */
+export function modelSupportsAudioTags(model = getModelId()) {
+  return /^eleven_v[34]/i.test(String(model || ""));
+}
+
+/** يحط تاجز الأسلوب قبل النص إذا الموديل بيدعمها. */
+export function applyStyleTags(text, styleTags, model = getModelId()) {
+  const tags = String(styleTags || "").trim();
+  return tags && modelSupportsAudioTags(model) ? `${tags} ${text}` : text;
+}
+
 export function isElevenLabsConfigured() {
   return Boolean(env("ELEVENLABS_API_KEY") && env("ELEVENLABS_VOICE_ID"));
 }
@@ -31,16 +46,17 @@ function describeError(error) {
 }
 
 /** يعيد { audio: Buffer, mimetype } أو null عند الفشل. */
-export async function createVoiceNote(text, { http = axios } = {}) {
-  const content = String(text || "").trim().slice(0, getVoiceMaxChars());
-  if (!content || !isElevenLabsConfigured()) return null;
+export async function createVoiceNote(text, { http = axios, styleTags = "" } = {}) {
+  const spoken = String(text || "").trim().slice(0, getVoiceMaxChars());
+  if (!spoken || !isElevenLabsConfigured()) return null;
+  const content = applyStyleTags(spoken, styleTags);
 
   try {
     const response = await http.post(
       `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(env("ELEVENLABS_VOICE_ID"))}`,
       {
         text: content,
-        model_id: env("ELEVENLABS_MODEL_ID", DEFAULT_MODEL),
+        model_id: getModelId(),
         voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.2, use_speaker_boost: true }
       },
       {
