@@ -16,6 +16,7 @@ import { getMentionFromJID } from "./commands/adminSystem.js";
 import { scheduleDailyReports } from "./utils/dailyReports.js";
 import { scheduleDailyQuranReminders } from "./utils/quran.js";
 import { schedulePersonalReminders } from "./utils/personalAssistant.js";
+import { scheduleMorningBriefs } from "./utils/assistantHome.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
@@ -331,6 +332,7 @@ async function startBot() {
       scheduleDailyReports(sock);
       scheduleDailyQuranReminders(sock);
       schedulePersonalReminders(sock);
+      scheduleMorningBriefs(sock);
       scheduleBusinessSummary(sock);
     }
 

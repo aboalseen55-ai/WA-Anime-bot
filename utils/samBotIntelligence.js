@@ -1,3 +1,4 @@
+import { consumeAssistantQuota, quotaExceededMessage } from "./assistantQuota.js";
 import { dashboardReply } from '../services/dashboardTemplates.js';
 import User from "../database/userModel.js";
 import { resolveMentionContext } from "../commands/adminSystem.js";
@@ -235,8 +236,8 @@ function buildReply(intent, nickname, text) {
       `سام بوت، بساعدكم بالأوامر.`
     ],
     capabilities: [
-      `أساعد بالأوامر والألعاب.`,
-      `اكتب /أوامر وشوف القائمة.`
+      `بفرّغ الفويسات، بقرأ الصور وملفات PDF، بذكّرك بمواعيدك، وبجاوب أسئلتك. اكتب /مساعدة وبتشوف كل اشي.`,
+      `اكتب /مساعدة وبتشوف كل اللي بقدر أعمله.`
     ],
     joke: [
       `الإداري كتب آخر تنبيه… للمرة العاشرة.`,
@@ -435,6 +436,14 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     ? await buildSamBotKingdomContext(jid, text)
     : "";
   const repeatedReply = getRepeatedSocialReply(memory, intent, nickname);
+  // بالخاص الرد أطول وأغلى، فيدخل ضمن الحد اليومي لكل شخص
+  if (!ambientSocial && !repeatedReply && shouldUseOnlineAI(intent) && isPrivateChat(jid)) {
+    const quota = await consumeAssistantQuota(sender);
+    if (!quota.allowed) {
+      if (quota.notify) await sock.sendMessage(jid, { text: quotaExceededMessage(quota.limit) });
+      return true;
+    }
+  }
   const aiReply = !ambientSocial && shouldUseOnlineAI(intent)
     ? await generateSamBotAIReply({
         userMessage: text,

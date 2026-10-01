@@ -32,12 +32,17 @@ const DURATION_WORD_RE = new RegExp(
 const DURATION_JOIN_RE = /^و\s*/u;
 const TIME_RE = new RegExp(
   `^(?:(?:في|على|ع)\\s+)?((?:ال)?ساع[هة]\\s*|at\\s+)?(\\d{1,2})(?:[:.](\\d{2}))?(?:\\s*و\\s*(نص|النص|نصف|ربع|الربع))?` +
-  `\\s*(صباحا|صباح|الصبح|الصباح|الفجر|ص|a\\.?m\\.?|مساءا|مساء|المساء|المسا|مسا|م|p\\.?m\\.?|الظهر|العصر|المغرب|الليل|بالليل|ليلا)?${END}\\s*`,
+  `\\s*(صباحا|صباح|الصبح|الصباح|الفجر|ص|a\\.?m\\.?|مساءا|مساء|المساء|المسا|مسا|م|p\\.?m\\.?|الظهر|ظهرا|ظهر|العصر|عصرا|المغرب|الليل|بالليل|ليلا)?${END}\\s*`,
   "iu"
 );
 const AM_WORDS = new Set(["صباحا", "صباح", "الصبح", "الصباح", "الفجر", "ص", "am", "a.m.", "a.m", "am."]);
 const LEADING_CONNECTOR_RE = /^(?:ب|عن|ان|أن|إن|انو|إنو|اني|إني|:|-|،|,)\s+/u;
 const DURATION_FRACTION_RE = new RegExp(`^(نص|نصف|ربع)${END}\\s*`, "u");
+const REPEAT_DAILY_RE = new RegExp(`^(?:كل\\s+يوم|يوميا|يومياً|every\\s+day|daily)${END}\\s*`, "iu");
+const REPEAT_WEEKDAY_RE = new RegExp(`^كل\\s+(?:يوم\\s+)?(?:ال)?(سبت|احد|أحد|اثنين|إثنين|ثلاثاء|ثلاثا|اربعاء|أربعاء|اربعا|خميس|جمع[هة])${END}\\s*`, "u");
+const REPEAT_WEEKLY_RE = new RegExp(`^(?:كل\\s+(?:اسبوع|أسبوع)|اسبوعيا|أسبوعياً|اسبوعياً|every\\s+week|weekly)${END}\\s*`, "iu");
+const WEEKDAYS = { "احد": 0, "أحد": 0, "اثنين": 1, "إثنين": 1, "ثلاثاء": 2, "ثلاثا": 2, "اربعاء": 3, "أربعاء": 3, "اربعا": 3, "خميس": 4, "جمعه": 5, "جمعة": 5, "سبت": 6 };
+const REPEAT_LABELS = { daily: "يوميًا", weekly: "أسبوعيًا" };
 
 function cleanInput(text) {
   return String(text || "")
@@ -119,11 +124,44 @@ function dayOffsetFromWord(word) {
  * يحوّل نص مثل "الساعة 6 مساء اتصل بأحمد" أو "بعد 10 دقائق الفرن"
  * إلى { dueAt, message } أو { error }.
  */
+function localWeekday(now, timeZone) {
+  const parts = getTimeZoneParts(now, timeZone);
+  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay();
+}
+
+/** يحرك الموعد بخطوات يوم/أسبوع (بالتوقيت المحلي) حتى يصبح بعد الآن. */
+export function nextRepeatDate(dueAt, repeat, now = new Date(), timeZone = TIME_ZONE) {
+  const stepDays = repeat === "weekly" ? 7 : 1;
+  const parts = getTimeZoneParts(new Date(dueAt), timeZone);
+  let next = new Date(dueAt);
+  for (let k = 1; next <= now && k < 800; k += 1) {
+    next = zonedTimeToUtc(parts.year, parts.month, parts.day + stepDays * k, parts.hour, parts.minute, 0, timeZone);
+  }
+  return next;
+}
+
 export function parseReminderRequest(input, { now = new Date(), timeZone = TIME_ZONE } = {}) {
   let rest = cleanInput(input);
   let dayOffset = null;
   let durationMs = 0;
   let time = null;
+  let repeat = null;
+
+  const weekdayMatch = rest.match(REPEAT_WEEKDAY_RE);
+  const dailyMatch = weekdayMatch ? null : rest.match(REPEAT_DAILY_RE);
+  const weeklyMatch = weekdayMatch || dailyMatch ? null : rest.match(REPEAT_WEEKLY_RE);
+  if (weekdayMatch) {
+    repeat = "weekly";
+    const target = WEEKDAYS[weekdayMatch[1]];
+    dayOffset = (target - localWeekday(now, timeZone) + 7) % 7;
+    rest = rest.slice(weekdayMatch[0].length);
+  } else if (dailyMatch) {
+    repeat = "daily";
+    rest = rest.slice(dailyMatch[0].length);
+  } else if (weeklyMatch) {
+    repeat = "weekly";
+    rest = rest.slice(weeklyMatch[0].length);
+  }
 
   for (let guard = 0; guard < 6 && rest; guard += 1) {
     const dayMatch = rest.match(DAY_WORD_RE);
@@ -162,7 +200,8 @@ export function parseReminderRequest(input, { now = new Date(), timeZone = TIME_
   while (LEADING_CONNECTOR_RE.test(message)) message = message.replace(LEADING_CONNECTOR_RE, "");
   message = message.trim();
 
-  if (!durationMs && !time && dayOffset === null) return { error: "no_time" };
+  if (repeat && durationMs) return { error: "repeat_relative" };
+  if (!durationMs && !time && dayOffset === null && !repeat) return { error: "no_time" };
   if (!message) return { error: "no_text" };
 
   let dueAt;
@@ -184,7 +223,7 @@ export function parseReminderRequest(input, { now = new Date(), timeZone = TIME_
 
     if (dueAt <= now && dayOffset === null) {
       // "الساعة 6" بعد السادسة صباحًا تعني غالبًا السادسة مساءً
-      const evening = !meridiem && hour >= 1 && hour < 12
+      const evening = time && !meridiem && hour >= 1 && hour < 12
         ? zonedTimeToUtc(parts.year, parts.month, parts.day, hour + 12, minute, 0, timeZone)
         : null;
       dueAt = evening && evening > now
@@ -193,10 +232,11 @@ export function parseReminderRequest(input, { now = new Date(), timeZone = TIME_
     }
   }
 
+  if (repeat && dueAt <= now) dueAt = nextRepeatDate(dueAt, repeat, now, timeZone);
   if (dueAt <= now) return { error: "past" };
   if (dueAt.getTime() - now.getTime() > MAX_AHEAD_MS) return { error: "too_far" };
 
-  return { dueAt, message: message.slice(0, MAX_TEXT_LENGTH) };
+  return { dueAt, message: message.slice(0, MAX_TEXT_LENGTH), repeat };
 }
 
 export function formatDueAt(date, timeZone = TIME_ZONE) {
@@ -267,7 +307,8 @@ const REMINDER_ERRORS = {
   no_text: "✍️ اكتب ماذا أذكرك به بعد الوقت.\nمثال: /ذكرني بكرة الساعة 9 اجتماع العمل",
   bad_time: "❌ الوقت غير صحيح. استخدم ساعة بين 0 و 23 ودقائق بين 0 و 59.",
   past: "❌ هذا الوقت مضى. اختر وقتًا قادمًا.",
-  too_far: "❌ أقصى مدة للتذكير سنة واحدة."
+  too_far: "❌ أقصى مدة للتذكير سنة واحدة.",
+  repeat_relative: "🔁 التذكير المتكرر بحتاج ساعة محددة.\nمثال: /ذكرني كل يوم الساعة 8 مساءً الدوا"
 };
 
 export function buildPersonalHelp() {
@@ -278,6 +319,8 @@ export function buildPersonalHelp() {
     "▪️ /ذكرني الساعة 6 مساءً <النص>",
     "▪️ /ذكرني بعد 30 دقيقة <النص>",
     "▪️ /ذكرني بكرة الساعة 9 <النص>",
+    "▪️ /ذكرني كل يوم الساعة 8 مساءً <النص>",
+    "▪️ /ذكرني كل جمعة الساعة 11 <النص>",
     "▪️ /تذكيراتي — التذكيرات القادمة",
     "▪️ /الغاء_تذكير <رقم>",
     "",
@@ -327,7 +370,7 @@ async function itemAt(kind, userJid, index) {
 function formatList(kind, items) {
   if (kind === "reminder") {
     if (!items.length) return "⏰ لا توجد تذكيرات قادمة.\nأضف واحدًا: /ذكرني الساعة 6 مساءً <النص>";
-    return ["*⏰ تذكيراتك القادمة*", "", ...items.map((item, i) => `${i + 1}. ${item.text}\n   🕒 ${formatDueAt(item.dueAt)}`), "", "للإلغاء: /الغاء_تذكير <رقم>"].join("\n");
+    return ["*⏰ تذكيراتك القادمة*", "", ...items.map((item, i) => `${i + 1}. ${item.text}\n   🕒 ${formatDueAt(item.dueAt)}${item.repeat ? ` · 🔁 ${REPEAT_LABELS[item.repeat]}` : ""}`), "", "للإلغاء: /الغاء_تذكير <رقم>"].join("\n");
   }
   if (kind === "todo") {
     if (!items.length) return "✅ قائمة مهامك فارغة.\nأضف مهمة: /مهمة <النص>";
@@ -353,9 +396,10 @@ async function runAction(sock, jid, sender, action, args, now) {
     case "addReminder": {
       const parsed = parseReminderRequest(args, { now });
       if (parsed.error) return reply(REMINDER_ERRORS[parsed.error]);
-      const item = await addItem("reminder", sender, jid, parsed.message, { dueAt: parsed.dueAt });
+      const item = await addItem("reminder", sender, jid, parsed.message, { dueAt: parsed.dueAt, repeat: parsed.repeat || null });
       if (!item) return reply(`❌ وصلت للحد الأقصى (${LIMITS.reminder}) من التذكيرات. احذف بعضها أولًا: /تذكيراتي`);
-      return reply(`✅ تم! سأذكرك على الخاص:\n📌 ${parsed.message}\n🕒 ${formatDueAt(parsed.dueAt)}`);
+      const repeatLine = parsed.repeat ? `\n🔁 ${REPEAT_LABELS[parsed.repeat]} لحد ما تلغيه` : "";
+      return reply(`✅ تم! سأذكرك على الخاص:\n📌 ${parsed.message}\n🕒 ${formatDueAt(parsed.dueAt)}${repeatLine}`);
     }
 
     case "listReminders":
@@ -452,7 +496,11 @@ export async function deliverDueReminders(sock, now = new Date()) {
 
     try {
       await sock.sendMessage(item.userJid, { text: `⏰ *تذكير*\n\n${item.text}` });
-      await PersonalItem.updateOne({ _id: item._id }, { $set: { status: "sent", sentAt: new Date() } });
+      const sentAt = new Date();
+      const done = item.repeat
+        ? { status: "pending", sentAt, attempts: 0, dueAt: nextRepeatDate(item.dueAt, item.repeat, now) }
+        : { status: "sent", sentAt };
+      await PersonalItem.updateOne({ _id: item._id }, { $set: done });
       sent += 1;
     } catch (error) {
       const attempts = (item.attempts || 0) + 1;

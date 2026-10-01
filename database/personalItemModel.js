@@ -23,6 +23,12 @@ const personalItemSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // تكرار التذكير: null مرة واحدة، أو daily / weekly
+  repeat: {
+    type: String,
+    enum: [null, "daily", "weekly"],
+    default: null
+  },
   status: {
     type: String,
     enum: ["pending", "sending", "sent", "failed"],

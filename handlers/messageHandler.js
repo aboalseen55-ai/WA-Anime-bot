@@ -12,6 +12,8 @@ import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleSta
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
 import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js';
 import { handleBusinessMessage } from '../services/businessMode.js';
+import { handleFirstContact } from "../utils/assistantHome.js";
+import { handleMediaAssistant } from "../utils/mediaAssistant.js";
 import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../utils/samBotUsage.js";
 import { trackMainGroupActivity } from "./activityTracking.js";
 import { checkAndSendMilestoneMessage } from "./milestones.js";
@@ -59,6 +61,10 @@ export async function messageHandler(sock, msg) {
   await checkAndSendMilestoneMessage(sock, jid, kingdom);
 
   if (await handleWordGameSetup(sock, jid, sender, text)) return;
+
+  // المساعد الشخصي: تعريف أول مرة بالخاص، ثم الفويسات والصور وملفات PDF
+  await handleFirstContact(sock, msg);
+  if (await handleMediaAssistant(sock, msg, text)) return;
 
   if (!text) return;
 

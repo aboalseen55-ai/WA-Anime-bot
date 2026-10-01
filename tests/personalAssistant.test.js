@@ -159,3 +159,40 @@ test('to-dos and notes: add, list privately, complete and delete', async t => {
   await handlePersonalCommand(sock, user, user, '/حذف_ملاحظة 9');
   assert.match(sock.sent[0].text, /رقم غير صحيح/);
 });
+
+test('recurring reminders parse daily and weekday schedules', () => {
+  // NOW is Thursday 14:00 in Amman
+  const daily = parseReminderRequest('كل يوم الساعة 8 مساءً الدوا', { now: NOW, timeZone: TZ });
+  assert.equal(daily.repeat, 'daily');
+  assert.equal(daily.message, 'الدوا');
+  assert.equal(daily.dueAt.toISOString(), '2026-10-01T17:00:00.000Z');
+
+  // morning time already passed: first run is tomorrow morning
+  assert.equal(parseReminderRequest('كل يوم الساعة 8 الصبح رياضة', { now: NOW, timeZone: TZ }).dueAt.toISOString(), '2026-10-02T05:00:00.000Z');
+  // no time given: 9 in the morning
+  assert.equal(parseReminderRequest('يوميا اشرب مي', { now: NOW, timeZone: TZ }).dueAt.toISOString(), '2026-10-02T06:00:00.000Z');
+
+  const friday = parseReminderRequest('كل جمعة الساعة 11 صلاة الجمعة', { now: NOW, timeZone: TZ });
+  assert.equal(friday.repeat, 'weekly');
+  assert.equal(friday.dueAt.toISOString(), '2026-10-02T08:00:00.000Z');
+  // same weekday but the hour passed: next week
+  assert.equal(parseReminderRequest('كل الخميس الساعة 1 ظهرا اجتماع', { now: NOW, timeZone: TZ }).dueAt.toISOString(), '2026-10-08T10:00:00.000Z');
+
+  assert.equal(parseReminderRequest('كل يوم بعد ساعة شي', { now: NOW, timeZone: TZ }).error, 'repeat_relative');
+  assert.equal(parseReminderRequest('بعد ساعة شاي', { now: NOW, timeZone: TZ }).repeat, null);
+});
+
+test('recurring reminders reschedule after delivery instead of finishing', async t => {
+  const docs = fakeStore(t);
+  const sock = fakeSock();
+  const user = 'u@s.whatsapp.net';
+  await handlePersonalCommand(sock, user, user, '/ذكرني كل يوم الساعة 8 مساءً الدوا', { now: NOW });
+  assert.equal(docs[0].repeat, 'daily');
+  assert.match(sock.sent[0].text, /يوميًا/);
+
+  const at = new Date('2026-10-01T17:00:30Z');
+  assert.equal(await deliverDueReminders(sock, at), 1);
+  assert.equal(docs[0].status, 'pending');
+  assert.equal(docs[0].dueAt.toISOString(), '2026-10-02T17:00:00.000Z');
+  assert.equal(await deliverDueReminders(sock, at), 0);
+});

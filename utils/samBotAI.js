@@ -87,10 +87,15 @@ export function isSamBotAIAvailable() {
   return Date.now() >= geminiBlockedUntil && getConfiguredApiKeys().length > 0;
 }
 
-function resolveMaxOutputTokens(value) {
+function resolveMaxOutputTokens(value, cap = MAX_ALLOWED_OUTPUT_TOKENS) {
   const number = Number(value || DEFAULT_MAX_OUTPUT_TOKENS);
-  if (!Number.isFinite(number) || number <= 0) return DEFAULT_MAX_OUTPUT_TOKENS;
-  return Math.min(number, MAX_ALLOWED_OUTPUT_TOKENS);
+  if (!Number.isFinite(number) || number <= 0) return Math.min(DEFAULT_MAX_OUTPUT_TOKENS, cap);
+  return Math.min(number, cap);
+}
+
+function envNumber(name, fallback) {
+  const number = Number(process.env[name]);
+  return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
 async function generateSamBotAIText({
@@ -98,6 +103,8 @@ async function generateSamBotAIText({
   prompt,
   temperature = 0.65,
   maxOutputTokens,
+  outputTokenCap = MAX_ALLOWED_OUTPUT_TOKENS,
+  responseMimeType,
   timeoutMs,
   modelName
 }) {
@@ -108,7 +115,7 @@ async function generateSamBotAIText({
 
   const resolvedModelName = modelName || process.env.SAM_BOT_AI_MODEL || process.env.GEMINI_MODEL || DEFAULT_MODEL;
   const resolvedTimeoutMs = Number(timeoutMs || process.env.SAM_BOT_AI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
-  const resolvedMaxOutputTokens = resolveMaxOutputTokens(maxOutputTokens);
+  const resolvedMaxOutputTokens = resolveMaxOutputTokens(maxOutputTokens, outputTokenCap);
 
   let lastError;
 
@@ -119,7 +126,8 @@ async function generateSamBotAIText({
       systemInstruction,
       generationConfig: {
         temperature,
-        maxOutputTokens: resolvedMaxOutputTokens
+        maxOutputTokens: resolvedMaxOutputTokens,
+        ...(responseMimeType ? { responseMimeType } : {})
       }
     });
 
@@ -162,7 +170,42 @@ async function generateSamBotAIText({
   return "";
 }
 
+// في الخاص سام مساعد شخصي: جواب كامل ومفيد بدل الرد القصير الخاص بالمجموعات
+const PRIVATE_MAX_OUTPUT_TOKENS = envNumber("SAM_BOT_PRIVATE_MAX_OUTPUT_TOKENS", 700);
+
+function buildPrivateAssistantInstruction() {
+  return [
+    "أنت سام، مساعد شخصي ذكي على واتساب.",
+    "ساعد المستخدم بأي طلب مفيد: أسئلة عامة، صياغة رسائل، ترجمة، تلخيص، أفكار، حسابات بسيطة، ونصائح يومية.",
+    "رد بلغة المستخدم ولهجته، بشكل واضح ومرتب ومناسب لواتساب (فقرات قصيرة أو نقاط، بدون جداول).",
+    "اجعل الجواب بطول ما يحتاجه السؤال فقط، وابدأ بالجواب مباشرة.",
+    "إذا لم تكن متأكدًا من معلومة حديثة أو دقيقة فقل ذلك بوضوح ولا تخترع.",
+    "للنصائح الطبية أو القانونية أو المالية الخطيرة: أعط معلومة عامة وانصح بمراجعة مختص.",
+    "يمكن للمستخدم أيضًا: إرسال رسالة صوتية لتفريغها وتلخيصها، أو صورة أو ملف PDF لقراءته، واستخدام /ذكرني و/مهمة و/ملاحظة، و/مساعدة لعرض كل شيء.",
+    "لا تقل إنك نفذت إجراء فعليًا (تذكير أو إرسال) لأن الأوامر هي التي تنفذ ذلك؛ وجّه المستخدم للأمر المناسب.",
+    "لا تكشف أرقام الهواتف أو المعرفات أو كلمات المرور أو أي بيانات حساسة.",
+    "المطور: سام آل جابر."
+  ].join(" ");
+}
+
 export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate, memoryContext = "", kingdomContext = "" }) {
+  if (isPrivate) {
+    const prompt = [
+      `name:${nickname || "-"}`,
+      memoryContext ? `ctx:\n${memoryContext}` : "",
+      `message:${userMessage}`
+    ].filter(Boolean).join("\n");
+
+    return generateSamBotAIText({
+      systemInstruction: buildPrivateAssistantInstruction(),
+      prompt,
+      temperature: 0.6,
+      maxOutputTokens: PRIVATE_MAX_OUTPUT_TOKENS,
+      outputTokenCap: PRIVATE_MAX_OUTPUT_TOKENS,
+      timeoutMs: envNumber("SAM_BOT_PRIVATE_TIMEOUT_MS", 25000)
+    });
+  }
+
   const systemInstruction = [
     "أنت سام بوت، مساعد واتساب ودود لمجموعات الأعضاء.",
     "رد واتساب قصير: سطر أو سطرين، حتى 20 كلمة.",
@@ -202,5 +245,20 @@ export async function generateSamBotAIJson({ systemInstruction, prompt, maxOutpu
     prompt,
     temperature,
     maxOutputTokens
+  });
+}
+
+// طلب متعدد الوسائط (صوت/صورة/PDF) مع حد أكبر للمخرجات من ردود الدردشة
+const MEDIA_MAX_OUTPUT_TOKENS = envNumber("SAM_BOT_MEDIA_MAX_OUTPUT_TOKENS", 1500);
+
+export async function generateSamBotAIFromParts({ systemInstruction, parts, maxOutputTokens = MEDIA_MAX_OUTPUT_TOKENS, temperature = 0.2, json = false }) {
+  return generateSamBotAIText({
+    systemInstruction,
+    prompt: parts,
+    temperature,
+    maxOutputTokens,
+    outputTokenCap: MEDIA_MAX_OUTPUT_TOKENS,
+    responseMimeType: json ? "application/json" : undefined,
+    timeoutMs: envNumber("SAM_BOT_MEDIA_TIMEOUT_MS", 60000)
   });
 }

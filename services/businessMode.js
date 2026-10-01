@@ -318,3 +318,14 @@ export async function handleBusinessMessage(sock, msg, text, now = Date.now()) {
   try { await store.markAutoReply(jid, new Date(now)); await store.bumpStat(dateKey, 'autoReplies'); } catch { /* best-effort */ }
   return true;
 }
+
+// هل هذه محادثة خاصة لعميل بينما وضع الأعمال شغال؟ (حتى لا تتدخل ميزات المساعد الشخصي)
+export async function isBusinessCustomerChat(jid) {
+  if (!isPrivateChat(jid) || !featureEnabled('business')) return false;
+  try {
+    const settings = await getBusinessSettings();
+    return Boolean(settings.enabled) && !isBusinessOwner(settings, jid);
+  } catch {
+    return false;
+  }
+}

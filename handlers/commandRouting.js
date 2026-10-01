@@ -9,6 +9,7 @@ import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../ut
 import { handleQuranCommand, isQuranCommand } from "../utils/quran.js";
 import { handlePersonalCommand } from "../utils/personalAssistant.js";
 import { handleBotStatusCommand } from "../utils/botStatus.js";
+import { handleAssistantHomeCommand } from "../utils/assistantHome.js";
 import { handleDashboardCommand, getSeriesSession, selectSeriesResult } from "../services/dashboardRuntime.js";
 import { handleBotDeletion } from '../services/botMessageDeletion.js';
 import { awaitingCommandsChoice, awaitingGameChoice } from "./handlerState.js";
@@ -56,6 +57,7 @@ export async function handleSlashCommand(sock, jid, sender, trimmedText, msg) {
     return true;
   }
 
+  if (await handleAssistantHomeCommand(sock, jid, sender, trimmedText, msg)) return true;
   if (await handlePersonalCommand(sock, jid, sender, trimmedText)) return true;
   if (await handleBotStatusCommand(sock, jid, sender, trimmedText)) return true;
 
