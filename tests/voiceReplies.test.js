@@ -114,3 +114,18 @@ test('/فويس اسلوب saves the parsed style and the voice note uses it', a
   assert.match(sock.sent[0].content.text, /\[softly\]/);
   assert.doesNotMatch(sock.sent[0].content.text, /⚠️/);
 });
+
+test('/فويس رصيد reports remaining ElevenLabs characters', async (t) => {
+  const { getElevenLabsUsage } = await import('../services/elevenLabsService.js');
+  const { formatUsage } = await import('../utils/voiceReplies.js');
+  withEnv(t, { ELEVENLABS_API_KEY: 'k', ELEVENLABS_VOICE_ID: 'v' });
+  const http = { get: async () => ({ data: { character_count: 2500, character_limit: 10000, next_character_count_reset_unix: 1790000000 } }) };
+  const usage = await getElevenLabsUsage({ http });
+  assert.equal(usage.remaining, 7500);
+  assert.match(formatUsage(usage), /7,500/);
+  assert.match(formatUsage(usage), /25%/);
+  t.mock.method(console, 'warn', () => {});
+  const denied = await getElevenLabsUsage({ http: { get: async () => { const e = new Error('401'); e.response = { status: 401 }; throw e; } } });
+  assert.equal(denied.error, 'permission');
+  assert.match(formatUsage(denied), /User = Read/);
+});

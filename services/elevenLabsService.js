@@ -75,3 +75,25 @@ export async function createVoiceNote(text, { http = axios, styleTags = "" } = {
     return null;
   }
 }
+
+/**
+ * رصيد الشهر من ElevenLabs: { used, limit, remaining, resetAt } أو { error: "permission" | "failed" }.
+ * يحتاج المفتاح صلاحية User: Read إذا كان مقيّدًا.
+ */
+export async function getElevenLabsUsage({ http = axios } = {}) {
+  if (!isElevenLabsConfigured()) return { error: "not_configured" };
+  try {
+    const { data } = await http.get("https://api.elevenlabs.io/v1/user/subscription", {
+      timeout: 15000,
+      headers: { "xi-api-key": env("ELEVENLABS_API_KEY") }
+    });
+    const used = Number(data?.character_count) || 0;
+    const limit = Number(data?.character_limit) || 0;
+    const reset = Number(data?.next_character_count_reset_unix) || 0;
+    return { used, limit, remaining: Math.max(0, limit - used), resetAt: reset ? new Date(reset * 1000) : null, tier: data?.tier || "" };
+  } catch (error) {
+    const status = error.response?.status;
+    console.warn(`ElevenLabs usage failed${status ? ` (${status})` : ""}:`, describeError(error));
+    return { error: status === 401 || status === 403 ? "permission" : "failed" };
+  }
+}

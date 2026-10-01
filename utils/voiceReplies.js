@@ -1,6 +1,6 @@
 // وضع المحادثة الصوتية: سام يرد بفويس (ElevenLabs) بدل النص في الخاص
 import AssistantProfile from "../database/assistantProfileModel.js";
-import { createVoiceNote, getVoiceMaxChars, isElevenLabsConfigured, modelSupportsAudioTags } from "../services/elevenLabsService.js";
+import { createVoiceNote, getElevenLabsUsage, getVoiceMaxChars, isElevenLabsConfigured, modelSupportsAudioTags } from "../services/elevenLabsService.js";
 import { isUnlimitedUser } from "./assistantQuota.js";
 
 const VOICE_COMMANDS = new Set(["فويس", "صوتي", "رد صوتي"]);
@@ -93,6 +93,24 @@ export async function sendVoiceOrText(sock, jid, text, { quoted, mentions, userJ
   return "text";
 }
 
+export function formatUsage(usage) {
+  if (usage?.error === "permission") {
+    return "🔐 المفتاح ما عنده صلاحية يقرأ الرصيد.\nبموقع ElevenLabs: Developers > API Keys > عدّل المفتاح وخلي User = Read.\nأو شوف الرصيد مباشرة من صفحة Subscription بالموقع.";
+  }
+  if (usage?.error) return "❌ ما قدرت أجيب الرصيد من ElevenLabs هسا، جرب بعد شوي.";
+  const fmt = (n) => Number(n).toLocaleString("en-US");
+  const percent = usage.limit ? Math.round((usage.used / usage.limit) * 100) : 0;
+  const lines = [
+    "🎙️ *رصيد ElevenLabs هالشهر*",
+    `مستخدم: ${fmt(usage.used)} من ${fmt(usage.limit)} حرف (${percent}%)`,
+    `ضايل: ${fmt(usage.remaining)} حرف`
+  ];
+  if (usage.resetAt) {
+    lines.push(`بيتجدد: ${usage.resetAt.toLocaleDateString("ar-JO", { timeZone: "Asia/Amman", day: "numeric", month: "long" })}`);
+  }
+  return lines.join("\n");
+}
+
 function normalize(text) {
   return String(text || "").trim().replace(/_/g, " ").replace(/[أإآ]/g, "ا").replace(/\s+/g, " ").toLowerCase();
 }
@@ -113,6 +131,11 @@ export async function handleVoiceCommand(sock, jid, sender, text) {
   }
   if (!canUseVoiceReplies(sender)) {
     await reply("🎙️ الردود الصوتية حاليًا لصاحب البوت بس.");
+    return true;
+  }
+
+  if (/^(رصيد|الرصيد|حد|الحد|usage)/.test(args)) {
+    await reply(formatUsage(await getElevenLabsUsage()));
     return true;
   }
 
@@ -154,7 +177,7 @@ export async function handleVoiceCommand(sock, jid, sender, text) {
 
   const enabled = await isVoiceReplyEnabled(sender);
   await reply(enabled
-    ? "🎙️ الردود الصوتية شغالة. للإيقاف: /فويس ايقاف\n🎭 لتغيير أسلوب الصوت: /فويس اسلوب ناعم هادي"
+    ? "🎙️ الردود الصوتية شغالة. للإيقاف: /فويس ايقاف\n🎭 لتغيير أسلوب الصوت: /فويس اسلوب ناعم هادي\n📊 الرصيد: /فويس رصيد"
     : "🎙️ بقدر أرد عليك بفويس بالخاص بدل الكتابة.\nللتشغيل: /فويس تشغيل");
   return true;
 }
