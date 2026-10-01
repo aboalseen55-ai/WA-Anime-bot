@@ -20,7 +20,7 @@ const bankSchema = new mongoose.Schema({
   transactions: [{
     type: {
       type: String,
-      enum: ['deposit', 'withdraw', 'transfer'],
+      enum: ['deposit', 'withdraw', 'transfer', 'admin_grant', 'admin_take'],
       required: true
     },
     userJid: {

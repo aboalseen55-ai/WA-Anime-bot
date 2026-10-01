@@ -1024,11 +1024,37 @@ export async function addCoins(sock, jid, targetNickname, amount, adminJid, king
             return false;
         }
 
-        user.coins = (user.coins || 0) + amount;
-        await user.save();
+        if (!Number.isInteger(amount) || amount <= 0) {
+            await sock.sendMessage(jid, { text: dashboardReply('reply_509b6fd0fbe42afb')(['❌ المبلغ يجب أن يكون أكبر من صفر!']) });
+            return false;
+        }
+
+        // العملات تخرج من بنك المملكة: نخصم ذريًا فقط إذا كان الرصيد يكفي
+        await getBankInfo(kingdom);
+        const bank = await Bank.findOneAndUpdate(
+            { kingdom, totalCoins: { $gte: amount } },
+            { $inc: { totalCoins: -amount }, $push: { transactions: { type: 'admin_grant', userJid: user.jid, amount } } },
+            { new: true }
+        );
+        if (!bank) {
+            const current = await Bank.findOne({ kingdom }).lean();
+            await sock.sendMessage(jid, {
+                text: `❌ رصيد بنك المملكة لا يكفي!\n🏦 رصيد البنك: ${current?.totalCoins ?? 0}\n💰 المطلوب: ${amount}`
+            });
+            return false;
+        }
+
+        try {
+            user.coins = (user.coins || 0) + amount;
+            await user.save();
+        } catch (error) {
+            // إرجاع المبلغ للبنك إذا فشل حفظ العضو
+            await Bank.updateOne({ kingdom }, { $inc: { totalCoins: amount }, $pull: { transactions: { type: 'admin_grant', userJid: user.jid, amount } } });
+            throw error;
+        }
 
         await sock.sendMessage(jid, {
-            text: dashboardReply('reply_a9f38a3f9cd3fe65')`💰 تم إضافة ${amount} عملة لـ ${user.nickname}!\nمجموع عملاته: ${user.coins}`
+            text: dashboardReply('reply_a9f38a3f9cd3fe65')`💰 تم إضافة ${amount} عملة لـ ${user.nickname}!\nمجموع عملاته: ${user.coins}` + `\n🏦 رصيد بنك المملكة: ${bank.totalCoins}`
         });
 
         return true;
@@ -1065,8 +1091,23 @@ export async function removeCoins(sock, jid, targetNickname, amount, modJid, kin
             return false;
         }
 
-        user.coins = Math.max(0, (user.coins || 0) - amount);
+        if (!Number.isInteger(amount) || amount <= 0) {
+            await sock.sendMessage(jid, { text: dashboardReply('reply_509b6fd0fbe42afb')(['❌ المبلغ يجب أن يكون أكبر من صفر!']) });
+            return false;
+        }
+
+        const removed = Math.min(amount, user.coins || 0);
+        user.coins = (user.coins || 0) - removed;
         await user.save();
+
+        // العملات المسحوبة من العضو ترجع لبنك المملكة
+        if (removed > 0) {
+            await getBankInfo(kingdom);
+            await Bank.updateOne(
+                { kingdom },
+                { $inc: { totalCoins: removed }, $push: { transactions: { type: 'admin_take', userJid: user.jid, amount: removed } } }
+            );
+        }
 
         await sock.sendMessage(jid, {
             text: dashboardReply('reply_17e421bf1d087cd9')`💰 تم إزالة ${amount} عملة من ${user.nickname}!\nمجموع عملاته: ${user.coins}`
