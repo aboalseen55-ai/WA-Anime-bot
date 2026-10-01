@@ -5,6 +5,7 @@ import { resolveMentionContext } from "../commands/adminSystem.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { generateSamBotAIReply } from "./samBotAI.js";
 import { isVoiceReplyEnabled, sendVoiceOrText } from "./voiceReplies.js";
+import { extractAssistantCommand, runAssistantCommand } from "./samCapabilities.js";
 import {
   buildSamBotMemoryContext,
   getRepeatedSocialReply,
@@ -314,7 +315,9 @@ function buildReply(intent, nickname, text) {
   return pick(replies[intent] || replies.conversation, `${intent}:${text}:${nickname}`);
 }
 
-function shouldUseOnlineAI(intent) {
+function shouldUseOnlineAI(intent, isPrivate = false) {
+  // بالخاص سام مساعد شخصي بيعرف خدماته، فأسئلة "شو بتقدر تعمل" بتروح للذكاء الاصطناعي
+  if (isPrivate && ["identity", "capabilities"].includes(intent)) return true;
   return !["identity", "capabilities", "greeting", "wellbeing", "wellbeing_answer", "ack", "thanks", "teasing"].includes(intent);
 }
 
@@ -438,14 +441,15 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     : "";
   const repeatedReply = getRepeatedSocialReply(memory, intent, nickname);
   // بالخاص الرد أطول وأغلى، فيدخل ضمن الحد اليومي لكل شخص
-  if (!ambientSocial && !repeatedReply && shouldUseOnlineAI(intent) && isPrivateChat(jid)) {
+  const useAI = shouldUseOnlineAI(intent, isPrivateChat(jid));
+  if (!ambientSocial && !repeatedReply && useAI && isPrivateChat(jid)) {
     const quota = await consumeAssistantQuota(sender);
     if (!quota.allowed) {
       if (quota.notify) await sock.sendMessage(jid, { text: quotaExceededMessage(quota.limit) });
       return true;
     }
   }
-  const aiReply = !ambientSocial && shouldUseOnlineAI(intent)
+  const rawAIReply = !ambientSocial && useAI
     ? await generateSamBotAIReply({
         userMessage: text,
         nickname,
@@ -455,6 +459,10 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
         kingdomContext
       })
     : "";
+  // بالخاص الذكاء الاصطناعي ممكن يطلب تنفيذ أمر (تذكير، مهمة...) بسطر [[CMD: ...]]
+  const { reply: aiReply, command } = isPrivateChat(jid)
+    ? extractAssistantCommand(rawAIReply)
+    : { reply: rawAIReply, command: null };
   const reply = repeatedReply || aiReply || buildReply(intent, nickname, text);
   if (aiReply && isPrivateChat(jid) && await isVoiceReplyEnabled(sender)) {
     await sendVoiceOrText(sock, jid, reply, { mentions: [sender], userJid: sender });
@@ -464,6 +472,8 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
       mentions: [sender]
     });
   }
+
+  if (command) await runAssistantCommand(sock, jid, sender, command);
 
   await rememberSamBotTurn({
     memory,

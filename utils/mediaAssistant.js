@@ -5,6 +5,7 @@ import { isBusinessCustomerChat } from "../services/businessMode.js";
 import { generateSamBotAIFromParts, isSamBotAIAvailable } from "./samBotAI.js";
 import { consumeAssistantQuota, quotaExceededMessage } from "./assistantQuota.js";
 import { isVoiceReplyEnabled, sendVoiceOrText, voiceConversationInstruction } from "./voiceReplies.js";
+import { runAssistantCommand, sanitizeAssistantCommand } from "./samCapabilities.js";
 
 const MB = 1024 * 1024;
 const MAX_AUDIO_SECONDS = Number(process.env.ASSISTANT_MAX_AUDIO_SECONDS || 600);
@@ -218,6 +219,8 @@ async function processMedia(sock, jid, sender, target, question, quoted) {
       return;
     }
     await sendVoiceOrText(sock, jid, answer, { quoted, userJid: sender });
+    const command = sanitizeAssistantCommand(result?.command);
+    if (command) await runAssistantCommand(sock, jid, sender, command);
     return;
   }
 

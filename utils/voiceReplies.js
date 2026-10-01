@@ -2,6 +2,7 @@
 import AssistantProfile from "../database/assistantProfileModel.js";
 import { createVoiceNote, getElevenLabsUsage, getVoiceMaxChars, isElevenLabsConfigured, modelSupportsAudioTags } from "../services/elevenLabsService.js";
 import { isUnlimitedUser } from "./assistantQuota.js";
+import { SAM_CAPABILITIES, assistantActionInstruction, currentTimeContext } from "./samCapabilities.js";
 
 const VOICE_COMMANDS = new Set(["فويس", "صوتي", "رد صوتي"]);
 const MAX_STYLE_CHARS = 150;
@@ -190,6 +191,11 @@ export function voiceConversationInstruction() {
     "Your answer will be read aloud by a text-to-speech voice, so write natural spoken sentences: no emojis, no markdown, no bullet lists, no links.",
     "Keep it short and conversational: usually one to four sentences, longer only when they clearly ask for detail.",
     "If the audio is silent or unintelligible, set transcript to an empty string and ask them politely to repeat.",
-    "Return JSON only: {\"transcript\":\"what the user said\",\"reply\":\"your spoken answer\"}"
-  ].join(" ");
+    "These are the bot's real features and commands. When asked what you can do, describe them naturally in speech (say the command names in words, e.g. \"اكتب سلاش ذكرني\"), and never invent other features:",
+    SAM_CAPABILITIES,
+    assistantActionInstruction(),
+    currentTimeContext(),
+    "Put the command (or an empty string) in the command field; never put it in reply.",
+    "Return JSON only: {\"transcript\":\"what the user said\",\"reply\":\"your spoken answer\",\"command\":\"/... or empty\"}"
+  ].join("\n");
 }

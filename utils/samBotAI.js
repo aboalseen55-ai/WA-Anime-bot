@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { recordSamBotAIUsage } from "./samBotUsage.js";
+import { SAM_CAPABILITIES, assistantActionInstruction, currentTimeContext } from "./samCapabilities.js";
 
 const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 const DEFAULT_TIMEOUT_MS = 12000;
@@ -181,8 +182,10 @@ function buildPrivateAssistantInstruction() {
     "اجعل الجواب بطول ما يحتاجه السؤال فقط، وابدأ بالجواب مباشرة.",
     "إذا لم تكن متأكدًا من معلومة حديثة أو دقيقة فقل ذلك بوضوح ولا تخترع.",
     "للنصائح الطبية أو القانونية أو المالية الخطيرة: أعط معلومة عامة وانصح بمراجعة مختص.",
-    "يمكن للمستخدم أيضًا: إرسال رسالة صوتية لتفريغها وتلخيصها، أو صورة أو ملف PDF لقراءته، واستخدام /ذكرني و/مهمة و/ملاحظة، و/مساعدة لعرض كل شيء.",
-    "لا تقل إنك نفذت إجراء فعليًا (تذكير أو إرسال) لأن الأوامر هي التي تنفذ ذلك؛ وجّه المستخدم للأمر المناسب.",
+    SAM_CAPABILITIES,
+    "إذا سألك المستخدم شو بتقدر تعمل أو كيف تساعده، اشرح هاي الخدمات بشكل مرتب مع مثال لكل وحدة واذكر الأوامر.",
+    assistantActionInstruction(),
+    "لتنفيذ أمر: اكتب بآخر ردك سطر لحاله بالشكل [[CMD: /الأمر]] وهو بينفذ تلقائيًا. بدون هذا السطر لا تقل إنك نفذت أي إجراء.",
     "لا تكشف أرقام الهواتف أو المعرفات أو كلمات المرور أو أي بيانات حساسة.",
     "المطور: سام آل جابر."
   ].join(" ");
@@ -191,6 +194,7 @@ function buildPrivateAssistantInstruction() {
 export async function generateSamBotAIReply({ userMessage, nickname, intent, isPrivate, memoryContext = "", kingdomContext = "" }) {
   if (isPrivate) {
     const prompt = [
+      currentTimeContext(),
       `name:${nickname || "-"}`,
       memoryContext ? `ctx:\n${memoryContext}` : "",
       `message:${userMessage}`

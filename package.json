@@ -14,7 +14,7 @@
     "migrate-kingdoms": "node scripts/migrateDatabaseToKingdoms.js",
     "check:syntax": "node scripts/checkSyntax.js",
     "test": "npm run check:syntax && npm run test:dashboard",
-    "test:dashboard": "node --test tests/dashboard.test.js tests/seriesService.test.js tests/seriesFlow.test.js tests/botControls.test.js tests/welcomeRealTimeImages.test.js tests/botMessageDeletion.test.js tests/youtubePreview.test.js tests/business.test.js tests/personalAssistant.test.js tests/assistant.test.js tests/groupTools.test.js tests/voiceReplies.test.js"
+    "test:dashboard": "node --test tests/dashboard.test.js tests/seriesService.test.js tests/seriesFlow.test.js tests/botControls.test.js tests/welcomeRealTimeImages.test.js tests/botMessageDeletion.test.js tests/youtubePreview.test.js tests/business.test.js tests/personalAssistant.test.js tests/assistant.test.js tests/groupTools.test.js tests/voiceReplies.test.js tests/samCapabilities.test.js"
   },
   "keywords": [],
   "author": "",
