@@ -17,6 +17,19 @@ export function isElevenLabsConfigured() {
   return Boolean(env("ELEVENLABS_API_KEY") && env("ELEVENLABS_VOICE_ID"));
 }
 
+// رسالة ElevenLabs الفعلية (مثلًا الصوت يحتاج خطة مدفوعة أو الرصيد خلص) بدل "status code 402"
+function describeError(error) {
+  const data = error.response?.data;
+  if (!data) return error.message;
+  try {
+    const body = JSON.parse(Buffer.from(data).toString("utf8"));
+    const detail = body?.detail;
+    return (typeof detail === "string" ? detail : detail?.message || detail?.status || JSON.stringify(detail || body)).slice(0, 300);
+  } catch {
+    return error.message;
+  }
+}
+
 /** يعيد { audio: Buffer, mimetype } أو null عند الفشل. */
 export async function createVoiceNote(text, { http = axios } = {}) {
   const content = String(text || "").trim().slice(0, getVoiceMaxChars());
@@ -42,7 +55,7 @@ export async function createVoiceNote(text, { http = axios } = {}) {
     return { audio, mimetype: "audio/ogg; codecs=opus" };
   } catch (error) {
     const status = error.response?.status;
-    console.warn(`ElevenLabs TTS failed${status ? ` (${status})` : ""}:`, error.message);
+    console.warn(`ElevenLabs TTS failed${status ? ` (${status})` : ""}:`, describeError(error));
     return null;
   }
 }

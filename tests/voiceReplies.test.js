@@ -79,3 +79,13 @@ test('/فويس explains when the server has no ElevenLabs key', async (t) => {
   assert.equal(await handleVoiceCommand(sock, USER, USER, '/فويس تشغيل'), true);
   assert.match(sock.sent[0].content.text, /ElevenLabs/);
 });
+
+test('createVoiceNote logs the ElevenLabs reason on failure', async (t) => {
+  withEnv(t, { ELEVENLABS_API_KEY: 'k', ELEVENLABS_VOICE_ID: 'v' });
+  const logged = [];
+  t.mock.method(console, 'warn', (...args) => logged.push(args.join(' ')));
+  const body = Buffer.from(JSON.stringify({ detail: { status: 'payment_required', message: 'Free users cannot use library voices via the API.' } }));
+  const http = { post: async () => { const e = new Error('Request failed with status code 402'); e.response = { status: 402, data: body }; throw e; } };
+  assert.equal(await createVoiceNote('مرحبا', { http }), null);
+  assert.match(logged[0], /\(402\).*library voices/);
+});
