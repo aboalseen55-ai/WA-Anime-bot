@@ -4,6 +4,7 @@ const labels = { overview:'نظرة عامة', commands:'الأوامر والر
 const icons = {overview:'layout-dashboard',commands:'message-square-text',kingdoms:'crown',members:'users',reports:'chart-no-axes-combined',games:'gamepad-2',banks:'landmark',services:'plug',usage:'sparkles',audit:'history'};
 const roleNames = {member:'عضو',moderator:'مشرف',admin:'أدمن',super_admin:'أدمن رئيسي',everyone:'الجميع',developer:'المطور'};
 labels.controls='التحكم والصيانة'; icons.controls='settings-2';
+labels.business='الأعمال'; icons.business='briefcase';
 let csrf='', state={commands:[],apis:[]}, kingdoms=[], templates=[], catalog=[], section='overview', tab='builtin', page=1, query='', version=0, saveAction=null, toastTimer;
 const e = (tag, text, className) => { const node=document.createElement(tag); if(text!==undefined)node.textContent=text; if(className)node.className=className; return node; };
 const icon = name => { const node=e('i');node.dataset.lucide=name;return node; };
@@ -43,7 +44,7 @@ function sourceLabel(file){if(!file)return 'النماذج الأساسية';if(
 async function load() {
   const token=++version;const root=$('content');root.replaceChildren(e('p','جارٍ تحميل البيانات…','loading'));
   $('pageTitle').textContent=labels[section];document.querySelectorAll('.nav-link').forEach(a=>{a.classList.toggle('active',a.dataset.section===section);if(a.dataset.section===section)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
-  $('scope').hidden=['commands','services','usage','controls'].includes(section);
+  $('scope').hidden=['commands','services','usage','controls','business'].includes(section);
   try {
     let render;
     if(section==='overview') {const data=await request(scoped('overview'));render=()=>overview(data);}
@@ -51,6 +52,7 @@ async function load() {
     else if(section==='kingdoms') {kingdoms=(await request('kingdoms')).kingdoms;render=kingdomList;}
     else if(section==='members') {const data=await request(scoped('members'));render=()=>members(data);}
     else if(section==='services') render=services;
+    else if(section==='business') {const data=await request('business?'+new URLSearchParams({status:businessStatus,q:query}));render=()=>business(data);}
     else if(section==='controls') {
       const data=await request('controls');
       state=await request('state');
@@ -335,6 +337,78 @@ function editMember(user) {
   const details=e('div',undefined,'details-grid');[['اسم واتساب',user.whatsappName],['معرّف العضو',user.jid],['المستوى',user.level],['XP الكلي',user.xp],['XP المحادثة',user.chatXp],['XP الألعاب',user.gameXp],['نقاط الألعاب',user.points],['العملات',user.coins],['الرسائل الكلية',user.totalMessages],['الاستقبال اليومي',user.dailyWelcomes],['نجوم اليوم',user.dailyRankStarsEarned],['آخر نشاط',date(user.lastActivityAt)]].forEach(([label,value])=>{const row=e('div');row.append(e('span',label),e('strong',String(value??'—')));details.append(row)});
   const grid=e('div',undefined,'form-grid');grid.append(field('nickname','اللقب',user.nickname),field('role','الصلاحية داخل البوت',user.role,'select',Object.entries(roleNames).filter(([key])=>['member','moderator','admin','super_admin'].includes(key))),field('isBanned','محظور داخل البوت',user.isBanned,'checkbox'),field('banReason','سبب الحظر',user.banReason));
   openEditor(user.nickname,[details,grid],async()=>{await request('members/'+user._id,'PUT',{...values(),kingdom:user.kingdom_id});await saved()});
+}
+let businessTab='orders', businessStatus='';
+const dayNames=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+function business(data) {
+  const root=$('content'),s=data.settings,t=data.today||{};
+  const title=heading('وضع الأعمال',s.enabled?'مفعّل: البوت يرد على عملاء الخاص':'متوقف: لا يرد البوت على العملاء حتى تفعّله من الإعدادات');
+  title.append(button(s.enabled?'إيقاف':'تفعيل',s.enabled?'pause':'play',()=>saveBusiness({...s,enabled:!s.enabled}).then(load),s.enabled?'secondary':'primary'));root.append(title);
+  const stats=e('div',undefined,'metrics');
+  [['رسائل العملاء اليوم',t.messages],['عملاء جدد اليوم',t.newContacts],['أسئلة شائعة أُجيب عنها',t.faqHits],['بانتظار المتابعة',data.openCount]].forEach(([label,value])=>{const item=e('div',undefined,'metric');item.append(e('span',label),e('strong',number(value)));stats.append(item)});
+  root.append(stats);
+  const tabs=e('div',undefined,'tabs');[['orders','الطلبات والحجوزات'],['faq','الأسئلة الشائعة'],['settings','الإعدادات والملخص']].forEach(([id,label])=>tabs.append(button(label,null,()=>{businessTab=id;query='';load()},id===businessTab?'active':'')));root.append(tabs);
+  if(businessTab==='orders')businessOrders(root,data);
+  if(businessTab==='faq')businessFaq(root,s);
+  if(businessTab==='settings')businessSettings(root,s);
+}
+async function saveBusiness(settings){await request('business/settings','PUT',settings);toast('تم حفظ إعدادات الأعمال');}
+function businessOrders(root,data) {
+  const bar=searchBar('ابحث بالاسم أو الرقم أو التفاصيل',load),status=e('select');status.setAttribute('aria-label','الحالة');status.add(new Option('كل الحالات',''));Object.entries(data.statuses).forEach(([key,label])=>status.add(new Option(label,key)));status.value=businessStatus;status.style.width='auto';
+  status.addEventListener('change',()=>{businessStatus=status.value;load().catch(showError)});bar.append(status);root.append(bar);
+  if(!data.orders.length){root.append(empty('لا توجد طلبات بعد. عندما يكتب عميل "'+(data.settings.orders?.keywords?.[0]||'طلب')+'" في الخاص سيظهر طلبه هنا.'));return;}
+  root.append(table(['الرقم','العميل','التفاصيل','التاريخ','الحالة',''],data.orders.map(order=>{
+    const select=e('select');Object.entries(data.statuses).forEach(([key,label])=>select.add(new Option(label,key)));select.value=order.status;select.setAttribute('aria-label','حالة الطلب #'+order.ref);
+    select.addEventListener('change',()=>request('business/orders/'+order._id,'PUT',{status:select.value,note:order.note}).then(()=>{order.status=select.value;toast('تم تحديث الحالة')}).catch(error=>{select.value=order.status;showError(error)}));
+    const customer=e('span',order.customerName||'—');if(order.customerPhone)customer.title='+'+order.customerPhone;
+    return ['#'+order.ref,customer,String(order.answers?.[0]?.answer||'—').slice(0,60),date(order.createdAt),select,rowsActions([['eye','تفاصيل الطلب',()=>businessOrderDetails(order,data.statuses)]])];
+  })));
+}
+function businessOrderDetails(order,statuses) {
+  const details=e('div');details.append(e('p',(order.customerName||'—')+(order.customerPhone?' · +'+order.customerPhone:''),'help'));
+  (order.answers||[]).forEach(row=>{details.append(e('h3',row.question),e('p',row.answer))});
+  if(order.customerPhone){const link=e('a','فتح المحادثة في واتساب');link.href='https://wa.me/'+order.customerPhone;link.target='_blank';link.rel='noopener noreferrer';link.className='help';details.append(link);}
+  const grid=e('div',undefined,'form-grid');grid.append(field('status','الحالة',order.status,'select',Object.entries(statuses)),field('note','ملاحظة داخلية',order.note,'textarea'));
+  openEditor(order.label+' #'+order.ref,[details,grid],async()=>{await request('business/orders/'+order._id,'PUT',values());$('editor').close();toast('تم الحفظ');await load();});
+}
+function businessFaq(root,s) {
+  const bar=e('div',undefined,'toolbar');bar.append(button('إضافة سؤال','plus',()=>editFaq(s,-1),'primary'));root.append(bar,e('p','يرد البوت بالجواب عندما تحتوي رسالة العميل على إحدى الكلمات المفتاحية. المتغيرات: {name} اسم العميل، {business} اسم النشاط.','help'));
+  if(!s.faq.length){root.append(empty('أضف أسئلة مثل الأسعار، الموقع، أوقات الدوام، التوصيل.'));return;}
+  root.append(table(['السؤال','الكلمات المفتاحية','الحالة',''],s.faq.map((item,index)=>[item.question||item.keywords[0],item.keywords.join('، '),item.enabled===false?'متوقف':'مفعّل',rowsActions([['pencil','تعديل السؤال',()=>editFaq(s,index)],['trash-2','حذف السؤال',()=>openEditor('حذف السؤال',[e('p','هل تريد حذف هذا السؤال؟')],async()=>{await saveBusiness({...s,faq:s.faq.filter((_,i)=>i!==index)});$('editor').close();await load();})]])])));
+}
+function editFaq(s,index) {
+  const item=s.faq[index]||{enabled:true,keywords:[]},grid=e('div',undefined,'form-grid');
+  grid.append(field('question','عنوان السؤال',item.question),field('keywords','الكلمات المفتاحية (افصلها بفاصلة)',item.keywords.join('، ')),field('answer','الجواب',item.answer,'textarea'),field('enabled','مفعّل',item.enabled!==false,'checkbox'));
+  openEditor(index<0?'إضافة سؤال شائع':'تعديل سؤال شائع',[grid],async()=>{const v=values(),faq=[...s.faq],row={question:v.question,keywords:v.keywords,answer:v.answer,enabled:v.enabled};if(index<0)faq.push(row);else faq[index]=row;await saveBusiness({...s,faq});$('editor').close();await load();});
+}
+function businessSettings(root,s) {
+  const bar=e('div',undefined,'toolbar');
+  bar.append(button('تعديل الإعدادات','pencil',()=>editBusinessSettings(s),'primary'),button('معاينة الملخص اليومي','eye',async()=>{const {text}=await request('business/summary');openEditor('معاينة الملخص',[e('pre',text,'help')]);$('saveEditor').hidden=true;}),button('إرسال الملخص الآن','send',async()=>{const r=await request('business/summary','POST',{});toast(r.sent?'تم الإرسال إلى '+r.sent+' رقم':'لم يُرسل؛ تحقق من أرقام المالك');}));
+  root.append(bar);
+  const hours=s.hours.enabled?s.hours.start+'–'+s.hours.end+' · '+s.hours.days.map(d=>dayNames[d]).join('، '):'بدون أوقات دوام (الترحيب دائمًا)';
+  root.append(table(['الإعداد','القيمة'],[
+    ['اسم النشاط',s.businessName||'—'],['أرقام المالك',(s.ownerJids.length?s.ownerJids:['رقم المطور الافتراضي']).map(j=>j.split('@')[0]).join('، ')],
+    ['أوقات الدوام',hours],['المنطقة الزمنية',s.timeZone],
+    ['الطلبات',s.orders.enabled?'مفعّلة · الكلمات: '+s.orders.keywords.join('، '):'متوقفة'],['أسئلة الطلب',s.orders.questions.join(' ← ')],
+    ['الملخص اليومي',s.summary.enabled?'يوميًا الساعة '+s.summary.time:'متوقف']
+  ]));
+  root.append(e('p','لا يتأثر عمل البوت في المجموعات. يرد وضع الأعمال على المحادثات الخاصة فقط، ويتجاهل رسائل المالك والمطور والأوامر التي تبدأ بـ /.','help'));
+}
+function editBusinessSettings(s) {
+  const general=e('div',undefined,'form-grid');
+  general.append(field('enabled','تفعيل وضع الأعمال',s.enabled,'checkbox'),field('businessName','اسم النشاط',s.businessName),field('ownerJids','أرقام المالك للإشعارات (بالصيغة الدولية، افصلها بفاصلة)',s.ownerJids.map(j=>j.split('@')[0]).join('، ')),field('timeZone','المنطقة الزمنية',s.timeZone),field('greeting','رسالة الترحيب',s.greeting,'textarea'),field('awayMessage','رسالة خارج الدوام',s.awayMessage,'textarea'));
+  const hours=e('div',undefined,'form-grid');hours.append(field('hoursEnabled','تحديد أوقات الدوام',s.hours.enabled,'checkbox'),field('hoursStart','بداية الدوام',s.hours.start,'time'),field('hoursEnd','نهاية الدوام',s.hours.end,'time'));
+  dayNames.forEach((name,day)=>hours.append(field('day'+day,name,s.hours.days.includes(day),'checkbox')));
+  const orders=e('div',undefined,'form-grid');orders.append(field('ordersEnabled','استقبال الطلبات والحجوزات',s.orders.enabled,'checkbox'),field('ordersLabel','اسم الطلب (مثل: طلب، حجز، موعد)',s.orders.label),field('ordersKeywords','كلمات بدء الطلب (افصلها بفاصلة)',s.orders.keywords.join('، ')),field('ordersQuestions','أسئلة الطلب (سؤال في كل سطر، حتى 6)',s.orders.questions.join('\n'),'textarea'),field('ordersConfirmation','رسالة التأكيد للعميل',s.orders.confirmation,'textarea'),field('ordersNotify','أرسل لي كل طلب جديد على الخاص',s.orders.notifyOwner,'checkbox'));
+  const summary=e('div',undefined,'form-grid');summary.append(field('summaryEnabled','ملخص يومي للمالك',s.summary.enabled,'checkbox'),field('summaryTime','وقت الملخص',s.summary.time,'time'));
+  openEditor('إعدادات الأعمال',[general,e('p','المتغيرات: {name} اسم العميل، {business} اسم النشاط، {hours} أوقات الدوام، {ref} رقم الطلب، {label} اسم الطلب.','help'),e('h3','أوقات الدوام'),hours,e('h3','الطلبات والحجوزات'),orders,e('h3','الملخص اليومي'),summary],async()=>{
+    const v=values();
+    await saveBusiness({...s,enabled:v.enabled,businessName:v.businessName,ownerJids:v.ownerJids,timeZone:v.timeZone,greeting:v.greeting,awayMessage:v.awayMessage,
+      hours:{enabled:v.hoursEnabled,start:v.hoursStart,end:v.hoursEnd,days:dayNames.map((_,day)=>day).filter(day=>v['day'+day])},
+      orders:{enabled:v.ordersEnabled,label:v.ordersLabel,keywords:v.ordersKeywords,questions:v.ordersQuestions.split('\n'),confirmation:v.ordersConfirmation,notifyOwner:v.ordersNotify},
+      summary:{enabled:v.summaryEnabled,time:v.summaryTime}});
+    $('editor').close();await load();
+  });
 }
 function navigate(next){section=Object.hasOwn(labels,next)?next:'overview';page=1;query='';history.replaceState(null,'','#'+section);load().catch(showError);}
 Object.entries(labels).forEach(([key,label])=>{const link=e('a',undefined,'nav-link');link.href='#'+key;link.dataset.section=key;link.append(icon(icons[key]),e('span',label));link.addEventListener('click',event=>{event.preventDefault();navigate(key)});$('navigation').append(link)});

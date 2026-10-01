@@ -22,6 +22,7 @@ import { handleKingdomEditStep, handleStartKingdomEdit } from "../utils/kingdomE
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
 import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js';
+import { handleBusinessMessage } from '../services/businessMode.js';
 import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../utils/samBotUsage.js";
 import { buildLevelUpMessage, trackChatActivity } from "../utils/xpSystem.js";
 import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
@@ -474,6 +475,8 @@ export async function messageHandler(sock, msg) {
   if (await handleKingdomRegistrationStep(sock, jid, sender, trimmedText)) {
     return;
   }
+
+  if (await handleBusinessMessage(sock, msg, trimmedText)) return;
 
   // البحث عن المستخدم (بدون تسجيل تلقائي)
   let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
