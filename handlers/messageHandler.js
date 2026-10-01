@@ -11,6 +11,7 @@ import { handleKingdomEditStep, handleStartKingdomEdit } from "../utils/kingdomE
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
 import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js';
+import { handleBusinessMessage } from '../services/businessMode.js';
 import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../utils/samBotUsage.js";
 import { trackMainGroupActivity } from "./activityTracking.js";
 import { checkAndSendMilestoneMessage } from "./milestones.js";
@@ -86,6 +87,8 @@ export async function messageHandler(sock, msg) {
   if (await handleKingdomEditStep(sock, jid, sender, trimmedText)) return;
   if (await handleStartKingdomRegistration(sock, jid, sender, trimmedText, msg)) return;
   if (await handleKingdomRegistrationStep(sock, jid, sender, trimmedText)) return;
+
+  if (await handleBusinessMessage(sock, msg, trimmedText)) return;
 
   // البحث عن المستخدم (بدون تسجيل تلقائي)
   const user = await User.findOne({ jid: sender, kingdom_id: kingdom });

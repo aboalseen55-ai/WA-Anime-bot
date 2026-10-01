@@ -12,6 +12,7 @@ import { dashboardRead, dashboardWrite, isReservedCommand, audit } from './dashb
 import { TEMPLATE_DEFINITIONS, validateTemplate, refreshDashboardTemplates } from './dashboardTemplates.js';
 import { validateEndpoint } from './dashboardApiSafety.js';
 import { runConfiguredApi, runSeriesService, readDashboardPath } from './dashboardRuntime.js';
+import { handleBusinessRoute } from './businessDashboard.js';
 
 const assets = new Map([
   ['/dashboard', ['../dashboard/index.html', 'text/html']],
@@ -168,7 +169,7 @@ export function publicApiConfig(value) {
   return output;
 }
 
-export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChange, onRestart, password = process.env.DASHBOARD_ADMIN_PASSWORD || '' }) {
+export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKingdomChange, onRestart, password = process.env.DASHBOARD_ADMIN_PASSWORD || '' }) {
   const sessions = new Map(), attempts = new Map();
   return async (req, res) => {
     res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('X-Frame-Options','DENY'); res.setHeader('Referrer-Policy','no-referrer');
@@ -259,6 +260,7 @@ export function createDashboardHandler({ getBotStatus, getGroups, onKingdomChang
         const data = await dashboardRead(url); if (data) return json(res,200,data);
       }
       const input = ['POST','PUT','DELETE'].includes(req.method) ? await readJson(req) : {};
+      const business = await handleBusinessRoute(route, req.method, input, url, { getSock }); if (business) return json(res,200,business);
       const data = await dashboardWrite(route,req.method,input,onKingdomChange,getGroups); if(data) return json(res,200,data);
       const duplicateApi = /^apis\/([a-f0-9]{24})\/duplicate$/.exec(route);
       if (duplicateApi && req.method === 'POST') {

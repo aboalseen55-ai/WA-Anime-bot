@@ -17,6 +17,7 @@ import { scheduleDailyQuranReminders } from "./utils/quran.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
+import { scheduleBusinessSummary } from "./services/businessSummary.js";
 import { refreshDashboardTemplates } from './services/dashboardTemplates.js';
 import { rememberBotMessage } from './services/botMessageDeletion.js';
 import { loadBotControls, featureEnabled, outgoingAllowed, withBotContext } from './services/botControls.js';
@@ -126,6 +127,7 @@ const DEFAULT_WHATSAPP_WEB_VERSION = [2, 3000, 1043857760];
 const WHATSAPP_VERSION_FETCH_TIMEOUT_MS = 10000;
 
 startDashboardServer({
+  getSock: () => (whatsappConnectionState === "open" ? activeSock : null),
   getGroups: async () => Object.values(await activeSock.groupFetchAllParticipating()).map(group => ({ id: group.id, name: group.subject || group.id })),
   getBotStatus: () => ({
     connected: whatsappConnectionState === "open" && Boolean(activeSock),
@@ -326,6 +328,7 @@ async function startBot() {
       // 📊 تفعيل جدولة التقارير اليومية
       scheduleDailyReports(sock);
       scheduleDailyQuranReminders(sock);
+      scheduleBusinessSummary(sock);
     }
 
     if (connection === "close") {
