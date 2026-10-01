@@ -107,7 +107,7 @@ function getContextInfo(msg) {
     || null;
 }
 
-function isReplyToBot(sock, msg) {
+export function isReplyToBot(sock, msg) {
   const contextInfo = getContextInfo(msg);
   if (!contextInfo?.quotedMessage) return false;
 

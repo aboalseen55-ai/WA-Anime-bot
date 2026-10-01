@@ -4,7 +4,9 @@ import { featureEnabled } from "../services/botControls.js";
 import { isBusinessCustomerChat } from "../services/businessMode.js";
 import { generateSamBotAIFromParts, isSamBotAIAvailable } from "./samBotAI.js";
 import { consumeAssistantQuota, quotaExceededMessage } from "./assistantQuota.js";
-import { isVoiceReplyEnabled, sendVoiceOrText, voiceConversationInstruction } from "./voiceReplies.js";
+import { canUseVoiceReplies, isVoiceReplyEnabled, sendVoiceOrText, voiceConversationInstruction } from "./voiceReplies.js";
+import { isElevenLabsConfigured } from "../services/elevenLabsService.js";
+import { isReplyToBot } from "./samBotIntelligence.js";
 import { runAssistantCommand, sanitizeAssistantCommand } from "./samCapabilities.js";
 
 const MB = 1024 * 1024;
@@ -204,8 +206,11 @@ async function processMedia(sock, jid, sender, target, question, quoted) {
 
   const inlineData = { inlineData: { mimeType: media.mimetype.split(";")[0], data: buffer.toString("base64") } };
 
-  // وضع المحادثة الصوتية: فويس بالخاص -> سام يفهمه ويرد بفويس
-  if (media.type === "audio" && !question && !target.explicit && isPrivateChat(jid) && await isVoiceReplyEnabled(sender)) {
+  // وضع المحادثة الصوتية: فويس بالخاص (مع /فويس تشغيل) أو فويس بالقروب ردًا على سام -> سام يفهمه ويرد عليه
+  const groupVoiceChat = Boolean(target.groupVoiceChat);
+  const voiceChat = media.type === "audio" && !question && !target.explicit
+    && (groupVoiceChat || (isPrivateChat(jid) && await isVoiceReplyEnabled(sender)));
+  if (voiceChat) {
     const raw = await generateSamBotAIFromParts({
       systemInstruction: voiceConversationInstruction(),
       parts: [inlineData, { text: "Answer this voice note." }],
@@ -216,6 +221,15 @@ async function processMedia(sock, jid, sender, target, question, quoted) {
     const answer = String(result?.reply || "").trim();
     if (!answer) {
       await reply("❌ ما قدرت أفهم الفويس، جرب مرة ثانية.");
+      return;
+    }
+    if (groupVoiceChat) {
+      // بالقروب: فويس إذا المرسل مسموحله بـ ElevenLabs، وإلا نص. وما بننفذ أوامر شخصية من القروب
+      if (isElevenLabsConfigured() && canUseVoiceReplies(sender)) {
+        await sendVoiceOrText(sock, jid, answer, { quoted, userJid: sender });
+      } else {
+        await reply(answer);
+      }
       return;
     }
     await sendVoiceOrText(sock, jid, answer, { quoted, userJid: sender });
@@ -282,7 +296,17 @@ export async function handleMediaAssistant(sock, msg, text) {
     return true;
   }
 
-  if (!isPrivateChat(jid)) return false;
+  if (!isPrivateChat(jid)) {
+    // بالقروب: فويس ردًا على رسالة من سام = حكي معه، فبيرد عليه
+    const groupMedia = describeMedia(msg.message);
+    if (groupMedia?.type !== "audio" || !isReplyToBot(sock, msg)) return false;
+    try {
+      await processMedia(sock, jid, sender, { media: groupMedia, message: msg, groupVoiceChat: true }, "", msg);
+    } catch (error) {
+      console.error("Group voice chat failed:", error.message);
+    }
+    return true;
+  }
   const media = describeMedia(msg.message);
   if (!media) return false;
   // تعليق يبدأ بـ / هو أمر لميزة أخرى (مثل الأوامر المخصصة)

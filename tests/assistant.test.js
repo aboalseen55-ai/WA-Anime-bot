@@ -117,6 +117,30 @@ test('media assistant ignores group media without a command and hints on a bare 
   assert.equal(await handleMediaAssistant(sock, captionCommand, ''), false);
 });
 
+test('a group voice note that replies to Sam is answered, other group voices are ignored', async () => {
+  setControlSnapshot([]);
+  const sock = fakeSock();
+  const toSam = {
+    key: { remoteJid: 'g@g.us', participant: 'u@s.whatsapp.net' },
+    message: { audioMessage: { seconds: 3, contextInfo: { participant: 'bot@s.whatsapp.net', stanzaId: 'x', quotedMessage: { conversation: 'أهلين' } } } }
+  };
+  const toSomeoneElse = {
+    key: { remoteJid: 'g@g.us', participant: 'u@s.whatsapp.net' },
+    message: { audioMessage: { seconds: 3, contextInfo: { participant: 'other@s.whatsapp.net', stanzaId: 'y', quotedMessage: { conversation: 'هاي' } } } }
+  };
+  assert.equal(await handleMediaAssistant(sock, toSomeoneElse, ''), false);
+  assert.equal(sock.sent.length, 0);
+  // بدون مفتاح Gemini بالاختبار، بيوصل لمرحلة الرد وبيعتذر إنه الخدمة متوقفة
+  const saved = { ...process.env };
+  for (const key of Object.keys(process.env)) if (/GEMINI|GOOGLE_API/.test(key)) delete process.env[key];
+  try {
+    assert.equal(await handleMediaAssistant(sock, toSam, ''), true);
+  } finally {
+    Object.assign(process.env, saved);
+  }
+  assert.equal(sock.sent[0].jid, 'g@g.us');
+});
+
 test('prayer times are parsed and cached', async () => {
   let calls = 0;
   const fetchImpl = async () => { calls += 1; return { ok: true, json: async () => ({ data: { timings: { Fajr: '04:51 (EEST)', Dhuhr: '11:39', Asr: '15:01', Maghrib: '17:37', Isha: '18:56' } } }) }; };
