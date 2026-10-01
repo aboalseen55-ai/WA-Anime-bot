@@ -4,6 +4,7 @@ import User from "../database/userModel.js";
 import { resolveMentionContext } from "../commands/adminSystem.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { generateSamBotAIReply } from "./samBotAI.js";
+import { isVoiceReplyEnabled, sendVoiceOrText } from "./voiceReplies.js";
 import {
   buildSamBotMemoryContext,
   getRepeatedSocialReply,
@@ -455,10 +456,14 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
       })
     : "";
   const reply = repeatedReply || aiReply || buildReply(intent, nickname, text);
-  await sock.sendMessage(jid, {
-    text: reply,
-    mentions: [sender]
-  });
+  if (aiReply && isPrivateChat(jid) && await isVoiceReplyEnabled(sender)) {
+    await sendVoiceOrText(sock, jid, reply, { mentions: [sender] });
+  } else {
+    await sock.sendMessage(jid, {
+      text: reply,
+      mentions: [sender]
+    });
+  }
 
   await rememberSamBotTurn({
     memory,

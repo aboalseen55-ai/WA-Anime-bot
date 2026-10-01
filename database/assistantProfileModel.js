@@ -24,6 +24,11 @@ const assistantProfileSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // وضع الرد بفويس (ElevenLabs) بالخاص
+  voiceReplies: {
+    type: Boolean,
+    default: false
+  },
   // الملخص الصباحي
   brief: {
     enabled: { type: Boolean, default: false },

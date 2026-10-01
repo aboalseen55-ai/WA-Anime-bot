@@ -4,6 +4,7 @@ import { featureEnabled } from "../services/botControls.js";
 import { isBusinessCustomerChat } from "../services/businessMode.js";
 import { generateSamBotAIFromParts, isSamBotAIAvailable } from "./samBotAI.js";
 import { consumeAssistantQuota, quotaExceededMessage } from "./assistantQuota.js";
+import { isVoiceReplyEnabled, sendVoiceOrText, voiceConversationInstruction } from "./voiceReplies.js";
 
 const MB = 1024 * 1024;
 const MAX_AUDIO_SECONDS = Number(process.env.ASSISTANT_MAX_AUDIO_SECONDS || 600);
@@ -202,6 +203,24 @@ async function processMedia(sock, jid, sender, target, question, quoted) {
 
   const inlineData = { inlineData: { mimeType: media.mimetype.split(";")[0], data: buffer.toString("base64") } };
 
+  // وضع المحادثة الصوتية: فويس بالخاص -> سام يفهمه ويرد بفويس
+  if (media.type === "audio" && !question && !target.explicit && isPrivateChat(jid) && await isVoiceReplyEnabled(sender)) {
+    const raw = await generateSamBotAIFromParts({
+      systemInstruction: voiceConversationInstruction(),
+      parts: [inlineData, { text: "Answer this voice note." }],
+      temperature: 0.6,
+      json: true
+    });
+    const result = parseJson(raw);
+    const answer = String(result?.reply || "").trim();
+    if (!answer) {
+      await reply("❌ ما قدرت أفهم الفويس، جرب مرة ثانية.");
+      return;
+    }
+    await sendVoiceOrText(sock, jid, answer, { quoted });
+    return;
+  }
+
   if (media.type === "audio") {
     const raw = await generateSamBotAIFromParts({
       systemInstruction: audioInstruction(),
@@ -252,7 +271,7 @@ export async function handleMediaAssistant(sock, msg, text) {
       return true;
     }
     try {
-      await processMedia(sock, jid, sender, target, command.question, msg);
+      await processMedia(sock, jid, sender, { ...target, explicit: true }, command.question, msg);
     } catch (error) {
       console.error("Media assistant failed:", error.message);
       await sock.sendMessage(jid, { text: "❌ صار خطأ، جرب مرة ثانية." }, { quoted: msg });
