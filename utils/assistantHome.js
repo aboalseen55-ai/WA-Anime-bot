@@ -204,7 +204,7 @@ async function getOrCreateProfile(jid) {
 
 const HELP_COMMANDS = new Set(["مساعده", "help", "start", "ابدا"]);
 
-export async function handleAssistantHomeCommand(sock, jid, sender, text, msg) {
+export async function handleAssistantHomeCommand(sock, jid, sender, text, msg, { now = new Date() } = {}) {
   const trimmed = String(text || "").trim();
   if (!trimmed.startsWith("/")) return false;
   const normalized = normalize(trimmed.slice(1));
@@ -239,7 +239,6 @@ export async function handleAssistantHomeCommand(sock, jid, sender, text, msg) {
     if (/^(تشغيل|شغل|فعل|on|start)/.test(args)) {
       const time = parseBriefTime(args) || { hour: 7, minute: 0 };
       // إذا الوقت مضى اليوم، أول ملخص يكون بكرة
-      const now = new Date();
       const today = getTimeZoneParts(now, TIME_ZONE);
       const passedToday = zonedTimeToUtc(today.year, today.month, today.day, time.hour, time.minute, 0, TIME_ZONE) <= now;
       await AssistantProfile.updateOne(

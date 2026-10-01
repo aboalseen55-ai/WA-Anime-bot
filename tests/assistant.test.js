@@ -138,7 +138,8 @@ test('morning brief lists today and is sent once per day at the chosen time', as
   const fetchImpl = async () => ({ ok: false });
 
   const sock = fakeSock();
-  await handleAssistantHomeCommand(sock, 'u@s.whatsapp.net', 'u@s.whatsapp.net', '/صباحي تشغيل 7:30', {});
+  // التفعيل الساعة 6 الصبح بعمّان، قبل موعد 7:30، فأول ملخص بيطلع اليوم
+  await handleAssistantHomeCommand(sock, 'u@s.whatsapp.net', 'u@s.whatsapp.net', '/صباحي تشغيل 7:30', {}, { now: new Date('2026-10-01T03:00:00Z') });
   assert.equal(docs[0].brief.enabled, true);
   assert.equal(docs[0].brief.hour, 7);
   assert.equal(docs[0].brief.minute, 30);
