@@ -131,3 +131,20 @@ test('group reminders are delivered to the group', async t => {
   assert.match(delivered.text, /تذكير للمجموعة/);
   assert.equal(docs[0].status, 'sent');
 });
+
+test('public landing page links to the bot number and privacy page renders', async () => {
+  const { serveSitePage } = await import('../services/dashboardServer.js');
+  const res = { head: null, body: '', writeHead(code, headers) { this.head = { code, headers }; }, end(body) { this.body = body; } };
+  assert.equal(serveSitePage('/', res, () => ({ user: { id: '962700000000:28@s.whatsapp.net' } })), true);
+  assert.equal(res.head.code, 200);
+  assert.match(res.body, /https:\/\/wa\.me\/962700000000\?text=/);
+  assert.doesNotMatch(res.body, /\{\{/);
+
+  const res2 = { ...res, writeHead: res.writeHead, end: res.end };
+  serveSitePage('/', res2, () => null);
+  assert.match(res2.body, / hidden>/);
+
+  assert.equal(serveSitePage('/privacy', res, () => null), true);
+  assert.match(res.body, /سياسة الخصوصية/);
+  assert.equal(serveSitePage('/dashboard', res, () => null), false);
+});

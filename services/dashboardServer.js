@@ -169,6 +169,27 @@ export function publicApiConfig(value) {
   return output;
 }
 
+// الصفحة التعريفية العامة وسياسة الخصوصية (بدون تسجيل دخول)
+const sitePages = new Map([
+  ['/', ['../site/index.html', 'text/html']],
+  ['/privacy', ['../site/privacy.html', 'text/html']],
+  ['/site/style.css', ['../site/style.css', 'text/css']]
+]);
+export function serveSitePage(pathname, res, getSock) {
+  const page = sitePages.get(pathname);
+  if (!page) return false;
+  let content = fs.readFileSync(new URL(page[0], import.meta.url), 'utf8');
+  if (page[1] === 'text/html') {
+    const number = String(getSock?.()?.user?.id || process.env.BOT_PUBLIC_NUMBER || '').split(':')[0].split('@')[0].replace(/\D/g, '');
+    content = content
+      .replace('{{WA_LINK}}', number ? `https://wa.me/${number}?text=${encodeURIComponent('/مساعدة')}` : '#')
+      .replace('{{WA_HIDDEN}}', number ? '' : 'hidden');
+  }
+  res.writeHead(200, { 'Content-Type': `${page[1]}; charset=utf-8`, 'Cache-Control': 'public, max-age=300' });
+  res.end(content);
+  return true;
+}
+
 export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKingdomChange, onRestart, password = process.env.DASHBOARD_ADMIN_PASSWORD || '' }) {
   const sessions = new Map(), attempts = new Map();
   return async (req, res) => {
@@ -176,6 +197,7 @@ export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKin
     res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
     try {
       const url = new URL(req.url, 'http://localhost');
+      if (req.method === 'GET' && serveSitePage(url.pathname, res, getSock)) return;
       if (!url.pathname.startsWith('/dashboard')) return json(res,404,{error:'غير موجود'});
       if (!getBotStatus().connected) return json(res,503,{error:'البوت غير متصل بواتساب؛ اللوحة غير متاحة حاليًا'});
       if (!password) return json(res,503,{error:'كلمة مرور اللوحة غير مضبوطة'});
