@@ -480,7 +480,7 @@ export async function handlePersonalCommand(sock, jid, sender, text, { now = new
 // ============================================
 
 export async function deliverDueReminders(sock, now = new Date()) {
-  const due = await PersonalItem.find({ kind: "reminder", status: "pending", dueAt: { $lte: now } })
+  const due = await PersonalItem.find({ kind: { $in: ["reminder", "groupReminder"] }, status: "pending", dueAt: { $lte: now } })
     .sort({ dueAt: 1 })
     .limit(25)
     .lean();
@@ -495,7 +495,9 @@ export async function deliverDueReminders(sock, now = new Date()) {
     if (!claimed) continue;
 
     try {
-      await sock.sendMessage(item.userJid, { text: `⏰ *تذكير*\n\n${item.text}` });
+      // تذكيرات المجموعة تنرسل للمجموعة نفسها، والشخصية على الخاص
+      const toGroup = item.kind === "groupReminder";
+      await sock.sendMessage(toGroup ? item.chatJid : item.userJid, { text: `⏰ *تذكير${toGroup ? " للمجموعة" : ""}*\n\n${item.text}` });
       const sentAt = new Date();
       const done = item.repeat
         ? { status: "pending", sentAt, attempts: 0, dueAt: nextRepeatDate(item.dueAt, item.repeat, now) }
@@ -536,7 +538,7 @@ export function schedulePersonalReminders(sock, { intervalMs = CHECK_INTERVAL_MS
   };
 
   // تذكيرات علقت أثناء إعادة تشغيل سابقة تعود للانتظار
-  PersonalItem.updateMany({ kind: "reminder", status: "sending" }, { $set: { status: "pending" } })
+  PersonalItem.updateMany({ kind: { $in: ["reminder", "groupReminder"] }, status: "sending" }, { $set: { status: "pending" } })
     .catch((error) => console.warn("Could not reset stuck personal reminders:", error.message))
     .finally(tick);
 

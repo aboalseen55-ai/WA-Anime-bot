@@ -17,16 +17,9 @@ export async function trackMainGroupActivity(sock, msg, jid, sender, text) {
     kingdom = getKingdomIdFromGroupJid(jid);
     kingdomData = KINGDOMS[kingdom];
 
-    // DEBUG: تحقق من القيم
-    console.log(`[DEBUG] جاء من: ${jid}`);
-    console.log(`[DEBUG] المملكة: ${kingdom}, mainGroup: ${kingdomData?.mainGroup}`);
-    console.log(`[DEBUG] من المستخدم: ${sender}`);
-    console.log(`[DEBUG] نوع الرسالة: ${Object.keys(msg.message || {}).join(', ')}`);
-    console.log(`[DEBUG] من مجموعة رئيسية؟ ${kingdomData && kingdomData.mainGroup === jid}`);
 
     // تتبع الرسائل من المجموعة الرئيسية فقط
     if (featureEnabled('tracking') && kingdomData && kingdomData.mainGroup === jid && !msg.key.fromMe) {
-      console.log(`[DEBUG] تطابق! بدء تتبع الرسالة...`);
       try {
         let user = await User.findOne({ jid: sender, kingdom_id: kingdom });
 
@@ -69,8 +62,6 @@ export async function trackMainGroupActivity(sock, msg, jid, sender, text) {
       } catch (error) {
         console.error('❌ خطأ في تتبع الرسائل اليومية:', error.message);
       }
-    } else {
-      console.log(`[DEBUG] ❌ لم يتطابق - jid: ${jid}, mainGroup: ${kingdomData?.mainGroup}, fromMe: ${msg.key.fromMe}`);
     }
   } catch (importError) {
     console.error('❌ خطأ في استيراد البيانات:', importError.message);

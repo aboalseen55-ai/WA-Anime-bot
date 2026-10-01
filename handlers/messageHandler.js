@@ -14,6 +14,7 @@ import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js'
 import { handleBusinessMessage } from '../services/businessMode.js';
 import { handleFirstContact } from "../utils/assistantHome.js";
 import { handleMediaAssistant } from "../utils/mediaAssistant.js";
+import { enforceGroupProtection, recordGroupMessage } from "../utils/groupTools.js";
 import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../utils/samBotUsage.js";
 import { trackMainGroupActivity } from "./activityTracking.js";
 import { checkAndSendMilestoneMessage } from "./milestones.js";
@@ -51,6 +52,10 @@ export async function messageHandler(sock, msg) {
 
   // حفظ رسالة في الـ cache لاستخدامها في حذف مجموعة رسائل لاحقاً
   addRecentMessage(jid, msg.key);
+
+  // حماية المجموعة (روابط وسبام) قبل أي معالجة، ثم حفظ النص لأمر /ملخص
+  if (await enforceGroupProtection(sock, msg)) return;
+  recordGroupMessage(jid, msg.pushName, text);
 
   let kingdom = await trackMainGroupActivity(sock, msg, jid, sender, text);
 

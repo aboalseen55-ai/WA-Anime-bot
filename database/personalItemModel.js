@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 const personalItemSchema = new mongoose.Schema({
   kind: {
     type: String,
-    enum: ["reminder", "todo", "note"],
+    enum: ["reminder", "todo", "note", "groupReminder"],
     required: true
   },
   userJid: {
