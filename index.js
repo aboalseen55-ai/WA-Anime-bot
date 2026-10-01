@@ -1,3 +1,4 @@
+import "./utils/silenceSignalLogs.js";
 import makeWASocket, {
   fetchLatestBaileysVersion,
   useMultiFileAuthState

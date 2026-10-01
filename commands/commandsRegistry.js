@@ -277,29 +277,12 @@ export const COMMANDS_REGISTRY = {
       emoji: '📤',
       permission: 'admin'
     },
-    // الأوامر الجديدة
     {
       command: '/حالة',
       description: 'فحص حالة البوت الكاملة',
       usage: '/حالة',
       category: 'monitoring',
       emoji: '🩺',
-      permission: 'admin'
-    },
-    {
-      command: '/إحصائيات',
-      description: 'إحصائيات الأداء المفصلة',
-      usage: '/إحصائيات',
-      category: 'monitoring',
-      emoji: '📊',
-      permission: 'admin'
-    },
-    {
-      command: '/backup',
-      description: 'إنشاء نسخة احتياطية فورية',
-      usage: '/backup',
-      category: 'maintenance',
-      emoji: '💾',
       permission: 'admin'
     }
   ],

@@ -8,6 +8,7 @@ import { denyCommandIfPaused } from '../services/botControls.js';
 import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
 import { handleQuranCommand, isQuranCommand } from "../utils/quran.js";
 import { handlePersonalCommand } from "../utils/personalAssistant.js";
+import { handleBotStatusCommand } from "../utils/botStatus.js";
 import { handleDashboardCommand, getSeriesSession, selectSeriesResult } from "../services/dashboardRuntime.js";
 import { handleBotDeletion } from '../services/botMessageDeletion.js';
 import { awaitingCommandsChoice, awaitingGameChoice } from "./handlerState.js";
@@ -56,6 +57,7 @@ export async function handleSlashCommand(sock, jid, sender, trimmedText, msg) {
   }
 
   if (await handlePersonalCommand(sock, jid, sender, trimmedText)) return true;
+  if (await handleBotStatusCommand(sock, jid, sender, trimmedText)) return true;
 
   // إذا لم يكن أمر الأوامر (تمت معالجته أعلاه)
   if (!commandsTriggers.includes(trimmedText)) {
