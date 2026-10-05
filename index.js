@@ -20,6 +20,7 @@ import { scheduleMorningBriefs } from "./utils/assistantHome.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
+import { handleShatreenApproval, startShatreenComments } from "./services/shatreenComments.js";
 import { scheduleBusinessSummary } from "./services/businessSummary.js";
 import { refreshDashboardTemplates } from './services/dashboardTemplates.js';
 import { rememberBotMessage } from './services/botMessageDeletion.js';
@@ -128,6 +129,8 @@ const AUTH_DIR = process.env.WHATSAPP_AUTH_DIR || "auth";
 const AUTH_RESET_MARKER_FILE = ".auth-reset-token";
 const DEFAULT_WHATSAPP_WEB_VERSION = [2, 3000, 1043857760];
 const WHATSAPP_VERSION_FETCH_TIMEOUT_MS = 10000;
+
+startShatreenComments({ getSock: () => (whatsappConnectionState === "open" ? activeSock : null) });
 
 startDashboardServer({
   getSock: () => (whatsappConnectionState === "open" ? activeSock : null),
@@ -452,6 +455,8 @@ async function startBot() {
 
     if (!msg.key.fromMe) {
       try {
+        // The developer approving a reply to an Instagram comment (services/shatreenComments.js).
+        if (await handleShatreenApproval(sock, msg)) return;
         const { messageHandler } = await import("./handlers/messageHandler.js");
         await withBotContext('reply', () => messageHandler(sock, msg));
       } catch (err) {
