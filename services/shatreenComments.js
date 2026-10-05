@@ -126,7 +126,9 @@ export async function pollShatreenComments() {
         let reply = fixedReply(c.text, caption);
         const how = reply ? "fixed" : "ai";
         if (!reply) reply = await aiReply(c.text, caption);
-        if (!reply || reply === "تجاهل") {
+        // No answer at all means Gemini failed (busy, quota): leave the comment for the next pass.
+        if (!reply) continue;
+        if (reply === "تجاهل") {
           await ShatreenComment.create({ ...base, status: "ignored", how, decidedAt: new Date() });
           continue;
         }
