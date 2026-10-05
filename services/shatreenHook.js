@@ -1,9 +1,11 @@
 import crypto from "node:crypto";
 import { DEVELOPER_JID } from "../config.js";
+import { instagramDaySection } from "./shatreenComments.js";
 
 // Notifications from شاطرين (shatreen.com): the platform POSTs a ready-worded message to
 // /hooks/shatreen with «Authorization: Bearer SHATREEN_HOOK_SECRET», and the bot sends it on
-// WhatsApp to the developer (or to SHATREEN_NOTIFY_JIDS, comma-separated, when set).
+// WhatsApp to the developer (or to SHATREEN_NOTIFY_JIDS, comma-separated, when set). The evening
+// summary comes with «kind: "daily"», and the bot adds the day's Instagram comments under it.
 
 const MAX_BODY = 8 * 1024;
 const MAX_PER_MINUTE = 30;
@@ -60,10 +62,20 @@ export function createShatreenHook({ getSock }) {
     if (sentInWindow >= MAX_PER_MINUTE) return reply(res, 429, { error: "too many" }), true;
 
     let text = "";
+    let kind = "";
     try {
-      text = String(JSON.parse(await readBody(req)).text || "").slice(0, 3000);
+      const body = JSON.parse(await readBody(req));
+      text = String(body.text || "").slice(0, 3000);
+      kind = String(body.kind || "");
     } catch {
       return reply(res, 400, { error: "bad body" }), true;
+    }
+    if (kind === "daily" && text.trim()) {
+      try {
+        text += "\n" + (await instagramDaySection());
+      } catch (error) {
+        console.warn("Shatreen Instagram summary failed:", error?.message);
+      }
     }
     if (!text.trim()) return reply(res, 400, { error: "empty" }), true;
 

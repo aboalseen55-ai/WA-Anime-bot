@@ -7,17 +7,15 @@ const shatreenCommentSchema = new mongoose.Schema({
   postCaption: { type: String, default: "" },
   username: { type: String, default: "" },
   text: { type: String, default: "" },
-  draft: { type: String, default: "" },
   reply: { type: String, default: "" },
-  // seeded: there before the watcher started · pending: waiting for the developer · sent · ignored · auto: thanked automatically
-  status: { type: String, enum: ["seeded", "pending", "sent", "ignored", "auto", "failed"], default: "pending" },
-  code: { type: Number, default: 0 },
-  waMessageId: { type: String, default: "" },
+  // fixed: a ready reply (emoji, «مؤسس», a puzzle answer) · ai: written by Gemini
+  how: { type: String, enum: ["fixed", "ai", ""], default: "" },
+  // seeded: there before the watcher started · sent · ignored · failed (Upload-Post refused)
+  status: { type: String, enum: ["seeded", "sent", "ignored", "failed"], default: "sent" },
   createdAt: { type: Date, default: Date.now },
   decidedAt: { type: Date, default: null }
 });
 
-shatreenCommentSchema.index({ status: 1, code: 1 });
-shatreenCommentSchema.index({ waMessageId: 1 });
+shatreenCommentSchema.index({ createdAt: 1 });
 
 export default mongoose.models.ShatreenComment || mongoose.model("ShatreenComment", shatreenCommentSchema);
