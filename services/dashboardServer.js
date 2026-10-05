@@ -1,3 +1,4 @@
+import { createShatreenHook } from './shatreenHook.js';
 import http from 'node:http';
 import { CONTROL_LABELS, controlSnapshot, saveBotControl } from './botControls.js';
 import crypto from 'node:crypto';
@@ -337,6 +338,12 @@ export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKin
   };
 }
 export function startDashboardServer(options) {
-  const server = http.createServer(createDashboardHandler(options)); server.requestTimeout = 30000; server.headersTimeout = 15000;
+  // شاطرين's notifications (/hooks/shatreen) are answered first; everything else is the dashboard.
+  const dashboard = createDashboardHandler(options);
+  const shatreen = options.getSock ? createShatreenHook({ getSock: options.getSock }) : null;
+  const server = http.createServer(async (req, res) => {
+    if (shatreen && (await shatreen(req, res))) return;
+    return dashboard(req, res);
+  }); server.requestTimeout = 30000; server.headersTimeout = 15000;
   server.listen(Number(process.env.PORT || 3000),'0.0.0.0',()=>console.log('Dashboard server ready')); return server;
 }
