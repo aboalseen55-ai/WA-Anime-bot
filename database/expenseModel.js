@@ -7,6 +7,9 @@ const expenseSchema = new mongoose.Schema({
   label: { type: String, default: "" },
   // null = العملة الافتراضية (EXPENSE_CURRENCY)
   currency: { type: String, default: null },
+  // المبلغ الأصلي إذا انحوّل من عملة ثانية للدينار
+  originalAmount: { type: Number, default: null },
+  originalCurrency: { type: String, default: null },
   spentAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

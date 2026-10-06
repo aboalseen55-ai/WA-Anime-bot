@@ -3,6 +3,7 @@ import Expense from "../database/expenseModel.js";
 import { DEFAULT_TIME_ZONE, getTimeZoneParts, zonedTimeToUtc } from "./quran.js";
 import { generateSamBotAIFromParts, isSamBotAIAvailable } from "./samBotAI.js";
 import { consumeAssistantQuota } from "./assistantQuota.js";
+import { getRateToJOD } from "../services/exchangeRates.js";
 
 const TIME_ZONE = process.env.PERSONAL_REMINDER_TIMEZONE || DEFAULT_TIME_ZONE;
 const CURRENCY = process.env.EXPENSE_CURRENCY || "دينار";
@@ -213,13 +214,45 @@ function parsePeriod(args) {
   return "month";
 }
 
-async function addExpenses(sock, jid, sender, items, now) {
+const NAME_TO_CODE = { "دولار": "USD", "يورو": "EUR", "ريال": "SAR", "درهم": "AED", "شيكل": "ILS", "جنيه": "EGP", "جنيه استرليني": "GBP" };
+
+/** أي عملة غير الدينار بتتحول لدينار بسعر الصرف، وبينحفظ المبلغ الأصلي جنبه. */
+export async function convertToJOD(item, rateOptions) {
+  if (!item.currency || process.env.EXPENSE_CONVERT === "false" || CURRENCY !== "دينار") return item;
+  const code = NAME_TO_CODE[item.currency] || (/^[A-Z]{3}$/.test(item.currency) ? item.currency : null);
+  const found = code ? await getRateToJOD(code, rateOptions).catch(() => null) : null;
+  if (!found) return item;
+  return {
+    ...item,
+    amount: Math.round(item.amount * found.rate * 1000) / 1000,
+    currency: null,
+    originalAmount: item.amount,
+    originalCurrency: item.currency
+  };
+}
+
+function describeItem(item) {
+  const original = item.originalAmount ? ` (${formatAmount(item.originalAmount, item.originalCurrency)})` : "";
+  return `${formatAmount(item.amount, item.currency)}${original}`;
+}
+
+async function addExpenses(sock, jid, sender, rawItems, now, rateOptions) {
+  const items = [];
+  for (const raw of rawItems) items.push(await convertToJOD(raw, rateOptions));
   for (const item of items) {
-    await Expense.create({ userJid: sender, amount: item.amount, label: item.label, currency: item.currency || null, spentAt: now });
+    await Expense.create({
+      userJid: sender,
+      amount: item.amount,
+      label: item.label,
+      currency: item.currency || null,
+      originalAmount: item.originalAmount ?? null,
+      originalCurrency: item.originalCurrency ?? null,
+      spentAt: now
+    });
   }
   const { start } = periodStart("month", now);
   const monthItems = await Expense.find({ userJid: sender, spentAt: { $gte: start } }).lean().catch(() => []);
-  const describe = (item) => `${formatAmount(item.amount, item.currency)}${item.label ? ` على ${item.label}` : ""}`;
+  const describe = (item) => `${describeItem(item)}${item.label ? ` على ${item.label}` : ""}`;
   const lines = items.length === 1
     ? [`💸 سجلت مصروف: ${describe(items[0])}`]
     : [`💸 سجلت ${items.length} مصاريف:`, ...items.map((item) => `▪️ ${describe(item)}`)];
@@ -245,7 +278,7 @@ async function listExpenses(sock, jid, sender, args, now) {
     .map(([key, sum]) => { const [label, currency] = key.split("\u0000"); return [label, formatAmount(sum, currency)]; });
   const recent = items.slice(0, LIST_LIMIT).map((item, index) => {
     const date = item.spentAt.toLocaleDateString("ar-JO", { timeZone: TIME_ZONE, day: "numeric", month: "numeric" });
-    return `${index + 1}. ${formatAmount(item.amount, item.currency)}${item.label ? ` · ${item.label}` : ""} (${date})`;
+    return `${index + 1}. ${describeItem(item)}${item.label ? ` · ${item.label}` : ""} (${date})`;
   });
   const lines = [
     `💰 *مصاريفك ${title}*`,
@@ -272,7 +305,7 @@ async function deleteExpense(sock, jid, sender, args, now) {
     return;
   }
   await Expense.deleteOne({ _id: item._id, userJid: sender });
-  await sock.sendMessage(jid, { text: `🗑️ حذفت: ${formatAmount(item.amount, item.currency)}${item.label ? ` · ${item.label}` : ""}` });
+  await sock.sendMessage(jid, { text: `🗑️ حذفت: ${describeItem(item)}${item.label ? ` · ${item.label}` : ""}` });
 }
 
 function matchCommand(text) {
@@ -295,7 +328,7 @@ export function isExpenseCommand(text) {
 }
 
 /** أوامر المصاريف. بالقروب بتنرد بالخاص حتى تضل مصاريفك إلك. */
-export async function handleExpenseCommand(sock, jid, sender, text, { now = new Date(), extractOptions } = {}) {
+export async function handleExpenseCommand(sock, jid, sender, text, { now = new Date(), extractOptions, rateOptions } = {}) {
   const matched = matchCommand(text);
   if (!matched) return false;
   const target = isPrivateChat(jid) ? jid : sender;
@@ -312,7 +345,7 @@ export async function handleExpenseCommand(sock, jid, sender, text, { now = new 
       if (!parsed.length) {
         await sock.sendMessage(target, { text: "✍️ اكتب المبلغ وعلى شو صرفت.\nمثال: /مصروف 5 قهوة\nأو: /مصروف 30 فاتورة كهربا" });
       } else {
-        await addExpenses(sock, target, sender, parsed, now);
+        await addExpenses(sock, target, sender, parsed, now, rateOptions);
       }
     }
     if (target !== jid) await sock.sendMessage(jid, { text: "📩 بعتلك على الخاص." });
@@ -324,12 +357,12 @@ export async function handleExpenseCommand(sock, jid, sender, text, { now = new 
 }
 
 /** "صرفت 5 على قهوة" بالخاص بتنسجل مصروف (أو أكثر) مباشرة. */
-export async function handleNaturalExpense(sock, jid, sender, text, { now = new Date(), extractOptions } = {}) {
+export async function handleNaturalExpense(sock, jid, sender, text, { now = new Date(), extractOptions, rateOptions } = {}) {
   if (!isPrivateChat(jid) || !looksLikeSpending(text)) return false;
   try {
     const { items } = await extractExpenses(text, sender, extractOptions);
     if (!items.length) return false;
-    await addExpenses(sock, jid, sender, items, now);
+    await addExpenses(sock, jid, sender, items, now, rateOptions);
   } catch (error) {
     console.error("Natural expense failed:", error.message);
     return false;

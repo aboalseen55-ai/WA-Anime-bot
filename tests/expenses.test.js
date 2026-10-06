@@ -5,6 +5,8 @@ import { extractExpenses, handleExpenseCommand, handleNaturalExpense, matchNatur
 
 const NO_AI = { extractOptions: { aiAvailable: () => false } };
 import { sanitizeAssistantCommand } from '../utils/samCapabilities.js';
+import { getRateToJOD, resetExchangeRateCache } from '../services/exchangeRates.js';
+import { convertToJOD } from '../utils/expenses.js';
 
 const USER = '962700000001@s.whatsapp.net';
 const NOW = new Date('2026-10-06T09:00:00Z'); // الثلاثاء 12:00 بعمّان
@@ -69,7 +71,8 @@ test('/مصروف adds, /مصاريفي totals and /حذف_مصروف removes', 
   assert.match(sock.sent[1].text, /مجموع هالشهر: 15 دينار/);
   await handleNaturalExpense(sock, USER, USER, 'دفعت 20$ كلود و 2 قهوة', { now: new Date(NOW.getTime() + 2000), ...NO_AI });
   assert.match(sock.sent.at(-1).text, /سجلت 2 مصاريف/);
-  assert.match(sock.sent.at(-1).text, /17 دينار \+ 20 دولار/);
+  assert.match(sock.sent.at(-1).text, /14\.18 دينار \(20 دولار\) على كلود/);
+  assert.match(sock.sent.at(-1).text, /مجموع هالشهر: 31\.18 دينار/);
   await handleExpenseCommand(sock, USER, USER, '/حذف_مصروف 1', { now: NOW, ...NO_AI });
   await handleExpenseCommand(sock, USER, USER, '/حذف_مصروف 1', { now: NOW, ...NO_AI });
 
@@ -131,9 +134,32 @@ test('several /مصروف in one command and "سجل مصروف" phrasing are sp
   };
   const extractOptions = { ai, aiAvailable: () => true, quota: async () => ({ allowed: true }) };
   await handleExpenseCommand(sock, USER, USER, '/مصروف 20$ كلود /مصروف 22.5 انترنت', { now: NOW, extractOptions });
-  assert.deepEqual(docs.map(d => [d.amount, d.currency, d.label]), [[20, 'دولار', 'كلود'], [22.5, null, 'انترنت']]);
+  assert.deepEqual(docs.map(d => [d.amount, d.currency, d.label, d.originalAmount, d.originalCurrency]), [[14.18, null, 'كلود', 20, 'دولار'], [22.5, null, 'انترنت', null, null]]);
 
   // بدون ذكاء اصطناعي الكود بيقسمها برضو
   assert.deepEqual(parseExpense('20$ كلود /مصروف 22.5 انترنت'), { amount: 20, label: 'كلود', currency: 'دولار' });
   assert.deepEqual(matchNaturalExpense('سجل مصروف 3 فطور و 2 قهوة').map(i => i.amount), [3, 2]);
+});
+
+test('foreign currencies are converted to dinar at the exchange rate', async (t) => {
+  resetExchangeRateCache();
+  t.mock.method(console, 'warn', () => {});
+  let calls = 0;
+  const fetchImpl = async () => { calls += 1; return { ok: true, json: async () => ({ result: 'success', rates: { JOD: 1, EUR: 1.25, SAR: 5.29 } }) }; };
+  // الدولار ثابت بدون إنترنت
+  assert.deepEqual(await getRateToJOD('USD', { fetchImpl }), { rate: 0.709, live: true });
+  assert.equal(calls, 0);
+  assert.equal((await getRateToJOD('EUR', { fetchImpl })).rate, 0.8);
+  await getRateToJOD('SAR', { fetchImpl });
+  assert.equal(calls, 1); // كاش
+
+  const euro = await convertToJOD({ amount: 10, label: 'كتاب', currency: 'يورو' }, { fetchImpl });
+  assert.deepEqual(euro, { amount: 8, label: 'كتاب', currency: null, originalAmount: 10, originalCurrency: 'يورو' });
+
+  // المصدر واقف: سعر تقريبي، وعملة مش معروفة بتضل زي ما هي
+  resetExchangeRateCache();
+  const down = async () => { throw new Error('offline'); };
+  assert.deepEqual(await getRateToJOD('AED', { fetchImpl: down }), { rate: 0.193, live: false });
+  assert.deepEqual(await convertToJOD({ amount: 3, label: 'x', currency: 'XYZ' }, { fetchImpl: down }), { amount: 3, label: 'x', currency: 'XYZ' });
+  resetExchangeRateCache();
 });
