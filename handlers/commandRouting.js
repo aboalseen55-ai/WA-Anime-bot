@@ -11,6 +11,7 @@ import { handlePersonalCommand } from "../utils/personalAssistant.js";
 import { handleBotStatusCommand } from "../utils/botStatus.js";
 import { handleAssistantHomeCommand } from "../utils/assistantHome.js";
 import { handleVoiceCommand } from "../utils/voiceReplies.js";
+import { handleExpenseCommand } from "../utils/expenses.js";
 import { handleGroupCommand } from "../utils/groupTools.js";
 import { handleDashboardCommand, getSeriesSession, selectSeriesResult } from "../services/dashboardRuntime.js";
 import { handleBotDeletion } from '../services/botMessageDeletion.js';
@@ -62,6 +63,7 @@ export async function handleSlashCommand(sock, jid, sender, trimmedText, msg) {
   if (await handleAssistantHomeCommand(sock, jid, sender, trimmedText, msg)) return true;
   if (await handleVoiceCommand(sock, jid, sender, trimmedText)) return true;
   if (await handleGroupCommand(sock, jid, sender, trimmedText, msg)) return true;
+  if (await handleExpenseCommand(sock, jid, sender, trimmedText)) return true;
   if (await handlePersonalCommand(sock, jid, sender, trimmedText)) return true;
   if (await handleBotStatusCommand(sock, jid, sender, trimmedText)) return true;
 

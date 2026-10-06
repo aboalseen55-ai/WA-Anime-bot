@@ -10,6 +10,7 @@ import { handleKingdomDeleteStep, handleStartKingdomDelete } from "../utils/king
 import { handleKingdomEditStep, handleStartKingdomEdit } from "../utils/kingdomEdit.js";
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
+import { handleNaturalExpense } from "../utils/expenses.js";
 import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js';
 import { handleBusinessMessage } from '../services/businessMode.js';
 import { handleFirstContact } from "../utils/assistantHome.js";
@@ -132,6 +133,8 @@ export async function messageHandler(sock, msg) {
   if (await handleReceptionRegistration(sock, jid, sender, text, msg)) return;
 
   // تفاعل سام بوت الذكي: يرد فقط إذا الكلام موجه له أو في الخاص أو بالرد على رسالته.
+  // "صرفت 5 على قهوة" بالخاص = مصروف، مش ملاحظة
+  if (await handleNaturalExpense(sock, jid, sender, trimmedText)) return;
   if (featureEnabled('ai')) {
     await handleSamBotInteraction(sock, jid, sender, text, msg);
   }
