@@ -121,3 +121,19 @@ test('the AI splits the message and the code validates what it returns', async (
   const noQuota = await extractExpenses('صرفت 5 قهوة', USER, { ai, aiAvailable: () => true, quota: async () => ({ allowed: false }) });
   assert.equal(noQuota.source, 'code');
 });
+
+test('several /مصروف in one command and "سجل مصروف" phrasing are split into separate expenses', async (t) => {
+  const docs = fakeExpenses(t);
+  const sock = fakeSock();
+  const ai = async ({ parts }) => {
+    assert.equal(parts[0].text, '20$ كلود و 22.5 انترنت');
+    return '{"items":[{"amount":20,"currency":"USD","label":"كلود"},{"amount":22.5,"currency":"JOD","label":"انترنت"}]}';
+  };
+  const extractOptions = { ai, aiAvailable: () => true, quota: async () => ({ allowed: true }) };
+  await handleExpenseCommand(sock, USER, USER, '/مصروف 20$ كلود /مصروف 22.5 انترنت', { now: NOW, extractOptions });
+  assert.deepEqual(docs.map(d => [d.amount, d.currency, d.label]), [[20, 'دولار', 'كلود'], [22.5, null, 'انترنت']]);
+
+  // بدون ذكاء اصطناعي الكود بيقسمها برضو
+  assert.deepEqual(parseExpense('20$ كلود /مصروف 22.5 انترنت'), { amount: 20, label: 'كلود', currency: 'دولار' });
+  assert.deepEqual(matchNaturalExpense('سجل مصروف 3 فطور و 2 قهوة').map(i => i.amount), [3, 2]);
+});

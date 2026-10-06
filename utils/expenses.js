@@ -30,7 +30,16 @@ function toLatinDigits(text) {
     .replace(/٫/g, ".");
 }
 
-const VERBS = /^(?:انا\s+|أنا\s+|اليوم\s+|هسا\s+)?(?:صرفت|دفعت|اشتريت)\s*/;
+const VERBS = /^(?:انا\s+|أنا\s+|اليوم\s+|هسا\s+)?(?:صرفت|دفعت|اشتريت|(?:سجل|سجلي|سجللي|حط|ضيف)\s+(?:لي\s+)?(?:مصروف|مصاريف))\s*/;
+
+// "/مصروف 20$ كلود /مصروف 22.5 نت" -> فاصل بين مصروفين
+function splitInnerCommands(text) {
+  return String(text || "").replace(/\s*\/(?:مصروف|صرفت|دفعت)\s*/g, " و ").replace(/^\s*و\s+/, "").trim();
+}
+
+function countAmounts(text) {
+  return (toLatinDigits(text).match(/\d+(?:[.,]\d{1,3})?/g) || []).length;
+}
 
 function detectCurrency(text) {
   if (/\$|دولار|usd/i.test(text)) return "دولار";
@@ -61,7 +70,7 @@ function parseOne(input) {
  * بنقسم عند " و" وبنضم الأجزاء اللي ما فيها رقم للجزء اللي بعدها ("ستيم وكلود 25" = مصروف واحد).
  */
 export function parseExpenses(input) {
-  const text = toLatinDigits(input).trim();
+  const text = splitInnerCommands(toLatinDigits(input));
   const cuts = [0];
   for (const match of text.matchAll(/\s+(?=و)/g)) cuts.push(match.index);
   cuts.push(text.length);
@@ -294,9 +303,12 @@ export async function handleExpenseCommand(sock, jid, sender, text, { now = new 
     if (matched.action === "list") await listExpenses(sock, target, sender, matched.args, now);
     else if (matched.action === "delete") await deleteExpense(sock, target, sender, matched.args, now);
     else {
-      const { items: parsed } = /\d/.test(toLatinDigits(matched.args)) && parseExpenses(matched.args).length === 1 && !/\s+و/.test(matched.args)
-        ? { items: parseExpenses(matched.args) }
-        : await extractExpenses(matched.args, sender, extractOptions);
+      // مبلغ واحد بسيط بينحفظ مباشرة، وأي اشي أعقد (أكثر من مبلغ، أرقام بالكلام) بيروح للذكاء الاصطناعي
+      const args = splitInnerCommands(matched.args);
+      const simple = countAmounts(args) === 1 && !/\s+و/.test(args);
+      const { items: parsed } = simple
+        ? { items: parseExpenses(args) }
+        : await extractExpenses(args, sender, extractOptions);
       if (!parsed.length) {
         await sock.sendMessage(target, { text: "✍️ اكتب المبلغ وعلى شو صرفت.\nمثال: /مصروف 5 قهوة\nأو: /مصروف 30 فاتورة كهربا" });
       } else {
