@@ -5,6 +5,8 @@ const expenseSchema = new mongoose.Schema({
   userJid: { type: String, required: true },
   amount: { type: Number, required: true, min: 0 },
   label: { type: String, default: "" },
+  // null = العملة الافتراضية (EXPENSE_CURRENCY)
+  currency: { type: String, default: null },
   spentAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
