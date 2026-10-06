@@ -231,6 +231,24 @@ export async function convertToJOD(item, rateOptions) {
   };
 }
 
+/** تحويل المصاريف القديمة اللي انحفظت بعملة ثانية قبل ما يصير التحويل تلقائي. آمنة لو اشتغلت أكثر من مرة. */
+export async function migrateForeignExpenses({ model = Expense, rateOptions } = {}) {
+  if (process.env.EXPENSE_CONVERT === "false" || CURRENCY !== "دينار") return { converted: 0, skipped: 0 };
+  const docs = await model.find({ currency: { $ne: null }, originalAmount: null }).lean();
+  let converted = 0;
+  let skipped = 0;
+  for (const doc of docs) {
+    const item = await convertToJOD({ amount: doc.amount, currency: doc.currency }, rateOptions);
+    if (item.currency) { skipped += 1; continue; }
+    await model.updateOne({ _id: doc._id, originalAmount: null }, {
+      $set: { amount: item.amount, currency: null, originalAmount: item.originalAmount, originalCurrency: item.originalCurrency }
+    });
+    converted += 1;
+  }
+  if (converted || skipped) console.log(`💱 Converted ${converted} old expenses to JOD (${skipped} skipped)`);
+  return { converted, skipped };
+}
+
 function describeItem(item) {
   const original = item.originalAmount ? ` (${formatAmount(item.originalAmount, item.originalCurrency)})` : "";
   return `${formatAmount(item.amount, item.currency)}${original}`;

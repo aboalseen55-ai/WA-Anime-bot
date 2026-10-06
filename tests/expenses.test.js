@@ -6,7 +6,7 @@ import { extractExpenses, handleExpenseCommand, handleNaturalExpense, matchNatur
 const NO_AI = { extractOptions: { aiAvailable: () => false } };
 import { sanitizeAssistantCommand } from '../utils/samCapabilities.js';
 import { getRateToJOD, resetExchangeRateCache } from '../services/exchangeRates.js';
-import { convertToJOD } from '../utils/expenses.js';
+import { convertToJOD, migrateForeignExpenses } from '../utils/expenses.js';
 
 const USER = '962700000001@s.whatsapp.net';
 const NOW = new Date('2026-10-06T09:00:00Z'); // الثلاثاء 12:00 بعمّان
@@ -161,5 +161,27 @@ test('foreign currencies are converted to dinar at the exchange rate', async (t)
   const down = async () => { throw new Error('offline'); };
   assert.deepEqual(await getRateToJOD('AED', { fetchImpl: down }), { rate: 0.193, live: false });
   assert.deepEqual(await convertToJOD({ amount: 3, label: 'x', currency: 'XYZ' }, { fetchImpl: down }), { amount: 3, label: 'x', currency: 'XYZ' });
+  resetExchangeRateCache();
+});
+
+test('old foreign-currency expenses are converted once at startup', async () => {
+  resetExchangeRateCache();
+  const fetchImpl = async () => ({ ok: true, json: async () => ({ result: 'success', rates: { JOD: 1 } }) });
+  const docs = [
+    { _id: '1', amount: 20, currency: 'دولار', originalAmount: null },
+    { _id: '2', amount: 5, currency: 'XYZ', originalAmount: null }
+  ];
+  const updates = [];
+  const model = {
+    find: () => ({ lean: async () => docs }),
+    updateOne: async (filter, update) => { updates.push([filter._id, update.$set]); }
+  };
+  const first = await migrateForeignExpenses({ model, rateOptions: { fetchImpl } });
+  assert.deepEqual(first, { converted: 1, skipped: 1 });
+  assert.deepEqual(updates, [['1', { amount: 14.18, currency: null, originalAmount: 20, originalCurrency: 'دولار' }]]);
+
+  // بعد التحويل ما بترجع تتحول
+  const done = { find: () => ({ lean: async () => [] }), updateOne: async () => { throw new Error('should not run'); } };
+  assert.deepEqual(await migrateForeignExpenses({ model: done, rateOptions: { fetchImpl } }), { converted: 0, skipped: 0 });
   resetExchangeRateCache();
 });

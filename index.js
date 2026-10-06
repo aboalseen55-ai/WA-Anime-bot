@@ -17,6 +17,7 @@ import { scheduleDailyReports } from "./utils/dailyReports.js";
 import { scheduleDailyQuranReminders } from "./utils/quran.js";
 import { schedulePersonalReminders } from "./utils/personalAssistant.js";
 import { scheduleMorningBriefs } from "./utils/assistantHome.js";
+import { migrateForeignExpenses } from "./utils/expenses.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
@@ -43,6 +44,7 @@ try {
   await initializeKingdomSystem();
   await refreshDashboardTemplates();
   await loadBotControls();
+  await migrateForeignExpenses().catch((error) => console.error("Expense currency migration failed:", error.message));
   console.log("✅ Kingdom system initialized from database");
 } catch (error) {
   console.error("❌ MongoDB Connection Error:");
