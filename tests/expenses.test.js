@@ -185,3 +185,24 @@ test('old foreign-currency expenses are converted once at startup', async () => 
   assert.deepEqual(await migrateForeignExpenses({ model: done, rateOptions: { fetchImpl } }), { converted: 0, skipped: 0 });
   resetExchangeRateCache();
 });
+
+test('/تصدير_مصاريف sends a CSV file that opens in Excel', async (t) => {
+  const items = [
+    { amount: 14.18, currency: null, label: 'كلود, اشتراك', originalAmount: 20, originalCurrency: 'دولار', spentAt: new Date('2026-10-02T09:30:00Z') },
+    { amount: 3, currency: null, label: 'قهوة', originalAmount: null, originalCurrency: null, spentAt: new Date('2026-10-01T06:00:00Z') }
+  ];
+  let query;
+  t.mock.method(Expense, 'find', (q) => { query = q; return { sort: () => ({ lean: async () => items }) }; });
+  const sock = fakeSock();
+  await handleExpenseCommand(sock, USER, USER, '/تصدير_مصاريف الكل', { now: NOW });
+  assert.equal(query.spentAt.$gte.getTime(), 0);
+  const sent = sock.sent.at(-1);
+  assert.equal(sent.mimetype, 'text/csv');
+  assert.match(sent.fileName, /^مصاريف-\d{4}-\d{2}-\d{2}\.csv$/);
+  const csv = sent.document.toString('utf8');
+  assert.ok(csv.startsWith('﻿التاريخ,'));
+  const lines = csv.trim().split('\r\n');
+  assert.equal(lines[1], '2026-10-01,09:00,3,دينار,قهوة,,');
+  assert.equal(lines[2], '2026-10-02,12:30,14.18,دينار,"كلود, اشتراك",20,دولار');
+  assert.equal(sanitizeAssistantCommand('/تصدير_مصاريف'), '/تصدير_مصاريف');
+});

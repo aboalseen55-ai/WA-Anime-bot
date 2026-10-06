@@ -13,6 +13,7 @@ const LIST_LIMIT = 10;
 const ADD_COMMANDS = ["مصروف", "صرفت", "دفعت", "اضف مصروف"];
 const LIST_COMMANDS = ["مصاريفي", "مصروفي", "مصاريف"];
 const DELETE_COMMANDS = ["حذف مصروف", "الغاء مصروف"];
+const EXPORT_COMMANDS = ["تصدير مصاريف", "تصدير مصروف", "مصاريف اكسل", "اكسل مصاريف", "اكسل"];
 
 const CURRENCY_WORDS = /(?:^|\s)(?:دنانير|دينار|دينارين|ليرات|ليره|ليرة|jd|jod|قرش|قروش|شيكل|دولار|ريال|درهم)(?=\s|$)/gi;
 
@@ -198,6 +199,7 @@ function periodStart(period, now) {
   const { year, month, day } = getTimeZoneParts(now, TIME_ZONE);
   const startOfToday = zonedTimeToUtc(year, month, day, 0, 0, 0, TIME_ZONE);
   if (period === "today") return { start: startOfToday, title: "اليوم" };
+  if (period === "all") return { start: new Date(0), title: "من الأول" };
   if (period === "week") {
     // الأسبوع من السبت
     const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay(); // 0 = الأحد
@@ -211,6 +213,7 @@ function parsePeriod(args) {
   const value = normalizeName(args);
   if (/^(اليوم|today)/.test(value)) return "today";
   if (/^(الاسبوع|اسبوع|هالاسبوع|week)/.test(value)) return "week";
+  if (/^(الكل|كل|all)/.test(value)) return "all";
   return "month";
 }
 
@@ -326,12 +329,53 @@ async function deleteExpense(sock, jid, sender, args, now) {
   await sock.sendMessage(jid, { text: `🗑️ حذفت: ${describeItem(item)}${item.label ? ` · ${item.label}` : ""}` });
 }
 
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+/** ملف CSV بيفتح بالإكسل مباشرة (الـ BOM عشان العربي يطلع صح). */
+export function buildExpensesCsv(items) {
+  const header = ["التاريخ", "الوقت", "المبلغ", "العملة", "على شو", "المبلغ الأصلي", "العملة الأصلية"];
+  const rows = [...items].sort((a, b) => new Date(a.spentAt) - new Date(b.spentAt)).map((item) => {
+    const spentAt = new Date(item.spentAt);
+    const { year, month, day, hour, minute } = getTimeZoneParts(spentAt, TIME_ZONE);
+    const pad = (n) => String(n).padStart(2, "0");
+    return [
+      `${year}-${pad(month)}-${pad(day)}`,
+      `${pad(hour)}:${pad(minute)}`,
+      item.amount,
+      item.currency || CURRENCY,
+      item.label || "",
+      item.originalAmount ?? "",
+      item.originalCurrency || ""
+    ];
+  });
+  return `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`;
+}
+
+async function exportExpenses(sock, jid, sender, args, now) {
+  const { start, title } = periodStart(parsePeriod(args), now);
+  const items = await Expense.find({ userJid: sender, spentAt: { $gte: start } }).sort({ spentAt: 1 }).lean();
+  if (!items.length) {
+    await sock.sendMessage(jid, { text: `📭 ما في مصاريف مسجلة ${title} عشان أصدرها.` });
+    return;
+  }
+  const { year, month, day } = getTimeZoneParts(now, TIME_ZONE);
+  await sock.sendMessage(jid, {
+    document: Buffer.from(buildExpensesCsv(items), "utf8"),
+    mimetype: "text/csv",
+    fileName: `مصاريف-${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}.csv`,
+    caption: `📊 مصاريفك ${title}: ${items.length} مصروف، المجموع ${formatTotals(items)}\nالملف بيفتح بالإكسل أو Google Sheets.\nلفترة ثانية: /تصدير_مصاريف اليوم · الاسبوع · الكل`
+  });
+}
+
 function matchCommand(text) {
   const trimmed = String(text || "").trim();
   if (!trimmed.startsWith("/")) return null;
   const normalized = normalizeName(trimmed.slice(1));
   const find = (names) => names.map(normalizeName).filter((n) => normalized === n || normalized.startsWith(`${n} `)).sort((a, b) => b.length - a.length)[0];
-  for (const [action, names] of [["delete", DELETE_COMMANDS], ["list", LIST_COMMANDS], ["add", ADD_COMMANDS]]) {
+  for (const [action, names] of [["export", EXPORT_COMMANDS], ["delete", DELETE_COMMANDS], ["list", LIST_COMMANDS], ["add", ADD_COMMANDS]]) {
     const name = find(names);
     if (name) {
       const args = trimmed.slice(1).replace(/_/g, " ").trim().split(/\s+/).slice(name.split(" ").length).join(" ");
@@ -352,6 +396,7 @@ export async function handleExpenseCommand(sock, jid, sender, text, { now = new 
   const target = isPrivateChat(jid) ? jid : sender;
   try {
     if (matched.action === "list") await listExpenses(sock, target, sender, matched.args, now);
+    else if (matched.action === "export") await exportExpenses(sock, target, sender, matched.args, now);
     else if (matched.action === "delete") await deleteExpense(sock, target, sender, matched.args, now);
     else {
       // مبلغ واحد بسيط بينحفظ مباشرة، وأي اشي أعقد (أكثر من مبلغ، أرقام بالكلام) بيروح للذكاء الاصطناعي
