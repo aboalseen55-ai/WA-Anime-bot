@@ -257,6 +257,12 @@ function describeItem(item) {
   return `${formatAmount(item.amount, item.currency)}${original}`;
 }
 
+// واتساب بيقرر اتجاه السطر من أول حرف، فالسطر اللي بيبلش برقم بيطلع من اليسار.
+// علامة RLM بأول كل سطر بتخليه من اليمين لليسار.
+function rtlLines(lines) {
+  return lines.map((line) => (line ? `\u200F${line}` : line)).join("\n");
+}
+
 async function addExpenses(sock, jid, sender, rawItems, now, rateOptions) {
   const items = [];
   for (const raw of rawItems) items.push(await convertToJOD(raw, rateOptions));
@@ -279,7 +285,7 @@ async function addExpenses(sock, jid, sender, rawItems, now, rateOptions) {
     : [`💸 سجلت ${items.length} مصاريف:`, ...items.map((item) => `▪️ ${describe(item)}`)];
   if (monthItems.length) lines.push(`📊 مجموع هالشهر: ${formatTotals(monthItems)}`);
   lines.push("لعرض مصاريفك: /مصاريفي (أو /مصاريفي اليوم، /مصاريفي الاسبوع)");
-  await sock.sendMessage(jid, { text: lines.join("\n") });
+  await sock.sendMessage(jid, { text: rtlLines(lines) });
 }
 
 async function listExpenses(sock, jid, sender, args, now) {
@@ -313,7 +319,7 @@ async function listExpenses(sock, jid, sender, args, now) {
     "",
     "للحذف: /حذف_مصروف <رقم من القائمة>"
   ];
-  await sock.sendMessage(jid, { text: lines.join("\n") });
+  await sock.sendMessage(jid, { text: rtlLines(lines) });
 }
 
 async function deleteExpense(sock, jid, sender, args, now) {

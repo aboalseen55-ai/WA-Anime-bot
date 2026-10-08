@@ -80,6 +80,8 @@ test('/مصروف adds, /مصاريفي totals and /حذف_مصروف removes', 
   const list = sock.sent.at(-1).text;
   assert.match(list, /المجموع: \*15 دينار\*/);
   assert.match(list, /1\. 10 دينار · بنزين/);
+  // كل سطر بيبلش بعلامة RLM عشان يطلع من اليمين لليسار
+  assert.ok(list.split('\n').filter(Boolean).every((line) => line.startsWith('\u200F')));
 
   await handleExpenseCommand(sock, USER, USER, '/حذف_مصروف 1', { now: NOW, ...NO_AI });
   assert.equal(docs.length, 1);
