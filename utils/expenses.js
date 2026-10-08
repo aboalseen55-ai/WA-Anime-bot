@@ -1,4 +1,5 @@
 // تسجيل المصاريف الشخصية بالخاص: /مصروف 5 قهوة، /مصاريفي، /حذف_مصروف، أو كلام طبيعي "صرفت 5 دنانير على قهوة"
+import ExcelJS from "exceljs";
 import Expense from "../database/expenseModel.js";
 import { DEFAULT_TIME_ZONE, getTimeZoneParts, zonedTimeToUtc } from "./quran.js";
 import { generateSamBotAIFromParts, isSamBotAIAvailable } from "./samBotAI.js";
@@ -335,29 +336,92 @@ async function deleteExpense(sock, jid, sender, args, now) {
   await sock.sendMessage(jid, { text: `🗑️ حذفت: ${describeItem(item)}${item.label ? ` · ${item.label}` : ""}` });
 }
 
-function csvCell(value) {
-  const text = String(value ?? "");
-  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+const XLSX_COLORS = { header: "FF1F4E79", title: "FF2E75B6", band: "FFEAF1FB", total: "FFFCE4D6", border: "FFBFBFBF", converted: "FF7F7F7F" };
+
+function styleRow(row, { fill, font, border = true } = {}) {
+  row.eachCell({ includeEmpty: true }, (cell) => {
+    if (fill) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
+    if (font) cell.font = { name: "Arial", size: 11, ...font };
+    if (border) {
+      const side = { style: "thin", color: { argb: XLSX_COLORS.border } };
+      cell.border = { top: side, bottom: side, left: side, right: side };
+    }
+    cell.alignment = { vertical: "middle", horizontal: "center", readingOrder: "rtl", ...(cell.alignment || {}) };
+  });
 }
 
-/** ملف CSV بيفتح بالإكسل مباشرة (الـ BOM عشان العربي يطلع صح). */
-export function buildExpensesCsv(items) {
-  const header = ["التاريخ", "الوقت", "المبلغ", "العملة", "على شو", "المبلغ الأصلي", "العملة الأصلية"];
-  const rows = [...items].sort((a, b) => new Date(a.spentAt) - new Date(b.spentAt)).map((item) => {
-    const spentAt = new Date(item.spentAt);
-    const { year, month, day, hour, minute } = getTimeZoneParts(spentAt, TIME_ZONE);
-    const pad = (n) => String(n).padStart(2, "0");
-    return [
-      `${year}-${pad(month)}-${pad(day)}`,
-      `${pad(hour)}:${pad(minute)}`,
-      item.amount,
-      item.currency || CURRENCY,
-      item.label || "",
-      item.originalAmount ?? "",
-      item.originalCurrency || ""
-    ];
+function addTitle(sheet, text, columns) {
+  sheet.mergeCells(1, 1, 1, columns);
+  const cell = sheet.getCell(1, 1);
+  cell.value = text;
+  cell.font = { name: "Arial", size: 14, bold: true, color: { argb: "FFFFFFFF" } };
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: XLSX_COLORS.title } };
+  cell.alignment = { vertical: "middle", horizontal: "center", readingOrder: "rtl" };
+  sheet.getRow(1).height = 28;
+}
+
+/** ملف إكسل مرتب: ورقة بكل المصاريف وسطر مجموع، وورقة ملخص حسب التصنيف. الصفحات من اليمين لليسار. */
+export async function buildExpensesWorkbook(items, title = "") {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Sam";
+  const sorted = [...items].sort((a, b) => new Date(a.spentAt) - new Date(b.spentAt));
+  const amountFormat = "#,##0.00";
+
+  const sheet = workbook.addWorksheet("المصاريف", { views: [{ rightToLeft: true, state: "frozen", ySplit: 2 }] });
+  const headers = ["التاريخ", "الوقت", "على شو", "المبلغ", "العملة", "المبلغ الأصلي", "العملة الأصلية"];
+  sheet.columns = [{ width: 13 }, { width: 9 }, { width: 28 }, { width: 13 }, { width: 10 }, { width: 14 }, { width: 14 }];
+  addTitle(sheet, `💰 مصاريفي ${title}`.trim(), headers.length);
+  const headerRow = sheet.addRow(headers);
+  headerRow.height = 22;
+  styleRow(headerRow, { fill: XLSX_COLORS.header, font: { bold: true, color: { argb: "FFFFFFFF" } } });
+
+  sorted.forEach((item, index) => {
+    const { year, month, day, hour, minute } = getTimeZoneParts(new Date(item.spentAt), TIME_ZONE);
+    // إكسل ما بيعرف المناطق الزمنية، فبنحط وقت عمّان كأنه UTC حتى يطلع زي ما هو
+    const local = new Date(Date.UTC(year, month - 1, day, hour, minute));
+    const row = sheet.addRow([local, local, item.label || "بدون تصنيف", item.amount, item.currency || CURRENCY, item.originalAmount ?? null, item.originalCurrency || null]);
+    styleRow(row, { fill: index % 2 ? XLSX_COLORS.band : undefined, font: {} });
+    row.getCell(1).numFmt = "dd/mm/yyyy";
+    row.getCell(2).numFmt = "hh:mm";
+    row.getCell(3).alignment = { vertical: "middle", horizontal: "right", readingOrder: "rtl" };
+    row.getCell(4).numFmt = amountFormat;
+    row.getCell(6).numFmt = amountFormat;
+    if (item.originalAmount != null) [6, 7].forEach((n) => { row.getCell(n).font = { name: "Arial", size: 11, color: { argb: XLSX_COLORS.converted } }; });
   });
-  return `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`;
+
+  const firstData = 3;
+  const lastData = firstData + sorted.length - 1;
+  const total = Math.round(sorted.reduce((sum, item) => sum + item.amount, 0) * 1000) / 1000;
+  const totalRow = sheet.addRow(["المجموع", "", `${sorted.length} مصروف`, { formula: `SUM(D${firstData}:D${lastData})`, result: total }, CURRENCY, "", ""]);
+  totalRow.height = 22;
+  styleRow(totalRow, { fill: XLSX_COLORS.total, font: { bold: true, size: 12 } });
+  totalRow.getCell(4).numFmt = amountFormat;
+  sheet.autoFilter = { from: { row: 2, column: 1 }, to: { row: lastData, column: headers.length } };
+
+  const summary = workbook.addWorksheet("حسب التصنيف", { views: [{ rightToLeft: true }] });
+  summary.columns = [{ width: 28 }, { width: 14 }, { width: 10 }, { width: 12 }];
+  addTitle(summary, "📊 وين راحت المصاري", 4);
+  styleRow(summary.addRow(["التصنيف", "المجموع", "العدد", "النسبة"]), { fill: XLSX_COLORS.header, font: { bold: true, color: { argb: "FFFFFFFF" } } });
+  const groups = new Map();
+  for (const item of sorted) {
+    const key = item.label || "بدون تصنيف";
+    const group = groups.get(key) || { sum: 0, count: 0 };
+    group.sum += item.amount;
+    group.count += 1;
+    groups.set(key, group);
+  }
+  [...groups.entries()].sort((a, b) => b[1].sum - a[1].sum).forEach(([label, group], index) => {
+    const row = summary.addRow([label, Math.round(group.sum * 1000) / 1000, group.count, total ? group.sum / total : 0]);
+    styleRow(row, { fill: index % 2 ? XLSX_COLORS.band : undefined, font: {} });
+    row.getCell(1).alignment = { vertical: "middle", horizontal: "right", readingOrder: "rtl" };
+    row.getCell(2).numFmt = amountFormat;
+    row.getCell(4).numFmt = "0%";
+  });
+  styleRow(summary.addRow(["المجموع", total, sorted.length, 1]), { fill: XLSX_COLORS.total, font: { bold: true, size: 12 } });
+  summary.lastRow.getCell(2).numFmt = amountFormat;
+  summary.lastRow.getCell(4).numFmt = "0%";
+
+  return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
 async function exportExpenses(sock, jid, sender, args, now) {
@@ -369,10 +433,10 @@ async function exportExpenses(sock, jid, sender, args, now) {
   }
   const { year, month, day } = getTimeZoneParts(now, TIME_ZONE);
   await sock.sendMessage(jid, {
-    document: Buffer.from(buildExpensesCsv(items), "utf8"),
-    mimetype: "text/csv",
-    fileName: `مصاريف-${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}.csv`,
-    caption: `📊 مصاريفك ${title}: ${items.length} مصروف، المجموع ${formatTotals(items)}\nالملف بيفتح بالإكسل أو Google Sheets.\nلفترة ثانية: /تصدير_مصاريف اليوم · الاسبوع · الكل`
+    document: await buildExpensesWorkbook(items, title),
+    mimetype: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    fileName: `مصاريف-${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}.xlsx`,
+    caption: `📊 مصاريفك ${title}: ${items.length} مصروف، المجموع ${formatTotals(items)}\nلفترة ثانية: /تصدير_مصاريف اليوم · الاسبوع · الكل`
   });
 }
 

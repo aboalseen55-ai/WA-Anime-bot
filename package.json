@@ -28,6 +28,7 @@
     "axios": "^1.13.6",
     "cheerio": "^1.2.0",
     "dotenv": "^17.3.1",
+    "exceljs": "^4.4.0",
     "libphonenumber-js": "^1.10.39",
     "lucide": "^1.47.0",
     "mongoose": "^9.2.4",
@@ -39,7 +40,7 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "pm2": "^6.0.14",
-    "nock": "^13.3.0"
+    "nock": "^13.3.0",
+    "pm2": "^6.0.14"
   }
 }

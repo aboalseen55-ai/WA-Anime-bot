@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import ExcelJS from 'exceljs';
 import Expense from '../database/expenseModel.js';
 import { extractExpenses, handleExpenseCommand, handleNaturalExpense, matchNaturalExpense, parseAIExpenses, parseExpense } from '../utils/expenses.js';
 
@@ -188,10 +189,11 @@ test('old foreign-currency expenses are converted once at startup', async () => 
   resetExchangeRateCache();
 });
 
-test('/تصدير_مصاريف sends a CSV file that opens in Excel', async (t) => {
+test('/تصدير_مصاريف sends a formatted Excel file with a total row', async (t) => {
   const items = [
-    { amount: 14.18, currency: null, label: 'كلود, اشتراك', originalAmount: 20, originalCurrency: 'دولار', spentAt: new Date('2026-10-02T09:30:00Z') },
-    { amount: 3, currency: null, label: 'قهوة', originalAmount: null, originalCurrency: null, spentAt: new Date('2026-10-01T06:00:00Z') }
+    { amount: 14.18, currency: null, label: 'كلود', originalAmount: 20, originalCurrency: 'دولار', spentAt: new Date('2026-10-02T09:30:00Z') },
+    { amount: 3, currency: null, label: 'قهوة', originalAmount: null, originalCurrency: null, spentAt: new Date('2026-10-01T06:00:00Z') },
+    { amount: 2, currency: null, label: 'قهوة', originalAmount: null, originalCurrency: null, spentAt: new Date('2026-10-03T06:00:00Z') }
   ];
   let query;
   t.mock.method(Expense, 'find', (q) => { query = q; return { sort: () => ({ lean: async () => items }) }; });
@@ -199,12 +201,25 @@ test('/تصدير_مصاريف sends a CSV file that opens in Excel', async (t) 
   await handleExpenseCommand(sock, USER, USER, '/تصدير_مصاريف الكل', { now: NOW });
   assert.equal(query.spentAt.$gte.getTime(), 0);
   const sent = sock.sent.at(-1);
-  assert.equal(sent.mimetype, 'text/csv');
-  assert.match(sent.fileName, /^مصاريف-\d{4}-\d{2}-\d{2}\.csv$/);
-  const csv = sent.document.toString('utf8');
-  assert.ok(csv.startsWith('﻿التاريخ,'));
-  const lines = csv.trim().split('\r\n');
-  assert.equal(lines[1], '2026-10-01,09:00,3,دينار,قهوة,,');
-  assert.equal(lines[2], '2026-10-02,12:30,14.18,دينار,"كلود, اشتراك",20,دولار');
+  assert.match(sent.mimetype, /spreadsheetml/);
+  assert.match(sent.fileName, /^مصاريف-\d{4}-\d{2}-\d{2}\.xlsx$/);
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(sent.document);
+  const sheet = workbook.getWorksheet('المصاريف');
+  assert.equal(sheet.views[0].rightToLeft, true);
+  assert.equal(sheet.getCell('A2').value, 'التاريخ');
+  // الأقدم أول، والوقت بتوقيت عمّان
+  assert.equal(sheet.getCell('C3').value, 'قهوة');
+  assert.equal(sheet.getCell('B3').value.toISOString(), '2026-10-01T09:00:00.000Z');
+  assert.equal(sheet.getCell('D4').value, 14.18);
+  assert.equal(sheet.getCell('F4').value, 20);
+  assert.equal(sheet.getCell('A6').value, 'المجموع');
+  assert.equal(sheet.getCell('D6').value.formula, 'SUM(D3:D5)');
+  assert.equal(sheet.getCell('D6').value.result, 19.18);
+
+  const summary = workbook.getWorksheet('حسب التصنيف');
+  assert.deepEqual([summary.getCell('A3').value, summary.getCell('B3').value, summary.getCell('C3').value], ['كلود', 14.18, 1]);
+  assert.deepEqual([summary.getCell('A4').value, summary.getCell('B4').value, summary.getCell('C4').value], ['قهوة', 5, 2]);
   assert.equal(sanitizeAssistantCommand('/تصدير_مصاريف'), '/تصدير_مصاريف');
 });
