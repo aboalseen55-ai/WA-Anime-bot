@@ -5,6 +5,7 @@ const icons = {overview:'layout-dashboard',commands:'message-square-text',kingdo
 const roleNames = {member:'عضو',moderator:'مشرف',admin:'أدمن',super_admin:'أدمن رئيسي',everyone:'الجميع',developer:'المطور'};
 labels.controls='التحكم والصيانة'; icons.controls='settings-2';
 labels.business='الأعمال'; icons.business='briefcase';
+labels.broadcast='رسائل جماعية'; icons.broadcast='send';
 let csrf='', state={commands:[],apis:[]}, kingdoms=[], templates=[], catalog=[], section='overview', tab='builtin', page=1, query='', version=0, saveAction=null, toastTimer;
 const e = (tag, text, className) => { const node=document.createElement(tag); if(text!==undefined)node.textContent=text; if(className)node.className=className; return node; };
 const icon = name => { const node=e('i');node.dataset.lucide=name;return node; };
@@ -44,7 +45,7 @@ function sourceLabel(file){if(!file)return 'النماذج الأساسية';if(
 async function load() {
   const token=++version;const root=$('content');root.replaceChildren(e('p','جارٍ تحميل البيانات…','loading'));
   $('pageTitle').textContent=labels[section];document.querySelectorAll('.nav-link').forEach(a=>{a.classList.toggle('active',a.dataset.section===section);if(a.dataset.section===section)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
-  $('scope').hidden=['commands','services','usage','controls','business'].includes(section);
+  $('scope').hidden=['commands','services','usage','controls','business','broadcast'].includes(section);
   try {
     let render;
     if(section==='overview') {const data=await request(scoped('overview'));render=()=>overview(data);}
@@ -52,6 +53,7 @@ async function load() {
     else if(section==='kingdoms') {kingdoms=(await request('kingdoms')).kingdoms;render=kingdomList;}
     else if(section==='members') {const data=await request(scoped('members'));render=()=>members(data);}
     else if(section==='services') render=services;
+    else if(section==='broadcast') {const data=await request('broadcast/targets');render=()=>broadcastPage(data);}
     else if(section==='business') {const data=await request('business?'+new URLSearchParams({status:businessStatus,q:query}));render=()=>business(data);}
     else if(section==='controls') {
       const data=await request('controls');
@@ -337,6 +339,109 @@ function editMember(user) {
   const details=e('div',undefined,'details-grid');[['اسم واتساب',user.whatsappName],['معرّف العضو',user.jid],['المستوى',user.level],['XP الكلي',user.xp],['XP المحادثة',user.chatXp],['XP الألعاب',user.gameXp],['نقاط الألعاب',user.points],['العملات',user.coins],['الرسائل الكلية',user.totalMessages],['الاستقبال اليومي',user.dailyWelcomes],['نجوم اليوم',user.dailyRankStarsEarned],['آخر نشاط',date(user.lastActivityAt)]].forEach(([label,value])=>{const row=e('div');row.append(e('span',label),e('strong',String(value??'—')));details.append(row)});
   const grid=e('div',undefined,'form-grid');grid.append(field('nickname','اللقب',user.nickname),field('role','الصلاحية داخل البوت',user.role,'select',Object.entries(roleNames).filter(([key])=>['member','moderator','admin','super_admin'].includes(key))),field('isBanned','محظور داخل البوت',user.isBanned,'checkbox'),field('banReason','سبب الحظر',user.banReason));
   openEditor(user.nickname,[details,grid],async()=>{await request('members/'+user._id,'PUT',{...values(),kingdom:user.kingdom_id});await saved()});
+}
+// بوابة الرسائل الجماعية: الصوت لنص وتحسين الرسالة بـ OpenAI، واختيار القروبات والأرقام
+const broadcastDraft={text:'',numbers:'',selected:new Set(),filter:''};
+function broadcastPage(data) {
+  const root=$('content');
+  root.append(heading('رسائل جماعية','اكتب أو احكي رسالتك، حسّنها بالذكاء الاصطناعي، واختار مين توصله.'));
+  const layout=e('div',undefined,'broadcast-layout'),compose=e('section',undefined,'band'),targets=e('section',undefined,'band');
+  layout.append(compose,targets);root.append(layout);
+
+  // الكتابة
+  compose.append(e('h3','الرسالة'));
+  const text=e('textarea');text.id='broadcastText';text.placeholder='اكتب الرسالة هون، أو اضغط المايك واحكي';text.value=broadcastDraft.text;text.dir='auto';
+  text.addEventListener('input',()=>{broadcastDraft.text=text.value;counter.textContent=number(text.value.length)+' حرف'});
+  const counter=e('p',number(text.value.length)+' حرف','help');
+  const tools=e('div',undefined,'toolbar broadcast-tools');
+  const mic=button('سجّل بصوتك','mic',()=>toggleRecording(),'secondary');
+  const tone=e('select');tone.setAttribute('aria-label','أسلوب الرسالة');[['friendly','ودّي'],['formal','رسمي'],['announcement','إعلان'],['hype','حماسي']].forEach(([v,l])=>tone.add(new Option(l,v)));tone.style.width='auto';
+  const extra=e('input');extra.placeholder='ملاحظة للتحسين (اختياري): مثلًا اختصرها';extra.setAttribute('aria-label','ملاحظة للتحسين');
+  let previous=null;
+  const undo=button('رجّع النسخة القديمة','undo-2',()=>{if(previous===null)return;text.value=previous;broadcastDraft.text=previous;previous=null;undo.hidden=true;counter.textContent=number(text.value.length)+' حرف'});undo.hidden=true;
+  const enhance=button('حسّن الرسالة','sparkles',async()=>{
+    enhance.disabled=true;
+    try{const r=await request('broadcast/enhance','POST',{text:text.value,tone:tone.value,instructions:extra.value});previous=text.value;text.value=r.text;broadcastDraft.text=r.text;undo.hidden=false;counter.textContent=number(text.value.length)+' حرف';toast('تم تحسين الرسالة، راجعها قبل الإرسال');}
+    finally{enhance.disabled=false}
+  },'primary');
+  if(!data.openai){mic.disabled=true;enhance.disabled=true;}
+  tools.append(mic,tone,enhance,undo);
+  compose.append(text,counter,tools,extra);
+  if(!data.openai)compose.append(e('p','لتفعيل المايك والتحسين: أضف OPENAI_API_KEY بمتغيرات ريلوي.','help'));
+  const status=e('p','','help');compose.append(status);
+
+  let recorder=null,chunks=[];
+  async function toggleRecording(){
+    if(recorder){recorder.stop();return;}
+    if(!navigator.mediaDevices?.getUserMedia)throw Error('المتصفح ما بيدعم التسجيل');
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    chunks=[];recorder=new MediaRecorder(stream);
+    recorder.ondataavailable=event=>{if(event.data.size)chunks.push(event.data)};
+    recorder.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const type=recorder.mimeType||'audio/webm';recorder=null;
+      mic.classList.remove('recording');mic.querySelector('span').textContent='سجّل بصوتك';mic.disabled=true;status.textContent='جارٍ تحويل الصوت لنص…';
+      try{
+        const response=await fetch('/dashboard/api/broadcast/transcribe',{method:'POST',credentials:'same-origin',headers:{'Content-Type':type,'X-Dashboard-CSRF':csrf},body:new Blob(chunks,{type})});
+        const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(result.error||'فشل التحويل');
+        text.value=(text.value.trim()?text.value.trim()+'\n':'')+result.text;broadcastDraft.text=text.value;counter.textContent=number(text.value.length)+' حرف';status.textContent='';
+      }catch(error){status.textContent='';showError(error)}
+      finally{mic.disabled=false}
+    };
+    recorder.start();mic.classList.add('recording');mic.querySelector('span').textContent='وقّف التسجيل';status.textContent='🎙️ عم بسجّل… احكي واضغط وقّف لما تخلص';
+  }
+
+  // الجهات
+  targets.append(e('h3','لمين؟'));
+  const search=e('input',undefined,'search');search.type='search';search.placeholder='دوّر على قروب أو مملكة';search.value=broadcastDraft.filter;search.setAttribute('aria-label','بحث بالقروبات');
+  const summary=e('p','','help');
+  const list=e('div',undefined,'target-list');
+  const groupsByKingdom=new Map();
+  data.groups.forEach(g=>{const key=g.kingdom||'قروبات ثانية';if(!groupsByKingdom.has(key))groupsByKingdom.set(key,[]);groupsByKingdom.get(key).push(g)});
+  const updateSummary=()=>{const n=normalizedCount();summary.textContent=`مختار ${number(broadcastDraft.selected.size)} قروب و${number(n)} رقم`;sendButton.disabled=!broadcastDraft.selected.size&&!n;};
+  function renderTargets(){
+    list.replaceChildren();const filter=broadcastDraft.filter.trim();
+    for(const [kingdom,groups] of groupsByKingdom){
+      const shown=groups.filter(g=>!filter||g.name.includes(filter)||kingdom.includes(filter));if(!shown.length)continue;
+      const box=e('div',undefined,'target-group'),head=e('label',undefined,'checkbox-label target-head'),all=e('input');all.type='checkbox';
+      all.checked=shown.every(g=>broadcastDraft.selected.has(g.id));
+      all.addEventListener('change',()=>{shown.forEach(g=>all.checked?broadcastDraft.selected.add(g.id):broadcastDraft.selected.delete(g.id));renderTargets();updateSummary()});
+      head.append(all,e('strong',kingdom),e('small',`(${number(shown.length)})`));box.append(head);
+      shown.forEach(g=>{const row=e('label',undefined,'checkbox-label'),input=e('input');input.type='checkbox';input.checked=broadcastDraft.selected.has(g.id);
+        input.addEventListener('change',()=>{input.checked?broadcastDraft.selected.add(g.id):broadcastDraft.selected.delete(g.id);renderTargets();updateSummary()});
+        row.append(input,e('span',g.name));if(g.role)row.append(e('span',g.role,'pill'));box.append(row)});
+      list.append(box);
+    }
+    if(!list.children.length)list.append(empty('ما في قروبات مطابقة'));
+  }
+  search.addEventListener('input',()=>{broadcastDraft.filter=search.value;renderTargets()});
+  const bar=e('div',undefined,'toolbar');bar.append(search,button('اختار الكل','check-check',()=>{data.groups.forEach(g=>broadcastDraft.selected.add(g.id));renderTargets();updateSummary()}),button('شيل الكل','x',()=>{broadcastDraft.selected.clear();renderTargets();updateSummary()}));
+  const numbers=e('textarea');numbers.className='numbers-input';numbers.placeholder='أرقام إضافية، كل رقم بسطر: 0791234567 أو 962791234567';numbers.value=broadcastDraft.numbers;numbers.dir='ltr';numbers.setAttribute('aria-label','أرقام إضافية');
+  numbers.addEventListener('input',()=>{broadcastDraft.numbers=numbers.value;updateSummary()});
+  function normalizedCount(){return broadcastDraft.numbers.split(/[\n,،;]+/).filter(x=>x.replace(/\D/g,'').length>=8).length}
+  const sendButton=button('أرسل الرسالة','send',sendNow,'primary full');
+  targets.append(bar,list,e('label','أرقام أشخاص'),numbers,summary,sendButton);
+  renderTargets();updateSummary();
+
+  async function sendNow(){
+    const message=text.value.trim();if(!message)throw Error('اكتب الرسالة أول');
+    const total=broadcastDraft.selected.size+normalizedCount();
+    const preview=e('div',message,'preview');preview.dir='auto';
+    openEditor(`تأكيد الإرسال لـ ${number(total)} جهة`,[e('p','هيك رح توصل الرسالة:','help'),preview,e('p','بينبعت بفاصل ثانية ونص بين كل رسالة حتى ما يعتبره واتساب سبام.','help')],async()=>{
+      const job=await request('broadcast/send','POST',{text:message,groups:[...broadcastDraft.selected],numbers:broadcastDraft.numbers});
+      $('editor').close();summary.textContent=`عم بنبعت… 0 من ${number(job.total)}`;sendButton.disabled=true;
+      const poll=async()=>{
+        const s=await request('broadcast/jobs/'+job.id);
+        summary.textContent=s.finished?`✅ انبعتت لـ ${number(s.sent)} من ${number(s.total)}${s.failed?` · فشل ${number(s.failed)}${s.failedTargets?.length?': '+s.failedTargets.join('، '):''}`:''}`:`عم بنبعت… ${number(s.done)} من ${number(s.total)}`;
+        if(s.error)summary.textContent='❌ '+s.error;
+        if(!s.finished)setTimeout(()=>poll().catch(showError),1500);else{sendButton.disabled=false;toast(s.error?s.error:'خلص الإرسال');}
+      };
+      await poll();
+    });
+    // زر الحفظ بيصير "أرسل" لهالنافذة بس
+    const save=$('saveEditor'),label=[...save.childNodes].find(n=>n.nodeType===3);
+    if(label){const original=label.textContent;label.textContent='أرسل الآن';$('editor').addEventListener('close',()=>{label.textContent=original},{once:true});}
+  }
 }
 let businessTab='orders', businessStatus='';
 const dayNames=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];

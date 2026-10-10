@@ -1,4 +1,5 @@
 import { createShatreenHook } from './shatreenHook.js';
+import { handleBroadcastRoute } from './broadcastService.js';
 import http from 'node:http';
 import { CONTROL_LABELS, controlSnapshot, saveBotControl } from './botControls.js';
 import crypto from 'node:crypto';
@@ -194,8 +195,8 @@ export function serveSitePage(pathname, res, getSock) {
 export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKingdomChange, onRestart, password = process.env.DASHBOARD_ADMIN_PASSWORD || '' }) {
   const sessions = new Map(), attempts = new Map();
   return async (req, res) => {
-    res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('X-Frame-Options','DENY'); res.setHeader('Referrer-Policy','no-referrer');
-    res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+    res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('X-Frame-Options','DENY'); res.setHeader('Referrer-Policy','no-referrer'); res.setHeader('Permissions-Policy','microphone=(self)');
+    res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
     try {
       const url = new URL(req.url, 'http://localhost');
       if (req.method === 'GET' && serveSitePage(url.pathname, res, getSock)) return;
@@ -270,6 +271,7 @@ export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKin
             : JSON.parse(JSON.stringify(selected).slice(0, 6000)));
         return json(res, 200, { ok: true, responseType: result.responseType, preview, path: String(body.testPath || '') });
       }
+      const broadcast = await handleBroadcastRoute(route, req, readJson, { getSock, getGroups }); if (broadcast) return json(res,200,broadcast);
       if (req.method === 'GET') {
         if (route === 'groups') return json(res,200,{groups:getGroups?await getGroups():[]});
         if (route === 'state') {
