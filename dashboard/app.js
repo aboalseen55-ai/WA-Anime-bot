@@ -340,6 +340,45 @@ function editMember(user) {
   const grid=e('div',undefined,'form-grid');grid.append(field('nickname','اللقب',user.nickname),field('role','الصلاحية داخل البوت',user.role,'select',Object.entries(roleNames).filter(([key])=>['member','moderator','admin','super_admin'].includes(key))),field('isBanned','محظور داخل البوت',user.isBanned,'checkbox'),field('banReason','سبب الحظر',user.banReason));
   openEditor(user.nickname,[details,grid],async()=>{await request('members/'+user._id,'PUT',{...values(),kingdom:user.kingdom_id});await saved()});
 }
+// تنسيق واتساب بالمعاينة: *عريض* _مائل_ ~مشطوب~ `كود` ```كتلة``` و> اقتباس، زي ما بيطلع بالتطبيق بالزبط
+const WA_MARKS={'*':'strong','_':'em','~':'s','`':'code'};
+function waInline(text){
+  const out=document.createDocumentFragment();
+  const re=/(^|[\s.,:;!?()"'«»\-،؛؟])([*_~`])(?![\s])([^\n]*?[^\s])\2(?=$|[\s.,:;!?()"'«»\-،؛؟])/u;
+  let rest=text;
+  while(rest){
+    const m=re.exec(rest);
+    if(!m){out.append(waLinks(rest));break;}
+    const start=m.index+m[1].length;
+    out.append(waLinks(rest.slice(0,start)));
+    const node=e(WA_MARKS[m[2]]);
+    if(m[2]==='`')node.textContent=m[3];else node.append(waInline(m[3]));
+    out.append(node);rest=rest.slice(start+m[2].length*2+m[3].length);
+  }
+  return out;
+}
+function waLinks(text){
+  const out=document.createDocumentFragment();let last=0;
+  for(const m of text.matchAll(/https?:\/\/[^\s]+/g)){out.append(text.slice(last,m.index));const a=e('a',m[0],'wa-link');a.href=m[0];a.target='_blank';a.rel='noopener noreferrer';out.append(a);last=m.index+m[0].length;}
+  out.append(text.slice(last));return out;
+}
+function waFormat(text){
+  const root=document.createDocumentFragment(),parts=String(text||'').split('```');
+  parts.forEach((part,i)=>{
+    if(i%2&&i<parts.length-1){root.append(e('pre',part.replace(/^\n|\n$/g,''),'wa-pre'));return;}
+    const chunk=i%2?'```'+part:part;
+    chunk.split('\n').forEach((line,index,lines)=>{
+      if(/^>\s?/.test(line)){const q=e('span',undefined,'wa-quote');q.append(waInline(line.replace(/^>\s?/,'')));root.append(q);}
+      else{root.append(waInline(line));if(index<lines.length-1&&!/^>\s?/.test(lines[index+1]))root.append(e('br'));}
+    });
+  });
+  return root;
+}
+function waBubble(text){
+  const wrap=e('div',undefined,'wa-chat'),bubble=e('div',undefined,'wa-bubble');bubble.dir='auto';
+  bubble.append(waFormat(text),e('span',new Date().toLocaleTimeString('ar-JO',{hour:'2-digit',minute:'2-digit'}),'wa-time'));
+  wrap.append(bubble);return wrap;
+}
 // بوابة الرسائل الجماعية: الصوت لنص وتحسين الرسالة بـ OpenAI، واختيار القروبات والأرقام
 const broadcastDraft={text:'',numbers:'',selected:new Set(),filter:''};
 function broadcastPage(data) {
@@ -351,22 +390,24 @@ function broadcastPage(data) {
   // الكتابة
   compose.append(e('h3','الرسالة'));
   const text=e('textarea');text.id='broadcastText';text.placeholder='اكتب الرسالة هون، أو اضغط المايك واحكي';text.value=broadcastDraft.text;text.dir='auto';
-  text.addEventListener('input',()=>{broadcastDraft.text=text.value;counter.textContent=number(text.value.length)+' حرف'});
+  const live=e('div',undefined,'wa-live');
+  const refresh=()=>{counter.textContent=number(text.value.length)+' حرف';live.replaceChildren(e('p','معاينة واتساب','help'),text.value.trim()?waBubble(text.value):e('p','اكتب الرسالة لتشوف شكلها هون','help'))};
+  text.addEventListener('input',()=>{broadcastDraft.text=text.value;refresh()});
   const counter=e('p',number(text.value.length)+' حرف','help');
   const tools=e('div',undefined,'toolbar broadcast-tools');
   const mic=button('سجّل بصوتك','mic',()=>toggleRecording(),'secondary');
   const tone=e('select');tone.setAttribute('aria-label','أسلوب الرسالة');[['friendly','ودّي'],['formal','رسمي'],['announcement','إعلان'],['hype','حماسي']].forEach(([v,l])=>tone.add(new Option(l,v)));tone.style.width='auto';
   const extra=e('input');extra.placeholder='ملاحظة للتحسين (اختياري): مثلًا اختصرها';extra.setAttribute('aria-label','ملاحظة للتحسين');
   let previous=null;
-  const undo=button('رجّع النسخة القديمة','undo-2',()=>{if(previous===null)return;text.value=previous;broadcastDraft.text=previous;previous=null;undo.hidden=true;counter.textContent=number(text.value.length)+' حرف'});undo.hidden=true;
+  const undo=button('رجّع النسخة القديمة','undo-2',()=>{if(previous===null)return;text.value=previous;broadcastDraft.text=previous;previous=null;undo.hidden=true;refresh()});undo.hidden=true;
   const enhance=button('حسّن الرسالة','sparkles',async()=>{
     enhance.disabled=true;
-    try{const r=await request('broadcast/enhance','POST',{text:text.value,tone:tone.value,instructions:extra.value});previous=text.value;text.value=r.text;broadcastDraft.text=r.text;undo.hidden=false;counter.textContent=number(text.value.length)+' حرف';toast('تم تحسين الرسالة، راجعها قبل الإرسال');}
+    try{const r=await request('broadcast/enhance','POST',{text:text.value,tone:tone.value,instructions:extra.value});previous=text.value;text.value=r.text;broadcastDraft.text=r.text;undo.hidden=false;refresh();toast('تم تحسين الرسالة، راجعها قبل الإرسال');}
     finally{enhance.disabled=false}
   },'primary');
   if(!data.openai){mic.disabled=true;enhance.disabled=true;}
   tools.append(mic,tone,enhance,undo);
-  compose.append(text,counter,tools,extra);
+  compose.append(text,counter,tools,extra,live);refresh();
   if(!data.openai)compose.append(e('p','لتفعيل المايك والتحسين: أضف OPENAI_API_KEY بمتغيرات ريلوي.','help'));
   const status=e('p','','help');compose.append(status);
 
@@ -384,7 +425,7 @@ function broadcastPage(data) {
       try{
         const response=await fetch('/dashboard/api/broadcast/transcribe',{method:'POST',credentials:'same-origin',headers:{'Content-Type':type,'X-Dashboard-CSRF':csrf},body:new Blob(chunks,{type})});
         const result=await response.json().catch(()=>({}));if(!response.ok)throw Error(result.error||'فشل التحويل');
-        text.value=(text.value.trim()?text.value.trim()+'\n':'')+result.text;broadcastDraft.text=text.value;counter.textContent=number(text.value.length)+' حرف';status.textContent='';
+        text.value=(text.value.trim()?text.value.trim()+'\n':'')+result.text;broadcastDraft.text=text.value;refresh();status.textContent='';
       }catch(error){status.textContent='';showError(error)}
       finally{mic.disabled=false}
     };
@@ -426,7 +467,7 @@ function broadcastPage(data) {
   async function sendNow(){
     const message=text.value.trim();if(!message)throw Error('اكتب الرسالة أول');
     const total=broadcastDraft.selected.size+normalizedCount();
-    const preview=e('div',message,'preview');preview.dir='auto';
+    const preview=waBubble(message);
     openEditor(`تأكيد الإرسال لـ ${number(total)} جهة`,[e('p','هيك رح توصل الرسالة:','help'),preview,e('p','بينبعت بفاصل ثانية ونص بين كل رسالة حتى ما يعتبره واتساب سبام.','help')],async()=>{
       const job=await request('broadcast/send','POST',{text:message,groups:[...broadcastDraft.selected],numbers:broadcastDraft.numbers});
       $('editor').close();summary.textContent=`عم بنبعت… 0 من ${number(job.total)}`;sendButton.disabled=true;
