@@ -19,6 +19,7 @@ const TZ = "Asia/Amman";
 const REPLIES = {
   thanks: "شكراً! 🤖",
   founder: "وصلتكم رسالة خاصة 📩 أهلاً بكم!",
+  link: "بعتنالك الرابط ع الخاص 📩",
   solved: "صح! 🎉 أحسنتم",
   close: "قريب! 👀 انتبهوا للصخرة فوق بِت"
 };
@@ -84,6 +85,7 @@ export function movesIn(text) {
 export function fixedReply(text, caption) {
   if (onlyEmoji(text)) return REPLIES.thanks;
   if (/مؤسس/.test(plainArabic(text))) return REPLIES.founder;
+  if (/رابط|لينك|link/i.test(plainArabic(text))) return REPLIES.link;
   const puzzle = PUZZLES.find((p) => p.match.test(caption || ""));
   const moves = puzzle ? movesIn(text) : "";
   if (moves) return moves === puzzle.solution ? REPLIES.solved : REPLIES.close;
