@@ -62,3 +62,17 @@ test('broadcast job runs in the background and reports progress', async () => {
   for (let i = 0; i < 20 && !getBroadcastJob(job.id).finished; i++) await new Promise((r) => setTimeout(r, 5));
   assert.deepEqual([getBroadcastJob(job.id).sent, getBroadcastJob(job.id).finished], [2, true]);
 });
+
+test('compose mode writes a new message from a description instead of polishing a draft', async (t) => {
+  withKey(t);
+  let payload;
+  const fetchImpl = async (url, init) => {
+    payload = JSON.parse(init.body);
+    return { ok: true, json: async () => ({ choices: [{ message: { content: '*اجتماع المملكة* 📣' } }] }) };
+  };
+  const out = await enhanceMessage('اكتبلي رسالة اجتماع للمملكة يوم الجمعة', { mode: 'compose', fetchImpl });
+  assert.equal(out, '*اجتماع المملكة* 📣');
+  assert.match(payload.messages[0].content, /كاتب رسائل/);
+  assert.match(payload.messages[0].content, /\[بين قوسين\]/);
+  await assert.rejects(enhanceMessage('  ', { mode: 'compose', fetchImpl }), /احكيلي/);
+});

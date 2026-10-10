@@ -1,5 +1,6 @@
 import { createShatreenHook } from './shatreenHook.js';
-import { handleBroadcastRoute } from './broadcastService.js';
+import { handleBroadcastRoute, isOpenAIConfigured } from './broadcastService.js';
+import { getBotMode } from './botMode.js';
 import http from 'node:http';
 import { CONTROL_LABELS, controlSnapshot, saveBotControl } from './botControls.js';
 import crypto from 'node:crypto';
@@ -21,7 +22,9 @@ const assets = new Map([
   ['/dashboard/', ['../dashboard/index.html', 'text/html']],
   ['/dashboard/app.js', ['../dashboard/app.js', 'application/javascript']],
   ['/dashboard/style.css', ['../dashboard/style.css', 'text/css']],
-  ['/dashboard/icons.js', ['../node_modules/lucide/dist/umd/lucide.min.js', 'application/javascript']]
+  ['/dashboard/icons.js', ['../node_modules/lucide/dist/umd/lucide.min.js', 'application/javascript']],
+  // خط IBM Plex Sans Arabic مستضاف محليًا (الـ CSP بيمنع الخطوط الخارجية)
+  ...['arabic', 'latin'].flatMap(subset => [400, 500, 600, 700].map(weight => [`/dashboard/fonts/${subset}-${weight}.woff2`, [`../node_modules/@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-${subset}-${weight}-normal.woff2`, 'font/woff2']]))
 ]);
 function json(res, status, body) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); }
 function decodeCommandKey(value) {
@@ -209,7 +212,7 @@ export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKin
       if (assets.has(url.pathname) && req.method === 'GET') {
         const [file,type] = assets.get(url.pathname);
         const content=fs.readFileSync(new URL(file, import.meta.url));
-        res.writeHead(200, { 'Content-Type': type + '; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(content); return;
+        res.writeHead(200, { 'Content-Type': type.startsWith('font/') ? type : type + '; charset=utf-8', 'Cache-Control': type.startsWith('font/') ? 'public, max-age=604800, immutable' : 'no-store' }); res.end(content); return;
       }
       const route = url.pathname.replace('/dashboard/api/','');
       if (route === 'login' && req.method === 'POST') {
@@ -276,7 +279,7 @@ export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKin
         if (route === 'groups') return json(res,200,{groups:getGroups?await getGroups():[]});
         if (route === 'state') {
           const [commands,apis] = await Promise.all([DashboardCommand.find({}).sort({trigger:1}).limit(1000).lean(),DashboardApi.find({}).sort({name:1}).limit(1000).lean()]);
-          return json(res,200,{csrf:session.csrf,status:getBotStatus(),commands,apis:apis.map(publicApiConfig),encryptionReady:isDashboardEncryptionConfigured()});
+          return json(res,200,{csrf:session.csrf,status:getBotStatus(),mode:getBotMode(),openai:isOpenAIConfigured(),commands,apis:apis.map(publicApiConfig),encryptionReady:isDashboardEncryptionConfigured()});
         }
         if (route === 'templates') {
           const rows = await DashboardTemplate.find({}).lean(), edits = new Map(rows.map(r=>[r.key,r]));

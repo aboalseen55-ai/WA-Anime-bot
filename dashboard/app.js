@@ -6,12 +6,23 @@ const roleNames = {member:'عضو',moderator:'مشرف',admin:'أدمن',super_a
 labels.controls='التحكم والصيانة'; icons.controls='settings-2';
 labels.business='الأعمال'; icons.business='briefcase';
 labels.broadcast='رسائل جماعية'; icons.broadcast='send';
+labels.overview='الرئيسية';
+const NAV_GROUPS=[
+  ['الرئيسية',['overview','broadcast']],
+  ['البوت',['commands','services','controls','usage']],
+  ['المجتمع',['kingdoms','members','games','banks','reports']],
+  ['الأعمال',['business']],
+  ['النظام',['audit']]
+];
+const HINTS={overview:'كل اشي مهم بنظرة وحدة',broadcast:'ابعت رسالة لقروبات أو أشخاص، واكتبها بمساعدة الذكاء الاصطناعي',commands:'الأوامر الأصلية والردود وأوامرك المضافة',services:'الخدمات الخارجية المربوطة بالأوامر',controls:'شغّل وطفّي أي قسم أو أمر أو خدمة',usage:'استهلاك الذكاء الاصطناعي يوميًا',kingdoms:'الممالك وقروباتها وروابطها',members:'أعضاء المملكة وصلاحياتهم',games:'جلسات المافيا والفعاليات',banks:'أرصدة البنوك وسجل العمليات',reports:'إنجازات الإدارة اليومية',business:'الردود التلقائية والطلبات والملخص اليومي',audit:'كل تعديل صار على اللوحة'};
+const groupOf=key=>NAV_GROUPS.find(([,keys])=>keys.includes(key))?.[0]||'';
 let csrf='', state={commands:[],apis:[]}, kingdoms=[], templates=[], catalog=[], section='overview', tab='builtin', page=1, query='', version=0, saveAction=null, toastTimer;
 const e = (tag, text, className) => { const node=document.createElement(tag); if(text!==undefined)node.textContent=text; if(className)node.className=className; return node; };
 const icon = name => { const node=e('i');node.dataset.lucide=name;return node; };
 const paintIcons = () => window.lucide?.createIcons();
 const number = value => Number(value||0).toLocaleString('ar-JO');
 const date = value => value?new Date(value).toLocaleString('ar-JO'):'—';
+const MODE_NAMES={all:'شخصي + قروبات',personal:'البوت الشخصي',fun:'بوت القروبات'};
 function button(text, name, handler, className='secondary') { const node=e('button',undefined,className);node.type='button';if(name)node.append(icon(name));if(text)node.append(e('span',text));node.addEventListener('click',()=>Promise.resolve(handler()).catch(showError));return node; }
 function action(name,title,handler) { const node=button('',name,handler,'icon-button');node.title=title;node.setAttribute('aria-label',title);return node; }
 function toast(message) { $('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,5000); }
@@ -29,6 +40,7 @@ async function bootstrap() {
   const selected=$('scope').value;$('scope').replaceChildren(new Option('جميع الممالك',''));
   kingdoms.forEach(k=>$('scope').add(new Option(k.name,k.id)));$('scope').value=kingdoms.some(k=>k.id===selected)?selected:'';
   $('login').hidden=true;$('app').hidden=false;$('password').value='';
+  $('modeLabel').textContent='الوضع: '+(MODE_NAMES[state.mode]||MODE_NAMES.all);
   await load();
 }
 function heading(title,subtitle='') { const row=e('div',undefined,'section-heading'),text=e('div');text.append(e('h2',title));if(subtitle)text.append(e('p',subtitle));row.append(text);return row; }
@@ -44,7 +56,7 @@ function sourceLabel(file){if(!file)return 'النماذج الأساسية';if(
 
 async function load() {
   const token=++version;const root=$('content');root.replaceChildren(e('p','جارٍ تحميل البيانات…','loading'));
-  $('pageTitle').textContent=labels[section];document.querySelectorAll('.nav-link').forEach(a=>{a.classList.toggle('active',a.dataset.section===section);if(a.dataset.section===section)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+  $('pageTitle').textContent=labels[section];$('pageGroup').textContent=groupOf(section)===labels[section]?'SAM BOT':groupOf(section);$('pageHint').textContent=HINTS[section]||'';document.title=labels[section]+' | Sam Bot';closeNav();document.querySelectorAll('.nav-link').forEach(a=>{a.classList.toggle('active',a.dataset.section===section);if(a.dataset.section===section)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
   $('scope').hidden=['commands','services','usage','controls','business','broadcast'].includes(section);
   try {
     let render;
@@ -65,27 +77,31 @@ async function load() {
     if(token!==version)return;root.replaceChildren();render();$('updated').textContent='آخر تحديث '+new Date().toLocaleTimeString('ar-JO');paintIcons();
   } catch(error) {if(token!==version)return;root.replaceChildren(e('p',error.message,'error-state'),button('إعادة المحاولة','refresh-cw',load));paintIcons();}
 }
+let controlsKind='';
 function renderControls(data) {
-  const root=$('content');root.append(heading('التحكم والصيانة'));
+  const root=$('content');
   const entries = [
     ...Object.entries(data.labels).map(([key,name])=>({key,name,kind:'قسم'})),
     ...[...new Set([...catalog.map(row=>row.command.split(/\s/)[0].toLowerCase()),...state.commands.map(row=>row.trigger)])].map(name=>({key:'command:'+name,name,kind:'أمر'})),
     ...state.apis.map(api=>({key:'service:'+api._id,name:api.name,kind:'خدمة',api}))
   ];
-  const area=e('div');root.append(searchBar('ابحث عن أمر أو خدمة',draw),area);
+  const kinds=[['','الكل'],['قسم','الأقسام'],['أمر','الأوامر'],['خدمة','الخدمات']];
+  const kindTabs=e('div',undefined,'tabs');
+  kinds.forEach(([kind,label])=>{const b=button(label+' · '+number(entries.filter(row=>!kind||row.kind===kind).length),null,()=>{controlsKind=kind;[...kindTabs.children].forEach(x=>x.classList.toggle('active',x===b));draw();paintIcons();},kind===controlsKind?'active':'');kindTabs.append(b)});
+  const area=e('div');root.append(kindTabs,searchBar('ابحث عن أمر أو خدمة',draw),area);
   function draw() {
-    const rows=entries.filter(row=>(row.name+' '+row.kind).includes(query));
+    const rows=entries.filter(row=>(!controlsKind||row.kind===controlsKind)&&(row.name+' '+row.kind).includes(query));
     area.replaceChildren(table(['العنصر','النوع','الحالة','العودة التلقائية',''],rows.map(row=>{
       const rule=data.controls.find(item=>item.key===row.key);
       const controlOff=rule?.enabled===false && (!rule.until || new Date(rule.until)>new Date());
       const apiOff=row.api?.enabled===false;
       const off=controlOff || apiOff;
-      const toggle=e('input');toggle.type='checkbox';toggle.checked=!off;toggle.setAttribute('aria-label',row.name);
+      const toggle=e('input');toggle.type='checkbox';toggle.className='switch';toggle.checked=!off;toggle.setAttribute('aria-label',row.name);
       toggle.disabled=apiOff && !rule;
       toggle.title=apiOff && !rule?'الخدمة متوقفة من إعدادات الخدمات':'تعديل حالة التحكم';
       toggle.addEventListener('change',()=>{const enabled=toggle.checked;toggle.checked=!off;editControl(row,rule,enabled)});
       const actions=rowsActions([['settings-2','إعدادات '+row.name,()=>editControl(row,rule,!off)]]);actions.prepend(toggle);
-      return [row.name,row.kind,apiOff&&!controlOff?'متوقف من إعداد الخدمة':off?'متوقف مؤقتًا':'مفعّل',controlOff&&rule.until?date(rule.until):'—',actions];
+      return [row.name,row.kind,e('span',apiOff&&!controlOff?'متوقف من إعداد الخدمة':off?'متوقف مؤقتًا':'مفعّل',off?'pill off':'pill'),controlOff&&rule.until?date(rule.until):'—',actions];
     })));
     // Switches use the same editor so duration and reason accompany each change.
   }
@@ -98,13 +114,35 @@ function renderControls(data) {
   }
   draw();
 }
+function metricsRow(items){
+  const stats=e('div',undefined,'metrics');
+  items.forEach(([label,value,name])=>{const item=e('div',undefined,'metric'),title=e('span'),chip=e('span',undefined,'metric-icon');chip.append(icon(name||'activity'));title.append(chip,e('span',label));item.append(title,e('strong',number(value)));stats.append(item)});
+  return stats;
+}
+function greeting(){const h=new Date().getHours();return h<5?'سهرانين؟':h<12?'صباح الخير':h<17?'نهارك سعيد':'مساء الخير';}
+function leaderboard(rows,valueOf,label){
+  const list=e('div',undefined,'leaderboard'),max=Math.max(1,...rows.map(valueOf));
+  rows.forEach((row,index)=>{const item=e('div',undefined,'leader'),name=e('div',undefined,'leader-name'),bar=e('div',undefined,'bar'),fill=e('i');fill.style.width=Math.max(4,Math.round(valueOf(row)/max*100))+'%';bar.append(fill);name.append(e('strong',row.nickname||'—'),bar);item.append(e('span',number(index+1),'rank'),name,e('span',number(valueOf(row)),'leader-value'));item.title=label;list.append(item)});
+  return rows.length?list:empty('ما في نشاط لسا اليوم');
+}
 function overview(data) {
-  const root=$('content'),stats=e('div',undefined,'metrics');
-  [['الممالك',data.totals.kingdoms],['الأعضاء المسجّلون',data.totals.members],['الرسائل اليومية الحالية',data.totals.dailyMessages],['إجابات الألعاب اليومية',data.totals.answers]].forEach(([title,value])=>{const item=e('div',undefined,'metric');item.append(e('span',title),e('strong',number(value)));stats.append(item)});
-  root.append(stats);const split=e('div',undefined,'split'),activity=e('section',undefined,'band'),games=e('section',undefined,'band');
-  activity.append(heading('الأكثر تفاعلًا','العدّادات الحالية منذ آخر تصفير يومي'),table(['العضو','الرسائل','المستوى'],data.top.map(u=>[u.nickname,number(u.dailyMessages),number(u.level)])));
-  games.append(heading('متصدّرو الألعاب'),table(['العضو','الإجابات','XP الألعاب'],data.games.map(u=>[u.nickname,number(u.dailyGameAnswers),number(u.dailyGameXp)])));split.append(activity,games);root.append(split);
-  root.append(heading('ملخص النشاط'),table(['الرسائل الكلية','XP الكلي','الاستقبال اليومي','نجوم اليوم'],[[number(data.totals.messages),number(data.totals.xp),number(data.totals.welcomes),number(data.totals.stars)]]));
+  const root=$('content'),hero=e('section',undefined,'hero'),intro=e('div'),chips=e('div',undefined,'hero-chips');
+  const scopeName=kingdoms.find(k=>k.id===$('scope').value)?.name;
+  intro.append(e('span','SAM BOT · '+(scopeName||'كل الممالك'),'eyebrow'),e('h2',greeting()+' 👋'),e('p','البوت شغال وكل اشي تحت إيدك. ابعت رسالة، عدّل أمر، أو شوف مين متفاعل اليوم.'));
+  const chip=(text,name,kind)=>{const node=e('span',undefined,'chip '+(kind||''));node.append(icon(name),e('span',text));return node;};
+  chips.append(chip('متصل بواتساب','wifi','ok'),chip(MODE_NAMES[state.mode]||MODE_NAMES.all,'layers','info'),chip(state.openai?'OpenAI جاهز':'OpenAI غير مضبوط','sparkles',state.openai?'ok':'warn'),chip(number(state.commands.length)+' أمر مضاف','terminal'));
+  intro.append(chips);
+  const quick=e('div',undefined,'quick-grid');
+  [['رسالة جماعية','لقروبات أو أشخاص','send',()=>navigate('broadcast')],['أمر جديد','رد أو خدمة','square-plus',()=>{tab='custom';navigate('commands');setTimeout(()=>editCommand(),300)}],['الصيانة','شغّل وطفّي الأقسام','toggle-left',()=>navigate('controls')],['الأعمال','الطلبات والردود','briefcase',()=>navigate('business')]].forEach(([title,sub,name,run])=>{const b=button('',name,run,'quick');b.querySelector('span')?.remove();b.append(e('strong',title),e('small',sub));quick.append(b)});
+  hero.append(intro,quick);root.append(hero);
+  root.append(metricsRow([['الممالك',data.totals.kingdoms,'crown'],['الأعضاء المسجّلون',data.totals.members,'users'],['رسائل اليوم',data.totals.dailyMessages,'message-circle'],['إجابات الألعاب اليوم',data.totals.answers,'gamepad-2']]));
+  const split=e('div',undefined,'split'),activity=e('section',undefined,'band'),games=e('section',undefined,'band');
+  activity.append(heading('🔥 الأكثر تفاعلًا','حسب رسائل اليوم'),leaderboard(data.top,u=>u.dailyMessages||0,'رسائل اليوم'));
+  games.append(heading('🎮 أبطال الألعاب','حسب إجابات اليوم'),leaderboard(data.games,u=>u.dailyGameAnswers||0,'إجابات اليوم'));
+  split.append(activity,games);root.append(split);
+  const totals=e('section',undefined,'band'),row=e('div',undefined,'stat-row');
+  [['كل الرسائل',data.totals.messages],['مجموع XP',data.totals.xp],['استقبال اليوم',data.totals.welcomes],['نجوم اليوم',data.totals.stars]].forEach(([label,value])=>{const stat=e('div',undefined,'stat');stat.append(e('span',label),e('strong',number(value)));row.append(stat)});
+  totals.append(heading('📊 ملخص عام'),row);root.append(totals);
 }
 function commands() {
   const root=$('content'),tabs=e('div',undefined,'tabs');[['builtin','الأوامر الأصلية'],['replies','الردود والقوالب'],['custom','أوامري المضافة']].forEach(([id,label])=>tabs.append(button(label,null,()=>{tab=id;query='';page=1;commandsReset()},id===tab?'active':'')));root.append(tabs);
@@ -116,7 +154,7 @@ function commands() {
     const visible=list.slice((page-1)*30,page*30);
     if(tab==='builtin') {const items=e('div',undefined,'command-list');visible.forEach(row=>{const item=e('div',undefined,'command');item.append(e('h3',row.title||row.command),e('p',row.description),e('small',row.usage));item.append(rowsActions([['pencil','تعديل الأمر الأصلي',()=>editBuiltinCommand(row)]]));items.append(item)});results.append(list.length?items:empty('لا توجد أوامر مطابقة'));}
     if(tab==='replies') results.append(table(['الرد','القسم','الحالة',''],visible.map(row=>{const title=e('span',row.title);title.title=row.text;return [title,sourceLabel(row.file),row.customized?'معدّل':'الأصلي',rowsActions([['pencil','تعديل الرد',()=>editTemplate(row)]])]})));
-    if(tab==='custom')results.append(table(['الأمر','الاسم','الصلاحية','الحالة',''],visible.map(row=>[row.trigger,row.title,roleNames[row.permission],row.enabled?'مفعّل':'متوقف',rowsActions([['pencil','تعديل الأمر',()=>editCommand(row)],['trash-2','حذف الأمر',()=>remove('commands/'+row._id,row.title)]])])));
+    if(tab==='custom')results.append(table(['الأمر','الاسم','الصلاحية','الحالة',''],visible.map(row=>[row.trigger,row.title,roleNames[row.permission],e('span',row.enabled?'مفعّل':'متوقف',row.enabled?'pill':'pill off'),rowsActions([['pencil','تعديل الأمر',()=>editCommand(row)],['trash-2','حذف الأمر',()=>remove('commands/'+row._id,row.title)]])])));
     results.append(pager(list.length,renderList));paintIcons();
   }
   renderList();
@@ -383,31 +421,37 @@ function waBubble(text){
 const broadcastDraft={text:'',numbers:'',selected:new Set(),filter:''};
 function broadcastPage(data) {
   const root=$('content');
-  root.append(heading('رسائل جماعية','اكتب أو احكي رسالتك، حسّنها بالذكاء الاصطناعي، واختار مين توصله.'));
   const layout=e('div',undefined,'broadcast-layout'),compose=e('section',undefined,'band'),targets=e('section',undefined,'band');
   layout.append(compose,targets);root.append(layout);
 
   // الكتابة
-  compose.append(e('h3','الرسالة'));
+  const h=e('h3');h.append(icon('pen-line'),e('span','الرسالة'));compose.append(h);
   const text=e('textarea');text.id='broadcastText';text.placeholder='اكتب الرسالة هون، أو اضغط المايك واحكي';text.value=broadcastDraft.text;text.dir='auto';
   const live=e('div',undefined,'wa-live');
-  const refresh=()=>{counter.textContent=number(text.value.length)+' حرف';live.replaceChildren(e('p','معاينة واتساب','help'),text.value.trim()?waBubble(text.value):e('p','اكتب الرسالة لتشوف شكلها هون','help'))};
+  const refresh=()=>{counter.textContent=text.value.length.toLocaleString('ar')+' حرف';live.replaceChildren(e('p','معاينة واتساب','help'),text.value.trim()?waBubble(text.value):e('p','اكتب الرسالة لتشوف شكلها هون','help'))};
   text.addEventListener('input',()=>{broadcastDraft.text=text.value;refresh()});
-  const counter=e('p',number(text.value.length)+' حرف','help');
+  const counter=e('p',text.value.length.toLocaleString('ar')+' حرف','help');
   const tools=e('div',undefined,'toolbar broadcast-tools');
   const mic=button('سجّل بصوتك','mic',()=>toggleRecording(),'secondary');
   const tone=e('select');tone.setAttribute('aria-label','أسلوب الرسالة');[['friendly','ودّي'],['formal','رسمي'],['announcement','إعلان'],['hype','حماسي']].forEach(([v,l])=>tone.add(new Option(l,v)));tone.style.width='auto';
   const extra=e('input');extra.placeholder='ملاحظة للتحسين (اختياري): مثلًا اختصرها';extra.setAttribute('aria-label','ملاحظة للتحسين');
   let previous=null;
   const undo=button('رجّع النسخة القديمة','undo-2',()=>{if(previous===null)return;text.value=previous;broadcastDraft.text=previous;previous=null;undo.hidden=true;refresh()});undo.hidden=true;
+  // وضعين: "حسّن مسودتي" بيرتب اللي كتبته، و"اكتبها إلي" بيكتب رسالة من وصفك
+  let aiMode='enhance';
+  const modes=e('div',undefined,'segmented');
+  const setMode=mode=>{aiMode=mode;[...modes.children].forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));enhance.querySelector('span').textContent=mode==='compose'?'اكتبها إلي':'حسّن الرسالة';text.placeholder=mode==='compose'?'احكيلي شو بدك تكتب ولمين. مثلًا: رسالة للممالك عن مسابقة يوم الجمعة الساعة 8 والجائزة 500 كوين':'اكتب الرسالة هون، أو اضغط المايك واحكي';};
+  [['enhance','حسّن مسودتي'],['compose','اكتبها إلي']].forEach(([mode,label])=>{const b=e('button',label);b.type='button';b.dataset.mode=mode;b.addEventListener('click',()=>setMode(mode));modes.append(b)});
   const enhance=button('حسّن الرسالة','sparkles',async()=>{
     enhance.disabled=true;
-    try{const r=await request('broadcast/enhance','POST',{text:text.value,tone:tone.value,instructions:extra.value});previous=text.value;text.value=r.text;broadcastDraft.text=r.text;undo.hidden=false;refresh();toast('تم تحسين الرسالة، راجعها قبل الإرسال');}
+    try{const r=await request('broadcast/enhance','POST',{text:text.value,tone:tone.value,instructions:extra.value,mode:aiMode});previous=text.value;text.value=r.text;broadcastDraft.text=r.text;undo.hidden=false;refresh();toast(aiMode==='compose'?'كتبتلك الرسالة، راجعها قبل الإرسال':'تم تحسين الرسالة، راجعها قبل الإرسال');if(aiMode==='compose')setMode('enhance');}
     finally{enhance.disabled=false}
   },'primary');
   if(!data.openai){mic.disabled=true;enhance.disabled=true;}
-  tools.append(mic,tone,enhance,undo);
-  compose.append(text,counter,tools,extra,live);refresh();
+  tools.append(mic,undo);
+  const ai=e('div',undefined,'ai-row');ai.append(modes,tone,enhance);
+  const aiBox=e('div',undefined,'card ai-box');const aiTitle=e('h3');aiTitle.append(icon('sparkles'),e('span','الذكاء الاصطناعي'));aiBox.append(aiTitle,ai,extra);
+  compose.append(text,counter,tools,aiBox,live);setMode('enhance');refresh();
   if(!data.openai)compose.append(e('p','لتفعيل المايك والتحسين: أضف OPENAI_API_KEY بمتغيرات ريلوي.','help'));
   const status=e('p','','help');compose.append(status);
 
@@ -433,7 +477,7 @@ function broadcastPage(data) {
   }
 
   // الجهات
-  targets.append(e('h3','لمين؟'));
+  const th=e('h3');th.append(icon('users'),e('span','لمين؟'));targets.append(th);
   const search=e('input',undefined,'search');search.type='search';search.placeholder='دوّر على قروب أو مملكة';search.value=broadcastDraft.filter;search.setAttribute('aria-label','بحث بالقروبات');
   const summary=e('p','','help');
   const list=e('div',undefined,'target-list');
@@ -456,7 +500,7 @@ function broadcastPage(data) {
     if(!list.children.length)list.append(empty('ما في قروبات مطابقة'));
   }
   search.addEventListener('input',()=>{broadcastDraft.filter=search.value;renderTargets()});
-  const bar=e('div',undefined,'toolbar');bar.append(search,button('اختار الكل','check-check',()=>{data.groups.forEach(g=>broadcastDraft.selected.add(g.id));renderTargets();updateSummary()}),button('شيل الكل','x',()=>{broadcastDraft.selected.clear();renderTargets();updateSummary()}));
+  const bar=e('div',undefined,'target-tools');bar.append(search,button('اختار الكل','check-check',()=>{data.groups.forEach(g=>broadcastDraft.selected.add(g.id));renderTargets();updateSummary()}),button('شيل الكل','x',()=>{broadcastDraft.selected.clear();renderTargets();updateSummary()}));
   const numbers=e('textarea');numbers.className='numbers-input';numbers.placeholder='أرقام إضافية، كل رقم بسطر: 0791234567 أو 962791234567';numbers.value=broadcastDraft.numbers;numbers.dir='ltr';numbers.setAttribute('aria-label','أرقام إضافية');
   numbers.addEventListener('input',()=>{broadcastDraft.numbers=numbers.value;updateSummary()});
   function normalizedCount(){return broadcastDraft.numbers.split(/[\n,،;]+/).filter(x=>x.replace(/\D/g,'').length>=8).length}
@@ -490,9 +534,7 @@ function business(data) {
   const root=$('content'),s=data.settings,t=data.today||{};
   const title=heading('وضع الأعمال',s.enabled?'مفعّل: البوت يرد على عملاء الخاص':'متوقف: لا يرد البوت على العملاء حتى تفعّله من الإعدادات');
   title.append(button(s.enabled?'إيقاف':'تفعيل',s.enabled?'pause':'play',()=>saveBusiness({...s,enabled:!s.enabled}).then(load),s.enabled?'secondary':'primary'));root.append(title);
-  const stats=e('div',undefined,'metrics');
-  [['رسائل العملاء اليوم',t.messages],['عملاء جدد اليوم',t.newContacts],['أسئلة شائعة أُجيب عنها',t.faqHits],['بانتظار المتابعة',data.openCount]].forEach(([label,value])=>{const item=e('div',undefined,'metric');item.append(e('span',label),e('strong',number(value)));stats.append(item)});
-  root.append(stats);
+  root.append(metricsRow([['رسائل العملاء اليوم',t.messages,'messages-square'],['عملاء جدد اليوم',t.newContacts,'user-plus'],['أسئلة أُجيب عنها',t.faqHits,'circle-help'],['بانتظار المتابعة',data.openCount,'clock']]));
   const tabs=e('div',undefined,'tabs');[['orders','الطلبات والحجوزات'],['faq','الأسئلة الشائعة'],['settings','الإعدادات والملخص']].forEach(([id,label])=>tabs.append(button(label,null,()=>{businessTab=id;query='';load()},id===businessTab?'active':'')));root.append(tabs);
   if(businessTab==='orders')businessOrders(root,data);
   if(businessTab==='faq')businessFaq(root,s);
@@ -557,7 +599,56 @@ function editBusinessSettings(s) {
   });
 }
 function navigate(next){section=Object.hasOwn(labels,next)?next:'overview';page=1;query='';history.replaceState(null,'','#'+section);load().catch(showError);}
-Object.entries(labels).forEach(([key,label])=>{const link=e('a',undefined,'nav-link');link.href='#'+key;link.dataset.section=key;link.append(icon(icons[key]),e('span',label));link.addEventListener('click',event=>{event.preventDefault();navigate(key)});$('navigation').append(link)});
+NAV_GROUPS.forEach(([group,keys])=>{
+  $('navigation').append(e('p',group,'nav-group'));
+  keys.forEach(key=>{const link=e('a',undefined,'nav-link');link.href='#'+key;link.dataset.section=key;link.append(icon(icons[key]),e('span',labels[key]));if(key==='broadcast')link.append(e('span','AI','nav-badge'));link.addEventListener('click',event=>{event.preventDefault();navigate(key)});$('navigation').append(link)});
+});
+function openNav(){document.body.classList.add('nav-open');$('scrim').hidden=false;}
+function closeNav(){document.body.classList.remove('nav-open');$('scrim').hidden=true;}
+$('menuToggle').addEventListener('click',()=>document.body.classList.contains('nav-open')?closeNav():openNav());
+$('scrim').addEventListener('click',closeNav);
+
+// البحث السريع (Ctrl+K): أي قسم أو إجراء بضغطة
+function paletteActions(){
+  return [
+    ...NAV_GROUPS.flatMap(([group,keys])=>keys.map(key=>({group:'الأقسام',label:labels[key],hint:group,icon:icons[key],run:()=>navigate(key)}))),
+    {group:'إجراءات',label:'رسالة جماعية جديدة',hint:'اكتب وابعت',icon:'send',run:()=>navigate('broadcast')},
+    {group:'إجراءات',label:'إضافة أمر جديد',hint:'الأوامر',icon:'plus',run:()=>{tab='custom';navigate('commands');setTimeout(()=>editCommand(),300)}},
+    {group:'إجراءات',label:'إضافة مملكة',hint:'الممالك',icon:'crown',run:()=>{navigate('kingdoms');setTimeout(()=>editKingdom(),300)}},
+    {group:'إجراءات',label:'إضافة خدمة',hint:'الخدمات',icon:'plug',run:()=>{navigate('services');setTimeout(()=>editApi(),300)}},
+    {group:'إجراءات',label:'إيقاف أو تشغيل قسم',hint:'التحكم والصيانة',icon:'toggle-left',run:()=>navigate('controls')},
+    {group:'إجراءات',label:'إعادة تشغيل البوت',hint:'قطع لحظي',icon:'power',run:()=>$('restart').click()},
+    {group:'إجراءات',label:'تحديث البيانات',hint:'',icon:'refresh-cw',run:()=>$('refresh').click()},
+    {group:'إجراءات',label:'تسجيل الخروج',hint:'',icon:'log-out',run:()=>$('logout').click()}
+  ];
+}
+let paletteIndex=0,paletteItems=[];
+function drawPalette(){
+  const q=$('paletteInput').value.trim();
+  paletteItems=paletteActions().filter(item=>!q||(item.label+' '+item.hint).includes(q));
+  paletteIndex=Math.min(paletteIndex,Math.max(0,paletteItems.length-1));
+  const list=$('paletteList');list.replaceChildren();let lastGroup='';
+  paletteItems.forEach((item,index)=>{
+    if(item.group!==lastGroup){list.append(e('p',item.group,'palette-section'));lastGroup=item.group;}
+    const row=e('button',undefined,'palette-item'+(index===paletteIndex?' selected':''));row.type='button';row.setAttribute('role','option');
+    row.append(icon(item.icon),e('span',item.label));if(item.hint)row.append(e('small',item.hint));
+    row.addEventListener('click',()=>runPalette(index));row.addEventListener('mousemove',()=>{if(paletteIndex!==index){paletteIndex=index;drawPalette()}});
+    list.append(row);
+  });
+  if(!paletteItems.length)list.append(e('p','ما في نتائج','palette-section'));
+  paintIcons();list.querySelector('.selected')?.scrollIntoView({block:'nearest'});
+}
+function openPalette(){if($('app').hidden)return;$('paletteInput').value='';paletteIndex=0;drawPalette();$('palette').showModal();$('paletteInput').focus();}
+function runPalette(index){const item=paletteItems[index];if(!item)return;$('palette').close();Promise.resolve(item.run()).catch(showError);}
+$('paletteInput').addEventListener('input',()=>{paletteIndex=0;drawPalette()});
+$('paletteInput').addEventListener('keydown',event=>{
+  if(event.key==='ArrowDown'){event.preventDefault();paletteIndex=(paletteIndex+1)%Math.max(1,paletteItems.length);drawPalette();}
+  else if(event.key==='ArrowUp'){event.preventDefault();paletteIndex=(paletteIndex-1+paletteItems.length)%Math.max(1,paletteItems.length);drawPalette();}
+  else if(event.key==='Enter'){event.preventDefault();runPalette(paletteIndex);}
+});
+$('palette').addEventListener('click',event=>{if(event.target===$('palette'))$('palette').close()});
+$('openPalette').addEventListener('click',openPalette);$('openPaletteSide').addEventListener('click',openPalette);
+document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openPalette();}});
 $('loginForm').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;$('loginNotice').textContent='';try{csrf=(await request('login','POST',{password:$('password').value})).csrf;await bootstrap();}catch(error){$('loginNotice').textContent=error.message;}finally{submit.disabled=false;}});
 $('logout').addEventListener('click',()=>request('logout','POST').finally(()=>location.reload()));
 $('restart').addEventListener('click',async()=>{if(!confirm('سيتم قطع اتصال واتساب لحظيًا وإعادة تشغيل البوت. هل تريد المتابعة؟'))return;try{await request('restart','POST');toast('بدأت إعادة التشغيل؛ انتظر عودة البوت.');}catch(error){showError(error);}});

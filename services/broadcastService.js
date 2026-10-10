@@ -68,17 +68,24 @@ export async function transcribeAudio(buffer, mimetype = 'audio/webm', { fetchIm
   return String(data.text || '').trim();
 }
 
-export async function enhanceMessage(text, { tone = 'friendly', instructions = '', fetchImpl } = {}) {
+/** mode=enhance بيحسّن مسودة موجودة، mode=compose بيكتب رسالة جديدة من وصف ("اكتبلي رسالة لـ..."). */
+export async function enhanceMessage(text, { tone = 'friendly', instructions = '', mode = 'enhance', fetchImpl } = {}) {
   const draft = String(text || '').trim().slice(0, MAX_TEXT);
-  if (!draft) throw new Error('اكتب أو سجّل الرسالة أول');
+  if (!draft) throw new Error(mode === 'compose' ? 'احكيلي عن شو بدك الرسالة' : 'اكتب أو سجّل الرسالة أول');
+  const compose = mode === 'compose';
   const system = [
-    'أنت محرر رسائل واتساب. حوّل المسودة لرسالة واتساب جاهزة للإرسال لمجموعة أو شخص.',
+    compose
+      ? 'أنت كاتب رسائل واتساب. المستخدم بيوصفلك شو بده يحكي ولمين، وأنت بتكتب الرسالة نفسها جاهزة للإرسال.'
+      : 'أنت محرر رسائل واتساب. حوّل المسودة لرسالة واتساب جاهزة للإرسال لمجموعة أو شخص.',
     `الأسلوب: ${TONES[tone] || TONES.friendly}.`,
-    'حافظ على المعنى وكل المعلومات (مواعيد، أرقام، روابط، أسماء) بدون ما تخترع اشي جديد.',
+    compose
+      ? 'استخدم كل التفاصيل اللي ذكرها (مواعيد، أرقام، روابط، أسماء)، وإذا ناقص تفصيل ضروري حط مكانه [بين قوسين] بدل ما تخترعه.'
+      : 'حافظ على المعنى وكل المعلومات (مواعيد، أرقام، روابط، أسماء) بدون ما تخترع اشي جديد.',
     'رتبها بفقرات قصيرة أو نقاط، واستخدم تنسيق واتساب (*عريض* و_مائل_) بدون مبالغة، وإيموجي قليلة ومناسبة.',
     'رجّع نص الرسالة فقط بدون أي شرح أو مقدمة أو علامات اقتباس.'
   ].join(' ');
-  const user = instructions ? `ملاحظات إضافية: ${String(instructions).slice(0, 500)}\n\nالمسودة:\n${draft}` : draft;
+  const label = compose ? 'الطلب' : 'المسودة';
+  const user = instructions ? `ملاحظات إضافية: ${String(instructions).slice(0, 500)}\n\n${label}:\n${draft}` : draft;
   const data = await openai('chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -198,7 +205,7 @@ export async function handleBroadcastRoute(route, req, readJson, { getSock, getG
   }
   if (route === 'broadcast/enhance' && req.method === 'POST') {
     const body = await readJson(req);
-    return { text: await enhanceMessage(body.text, { tone: body.tone, instructions: body.instructions }) };
+    return { text: await enhanceMessage(body.text, { tone: body.tone, instructions: body.instructions, mode: body.mode === 'compose' ? 'compose' : 'enhance' }) };
   }
   if (route === 'broadcast/send' && req.method === 'POST') {
     const body = await readJson(req);
