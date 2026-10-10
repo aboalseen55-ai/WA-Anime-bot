@@ -5,6 +5,7 @@ import { showCommandsList, handleCommandsChoice } from "../commands/commandsList
 import { isModerator } from "../commands/adminSystem.js";
 import { showLeaderboard } from "../games/guessAnime.js";
 import { denyCommandIfPaused } from '../services/botControls.js';
+import { funEnabled, personalEnabled } from '../services/botMode.js';
 import { buildSmartCommandExplanation, classifySmartCommandRequest } from "../utils/smartCommandRouter.js";
 import { handleQuranCommand, isQuranCommand } from "../utils/quran.js";
 import { handlePersonalCommand } from "../utils/personalAssistant.js";
@@ -60,12 +61,24 @@ export async function handleSlashCommand(sock, jid, sender, trimmedText, msg) {
     return true;
   }
 
-  if (await handleAssistantHomeCommand(sock, jid, sender, trimmedText, msg)) return true;
-  if (await handleVoiceCommand(sock, jid, sender, trimmedText)) return true;
+  const personal = personalEnabled();
+  if (personal) {
+    // بالبوت الشخصي /أوامر بتعرض قائمة المساعد
+    const commandText = !funEnabled() && commandsTriggers.includes(trimmedText) ? "/مساعدة" : trimmedText;
+    if (await handleAssistantHomeCommand(sock, jid, sender, commandText, msg)) return true;
+    if (await handleVoiceCommand(sock, jid, sender, trimmedText)) return true;
+  }
   if (await handleGroupCommand(sock, jid, sender, trimmedText, msg)) return true;
-  if (await handleExpenseCommand(sock, jid, sender, trimmedText)) return true;
-  if (await handlePersonalCommand(sock, jid, sender, trimmedText)) return true;
+  if (personal) {
+    if (await handleExpenseCommand(sock, jid, sender, trimmedText)) return true;
+    if (await handlePersonalCommand(sock, jid, sender, trimmedText)) return true;
+  }
   if (await handleBotStatusCommand(sock, jid, sender, trimmedText)) return true;
+
+  if (!funEnabled()) {
+    await sock.sendMessage(jid, { text: `❌ الأمر غير معروف: ${trimmedText}\nاكتب /مساعدة لتشوف الأوامر.` });
+    return true;
+  }
 
   // إذا لم يكن أمر الأوامر (تمت معالجته أعلاه)
   if (!commandsTriggers.includes(trimmedText)) {

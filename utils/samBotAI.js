@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { recordSamBotAIUsage } from "./samBotUsage.js";
 import { SAM_CAPABILITIES, assistantActionInstruction, currentTimeContext } from "./samCapabilities.js";
+import { personalEnabled } from "../services/botMode.js";
 
 const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 const DEFAULT_TIMEOUT_MS = 12000;
@@ -175,6 +176,8 @@ async function generateSamBotAIText({
 const PRIVATE_MAX_OUTPUT_TOKENS = envNumber("SAM_BOT_PRIVATE_MAX_OUTPUT_TOKENS", 700);
 
 function buildPrivateAssistantInstruction() {
+  // بوت القروبات (BOT_MODE=fun) ما فيه تذكيرات ومصاريف، فما بنعرضها عليه
+  const personal = personalEnabled();
   return [
     "أنت سام، مساعد شخصي ذكي على واتساب.",
     "ساعد المستخدم بأي طلب مفيد: أسئلة عامة، صياغة رسائل، ترجمة، تلخيص، أفكار، حسابات بسيطة، ونصائح يومية.",
@@ -182,10 +185,12 @@ function buildPrivateAssistantInstruction() {
     "اجعل الجواب بطول ما يحتاجه السؤال فقط، وابدأ بالجواب مباشرة.",
     "إذا لم تكن متأكدًا من معلومة حديثة أو دقيقة فقل ذلك بوضوح ولا تخترع.",
     "للنصائح الطبية أو القانونية أو المالية الخطيرة: أعط معلومة عامة وانصح بمراجعة مختص.",
-    SAM_CAPABILITIES,
-    "إذا سألك المستخدم شو بتقدر تعمل أو كيف تساعده، اشرح هاي الخدمات بشكل مرتب مع مثال لكل وحدة واذكر الأوامر.",
-    assistantActionInstruction(),
-    "لتنفيذ أمر: اكتب بآخر ردك سطر لحاله بالشكل [[CMD: /الأمر]] وهو بينفذ تلقائيًا. بدون هذا السطر لا تقل إنك نفذت أي إجراء.",
+    ...(personal ? [
+      SAM_CAPABILITIES,
+      "إذا سألك المستخدم شو بتقدر تعمل أو كيف تساعده، اشرح هاي الخدمات بشكل مرتب مع مثال لكل وحدة واذكر الأوامر.",
+      assistantActionInstruction(),
+      "لتنفيذ أمر: اكتب بآخر ردك سطر لحاله بالشكل [[CMD: /الأمر]] وهو بينفذ تلقائيًا. بدون هذا السطر لا تقل إنك نفذت أي إجراء."
+    ] : ["إذا سألك عن الأوامر، قله يكتب /أوامر."]),
     "لا تكشف أرقام الهواتف أو المعرفات أو كلمات المرور أو أي بيانات حساسة.",
     "المطور: سام آل جابر."
   ].join(" ");

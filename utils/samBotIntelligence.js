@@ -6,6 +6,7 @@ import { getKingdomIdFromGroupJid } from "../config.js";
 import { generateSamBotAIReply } from "./samBotAI.js";
 import { isVoiceReplyEnabled, sendVoiceOrText } from "./voiceReplies.js";
 import { extractAssistantCommand, runAssistantCommand } from "./samCapabilities.js";
+import { personalEnabled } from "../services/botMode.js";
 import {
   buildSamBotMemoryContext,
   getRepeatedSocialReply,
@@ -463,8 +464,9 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
   const { reply: aiReply, command } = isPrivateChat(jid)
     ? extractAssistantCommand(rawAIReply)
     : { reply: rawAIReply, command: null };
+  const allowCommand = command && personalEnabled();
   const reply = repeatedReply || aiReply || buildReply(intent, nickname, text);
-  if (aiReply && isPrivateChat(jid) && await isVoiceReplyEnabled(sender)) {
+  if (aiReply && isPrivateChat(jid) && personalEnabled() && await isVoiceReplyEnabled(sender)) {
     await sendVoiceOrText(sock, jid, reply, { mentions: [sender], userJid: sender });
   } else {
     await sock.sendMessage(jid, {
@@ -473,7 +475,7 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     });
   }
 
-  if (command) await runAssistantCommand(sock, jid, sender, command);
+  if (allowCommand) await runAssistantCommand(sock, jid, sender, command);
 
   await rememberSamBotTurn({
     memory,

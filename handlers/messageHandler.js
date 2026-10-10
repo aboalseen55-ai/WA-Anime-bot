@@ -13,6 +13,7 @@ import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
 import { handleNaturalExpense } from "../utils/expenses.js";
 import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js';
 import { handleBusinessMessage } from '../services/businessMode.js';
+import { funEnabled, personalEnabled } from '../services/botMode.js';
 import { handleFirstContact } from "../utils/assistantHome.js";
 import { handleMediaAssistant } from "../utils/mediaAssistant.js";
 import { enforceGroupProtection, recordGroupMessage } from "../utils/groupTools.js";
@@ -58,19 +59,26 @@ export async function messageHandler(sock, msg) {
   if (await enforceGroupProtection(sock, msg)) return;
   recordGroupMessage(jid, msg.pushName, text);
 
-  let kingdom = await trackMainGroupActivity(sock, msg, jid, sender, text);
+  // BOT_MODE بيحدد إذا هاد البوت شخصي أو بوت قروبات أو الاثنين (services/botMode.js)
+  const fun = funEnabled();
+  const personal = personalEnabled();
+
+  let kingdom = fun ? await trackMainGroupActivity(sock, msg, jid, sender, text) : null;
 
   // التحقق من عدد الأعضاء وإرسال رسالة التشجيع إذا لزم الأمر
   if (!kingdom) {
     kingdom = getKingdomIdFromGroupJid(jid);
   }
-  await checkAndSendMilestoneMessage(sock, jid, kingdom);
-
-  if (await handleWordGameSetup(sock, jid, sender, text)) return;
+  if (fun) {
+    await checkAndSendMilestoneMessage(sock, jid, kingdom);
+    if (await handleWordGameSetup(sock, jid, sender, text)) return;
+  }
 
   // المساعد الشخصي: تعريف أول مرة بالخاص، ثم الفويسات والصور وملفات PDF
-  await handleFirstContact(sock, msg);
-  if (await handleMediaAssistant(sock, msg, text)) return;
+  if (personal) {
+    await handleFirstContact(sock, msg);
+    if (await handleMediaAssistant(sock, msg, text)) return;
+  }
 
   if (!text) return;
 
@@ -86,21 +94,25 @@ export async function messageHandler(sock, msg) {
     return;
   }
 
-  if (await handleMafiaHostPrivateFlow(sock, jid, sender, trimmedText)) return;
-  if (await handleMafiaNicknameRegistration(sock, jid, sender, trimmedText)) return;
-  if (await handleMafiaCommand(sock, jid, sender, trimmedText)) return;
+  if (fun) {
+    if (await handleMafiaHostPrivateFlow(sock, jid, sender, trimmedText)) return;
+    if (await handleMafiaNicknameRegistration(sock, jid, sender, trimmedText)) return;
+    if (await handleMafiaCommand(sock, jid, sender, trimmedText)) return;
+  }
   if (await handleDeveloperCommandGuide(sock, jid, sender, trimmedText)) return;
   if (await handleSamBotTokenCountCommand(sock, jid, sender, trimmedText)) return;
   if (await handleSamBotUsageCommand(sock, jid, sender, trimmedText)) return;
-  if (await handleDeveloperKingdomCommand(sock, jid, sender, trimmedText)) return;
-  if (await handleStartKingdomDelete(sock, jid, sender, trimmedText)) return;
-  if (await handleKingdomDeleteStep(sock, jid, sender, trimmedText)) return;
-  if (await handleStartKingdomEdit(sock, jid, sender, trimmedText)) return;
-  if (await handleKingdomEditStep(sock, jid, sender, trimmedText)) return;
-  if (await handleStartKingdomRegistration(sock, jid, sender, trimmedText, msg)) return;
-  if (await handleKingdomRegistrationStep(sock, jid, sender, trimmedText)) return;
+  if (fun) {
+    if (await handleDeveloperKingdomCommand(sock, jid, sender, trimmedText)) return;
+    if (await handleStartKingdomDelete(sock, jid, sender, trimmedText)) return;
+    if (await handleKingdomDeleteStep(sock, jid, sender, trimmedText)) return;
+    if (await handleStartKingdomEdit(sock, jid, sender, trimmedText)) return;
+    if (await handleKingdomEditStep(sock, jid, sender, trimmedText)) return;
+    if (await handleStartKingdomRegistration(sock, jid, sender, trimmedText, msg)) return;
+    if (await handleKingdomRegistrationStep(sock, jid, sender, trimmedText)) return;
+  }
 
-  if (await handleBusinessMessage(sock, msg, trimmedText)) return;
+  if (personal && await handleBusinessMessage(sock, msg, trimmedText)) return;
 
   // البحث عن المستخدم (بدون تسجيل تلقائي)
   const user = await User.findOne({ jid: sender, kingdom_id: kingdom });
@@ -110,31 +122,35 @@ export async function messageHandler(sock, msg) {
     return; // تجاهل الرسائل من المحظورين
   }
 
-  if (await handleGamesMenuCommand(sock, jid, sender, trimmedText, kingdom)) return;
-  if (await handleCommandsMenuCommand(sock, jid, sender, trimmedText)) return;
-  if (await handleGameCommands(sock, jid, sender, trimmedText, kingdom)) return;
-  if (await handleActiveGameResponses(sock, jid, sender, text)) return;
-  if (await handlePendingMention(sock, jid, sender, msg)) return;
-  if (await handleKickConfirmation(sock, jid, sender, trimmedText, kingdom)) return;
+  if (fun) {
+    if (await handleGamesMenuCommand(sock, jid, sender, trimmedText, kingdom)) return;
+    if (await handleCommandsMenuCommand(sock, jid, sender, trimmedText)) return;
+    if (await handleGameCommands(sock, jid, sender, trimmedText, kingdom)) return;
+    if (await handleActiveGameResponses(sock, jid, sender, text)) return;
+    if (await handlePendingMention(sock, jid, sender, msg)) return;
+    if (await handleKickConfirmation(sock, jid, sender, trimmedText, kingdom)) return;
+  }
 
   // الأوامر
-  if (await handleSeriesSelection(sock, jid, sender, trimmedText, msg)) return;
+  if (fun && await handleSeriesSelection(sock, jid, sender, trimmedText, msg)) return;
   if (await handleSlashCommand(sock, jid, sender, trimmedText, msg)) return;
   if (await handleQuranText(sock, jid, trimmedText)) return;
-  if (await handleSmartCommandRoute(sock, jid, sender, trimmedText, msg)) return;
+  if (fun && await handleSmartCommandRoute(sock, jid, sender, trimmedText, msg)) return;
 
-  if (await handleWelcomeModeStep(sock, jid, sender, text)) return;
-  if (await handleWelcomeImageChoice(sock, jid, text)) return;
-  if (await handleWelcomeConfirmation(sock, jid, text)) return;
-  if (await handleProfileChoice(sock, jid, sender, text)) return;
-  if (await handleReportReason(sock, jid, sender, text, kingdom)) return;
-  if (await handleCommandsMenuChoice(sock, jid, sender, text, kingdom)) return;
-  if (await handleEmperorPassword(sock, sender, text)) return;
-  if (await handleReceptionRegistration(sock, jid, sender, text, msg)) return;
+  if (fun) {
+    if (await handleWelcomeModeStep(sock, jid, sender, text)) return;
+    if (await handleWelcomeImageChoice(sock, jid, text)) return;
+    if (await handleWelcomeConfirmation(sock, jid, text)) return;
+    if (await handleProfileChoice(sock, jid, sender, text)) return;
+    if (await handleReportReason(sock, jid, sender, text, kingdom)) return;
+    if (await handleCommandsMenuChoice(sock, jid, sender, text, kingdom)) return;
+    if (await handleEmperorPassword(sock, sender, text)) return;
+    if (await handleReceptionRegistration(sock, jid, sender, text, msg)) return;
+  }
 
   // تفاعل سام بوت الذكي: يرد فقط إذا الكلام موجه له أو في الخاص أو بالرد على رسالته.
   // "صرفت 5 على قهوة" بالخاص = مصروف، مش ملاحظة
-  if (await handleNaturalExpense(sock, jid, sender, trimmedText)) return;
+  if (personal && await handleNaturalExpense(sock, jid, sender, trimmedText)) return;
   if (featureEnabled('ai')) {
     await handleSamBotInteraction(sock, jid, sender, text, msg);
   }

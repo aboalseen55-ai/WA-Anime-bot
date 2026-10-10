@@ -23,6 +23,7 @@ import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
 import { startShatreenComments } from "./services/shatreenComments.js";
 import { scheduleBusinessSummary } from "./services/businessSummary.js";
+import { getBotMode, funEnabled, personalEnabled } from "./services/botMode.js";
 import { refreshDashboardTemplates } from './services/dashboardTemplates.js';
 import { rememberBotMessage } from './services/botMessageDeletion.js';
 import { loadBotControls, featureEnabled, outgoingAllowed, withBotContext } from './services/botControls.js';
@@ -41,6 +42,7 @@ try {
     maxPoolSize: 10,
   });
   console.log("✅ MongoDB connected successfully");
+  console.log(`🤖 BOT_MODE=${getBotMode()}`);
   await initializeKingdomSystem();
   await refreshDashboardTemplates();
   await loadBotControls();
@@ -142,7 +144,7 @@ startDashboardServer({
     connection: whatsappConnectionState
   }),
   onKingdomChange: () => {
-    if (activeSock && whatsappConnectionState === 'open') {
+    if (activeSock && whatsappConnectionState === 'open' && funEnabled()) {
       scheduleDailyReports(activeSock);
       scheduleDailyQuranReminders(activeSock);
     }
@@ -334,11 +336,15 @@ async function startBot() {
       }
       
       // 📊 تفعيل جدولة التقارير اليومية
-      scheduleDailyReports(sock);
-      scheduleDailyQuranReminders(sock);
-      schedulePersonalReminders(sock);
-      scheduleMorningBriefs(sock);
-      scheduleBusinessSummary(sock);
+      if (funEnabled()) {
+        scheduleDailyReports(sock);
+        scheduleDailyQuranReminders(sock);
+      }
+      if (personalEnabled()) {
+        schedulePersonalReminders(sock);
+        scheduleMorningBriefs(sock);
+        scheduleBusinessSummary(sock);
+      }
     }
 
     if (connection === "close") {
