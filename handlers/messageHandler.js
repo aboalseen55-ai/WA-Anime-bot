@@ -21,6 +21,7 @@ import { handleSamBotTokenCountCommand, handleSamBotUsageCommand } from "../util
 import { trackMainGroupActivity } from "./activityTracking.js";
 import { checkAndSendMilestoneMessage } from "./milestones.js";
 import { handleWordGameSetup, handleGamesMenuCommand, handleGameCommands, handleActiveGameResponses } from "./gameCommands.js";
+import { handleDashboardLinkCommand } from "../utils/dashboardLink.js";
 import { handleCommandsMenuCommand, handleSeriesSelection, handleSlashCommand, handleQuranText, handleSmartCommandRoute, handleCommandsMenuChoice } from "./commandRouting.js";
 import { handlePendingMention, handleReportReason } from "./pendingMentionFlow.js";
 import { handleKickConfirmation, handleEmperorPassword } from "./adminConfirmations.js";
@@ -102,6 +103,7 @@ export async function messageHandler(sock, msg) {
   if (await handleDeveloperCommandGuide(sock, jid, sender, trimmedText)) return;
   if (await handleSamBotTokenCountCommand(sock, jid, sender, trimmedText)) return;
   if (await handleSamBotUsageCommand(sock, jid, sender, trimmedText)) return;
+  if (await handleDashboardLinkCommand(sock, jid, sender, trimmedText)) return;
   if (fun) {
     if (await handleDeveloperKingdomCommand(sock, jid, sender, trimmedText)) return;
     if (await handleStartKingdomDelete(sock, jid, sender, trimmedText)) return;
