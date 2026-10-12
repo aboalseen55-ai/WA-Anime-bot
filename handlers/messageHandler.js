@@ -134,7 +134,8 @@ export async function messageHandler(sock, msg) {
   }
 
   // الأوامر
-  if (fun && await handleSeriesSelection(sock, jid, sender, trimmedText, msg)) return;
+  // اختيار رقم من نتائج أمر داشبورد (بكل الأوضاع، لأنه أوامر الداشبورد شغالة بكل الأوضاع)
+  if (await handleSeriesSelection(sock, jid, sender, trimmedText, msg)) return;
   if (await handleSlashCommand(sock, jid, sender, trimmedText, msg)) return;
   if (await handleQuranText(sock, jid, trimmedText)) return;
   if (fun && await handleSmartCommandRoute(sock, jid, sender, trimmedText, msg)) return;
