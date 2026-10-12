@@ -16,6 +16,7 @@ import Kingdom from '../database/kingdomModel.js';
 import User from '../database/userModel.js';
 import { decryptDashboardValue, encryptDashboardValue } from '../services/dashboardCrypto.js';
 import { handleDashboardCommand, setHttpClient, sendSeriesResults } from '../services/dashboardRuntime.js';
+import { DEVELOPER_JIDS } from '../config.js';
 
 test('series thumbnails preserve numbering with safe text fallbacks', async t => {
   t.mock.method(dns, 'lookup', async () => [{address:'8.8.8.8',family:4}]);
@@ -216,4 +217,17 @@ test('HTTP authentication, CSRF, templates, assets and disconnected gate',async 
   assert.equal((await fetch(base+'/api/state',{headers})).status,200);
   connected=false;assert.equal((await fetch(base+'/api/state',{headers})).status,503);
   connected=true;await fetch(base+'/api/logout',{method:'POST',headers});assert.equal((await fetch(base+'/api/state',{headers})).status,401);
+});
+
+test('/فيديو only runs for the developer in a private chat', async t => {
+  const lookups = [];
+  t.mock.method(Command, 'findOne', (query) => { lookups.push(query); return { populate: async () => null }; });
+  const sent = [];
+  const sock = { sendMessage: async (jid, content) => sent.push({ jid, content }) };
+  assert.equal(await handleDashboardCommand(sock, 'stranger@s.whatsapp.net', 'stranger@s.whatsapp.net', '/فيديو x', {}), true);
+  assert.equal(await handleDashboardCommand(sock, '123-1@g.us', DEVELOPER_JIDS[0], '/فيديو x', {}), true);
+  assert.equal(sent.length, 0);
+  assert.equal(lookups.length, 0);
+  assert.equal(await handleDashboardCommand(sock, DEVELOPER_JIDS[0], DEVELOPER_JIDS[0], '/فيديو x', {}), false);
+  assert.equal(lookups.length, 1);
 });

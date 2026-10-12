@@ -22,6 +22,9 @@ function normalizeJid(jid = "") {
   return String(jid).split(":")[0];
 }
 
+// أوامر خاصة بالمطور بالخاص فقط: لأي حدا ثاني أو جوا قروب بتنبلع بصمت
+const PRIVATE_DEVELOPER_TRIGGERS = new Set(["/فيديو"]);
+
 function isDeveloper(jid) {
   const user = normalizeJid(jid).split("@")[0];
   return DEVELOPER_JIDS.some((developer) => normalizeJid(developer).split("@")[0] === user);
@@ -335,6 +338,7 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   const args = String(text).trim().split(/\s+/).slice(1);
   const query = args.join(" ");
   if (isReservedCommand(trigger)) return false;
+  if (PRIVATE_DEVELOPER_TRIGGERS.has(trigger) && (String(jid).endsWith("@g.us") || !isDeveloper(sender))) return true;
   const command = await DashboardCommand.findOne({ trigger }).populate("apiId");
   if (!command) return false;
   if (command.enabled === false || (command.apiId && (command.apiId.enabled === false || !featureEnabled('services') || controlBlocked(`service:${command.apiId._id}`)))) {
