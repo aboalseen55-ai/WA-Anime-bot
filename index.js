@@ -19,6 +19,7 @@ import { scheduleMorningBriefs } from "./utils/assistantHome.js";
 import { migrateForeignExpenses } from "./utils/expenses.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
+import pino from "pino";
 import { startDashboardServer } from "./services/dashboardServer.js";
 import { setPairingQr, invalidatePairingQr } from "./services/whatsappPairing.js";
 import { startShatreenComments } from "./services/shatreenComments.js";
@@ -273,6 +274,8 @@ async function startBot() {
   const sock = makeWASocket({
     version,
     auth: state,
+    // Baileys على مستوى info بيطبع مفاتيح التسجيل وبيانات الجلسة؛ نخليه warn عشان ما توصل للـ logs
+    logger: pino({ level: process.env.BAILEYS_LOG_LEVEL || "warn" }),
     generateHighQualityLinkPreview: false
   });
 
