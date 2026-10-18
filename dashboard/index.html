@@ -10,6 +10,16 @@
     <p class="login-foot"><i data-lucide="shield-check"></i>وصول خاص بالمطور، الاتصال مشفّر</p>
   </div>
 </section>
+<section id="pairing" class="login-shell" hidden>
+  <div class="login-card pairing-card">
+    <div class="login-brand"><span class="brand-mark"><i data-lucide="qr-code"></i></span><span>Sam Bot <small>WHATSAPP LINK</small></span></div>
+    <p class="eyebrow">ربط واتساب</p><h1 id="pairingTitle">بنجهّز رمز الربط…</h1>
+    <p class="login-sub" id="pairingHint">من واتساب على جوالك: الأجهزة المرتبطة ← ربط جهاز، وامسح الرمز.</p>
+    <div class="pairing-frame" id="pairingFrame"><img id="pairingQr" alt="رمز QR لربط واتساب" width="280" height="280" hidden><p id="pairingWait" class="pairing-wait">بستنى رمز جديد من واتساب…</p></div>
+    <p class="login-foot" id="pairingTimer" role="status"></p>
+    <button id="pairingLogout" type="button" class="secondary full"><i data-lucide="log-out"></i>تسجيل الخروج</button>
+  </div>
+</section>
 <div id="app" hidden>
   <aside class="sidebar" id="sidebar">
     <a class="brand" href="#overview"><span class="brand-mark"><i data-lucide="bot"></i></span><span>Sam Bot<small>مركز التحكم</small></span></a>

@@ -6,7 +6,6 @@ import makeWASocket, {
 
 import fs from "fs/promises";
 import path from "path";
-import qrcode from "qrcode-terminal";
 import mongoose from "mongoose";
 import User from "./database/userModel.js";
 import { KINGDOMS, getKingdomFromGroupJid } from "./config.js";
@@ -21,6 +20,7 @@ import { migrateForeignExpenses } from "./utils/expenses.js";
 import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import { startDashboardServer } from "./services/dashboardServer.js";
+import { setPairingQr, invalidatePairingQr } from "./services/whatsappPairing.js";
 import { startShatreenComments } from "./services/shatreenComments.js";
 import { scheduleBusinessSummary } from "./services/businessSummary.js";
 import { getBotMode, funEnabled, personalEnabled } from "./services/botMode.js";
@@ -273,7 +273,6 @@ async function startBot() {
   const sock = makeWASocket({
     version,
     auth: state,
-    printQRInTerminal: true,
     generateHighQualityLinkPreview: false
   });
 
@@ -298,12 +297,14 @@ async function startBot() {
 
     if (connection) whatsappConnectionState = connection;
 
+    // الرمز يروح للوحة فقط (/dashboard) ولا يُطبع بالـ logs لأنه بيعطي وصول للحساب
     if (qr) {
-      console.log("\n📱 امسح QR من واتساب:\n");
-      qrcode.generate(qr, {
-        small: true
-      });
+      setPairingQr(qr)
+        .then(() => console.log("📱 رمز ربط واتساب جديد جاهز في لوحة التحكم"))
+        .catch(error => console.warn("⚠️ تعذر تجهيز رمز الربط للوحة:", error.name));
     }
+
+    if (connection === "open" || connection === "close") invalidatePairingQr();
 
     if (connection === "open") {
       if (reconnectTimer) {

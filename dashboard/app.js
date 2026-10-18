@@ -30,8 +30,37 @@ function showError(error) { toast(error.message||'تعذر إكمال الطلب
 async function request(path,method='GET',body) {
   const response=await fetch('/dashboard/api/'+path,{method,credentials:'same-origin',headers:{'Content-Type':'application/json','X-Dashboard-CSRF':csrf},...(body!==undefined?{body:JSON.stringify(body)}:{})});
   const data=await response.json().catch(()=>({}));
-  if(response.status===401&&path!=='login') { $('app').hidden=true;$('login').hidden=false;csrf=''; }
-  if(!response.ok)throw Error(data.error||'تعذر الاتصال بالخادم');return data;
+  if(response.status===401&&path!=='login') { stopPairing();$('pairing').hidden=true;$('app').hidden=true;$('login').hidden=false;csrf=''; }
+  if(response.status===503&&data.code==='not_connected') showPairing();
+  if(!response.ok){const error=Error(data.error||'تعذر الاتصال بالخادم');error.code=data.code;throw error;}return data;
+}
+// شاشة ربط واتساب: تظهر لما البوت مش متصل، وتعرض أحدث رمز QR من السيرفر فقط
+let pairingTimer=null, pairingExpiry=null, pairingCountdown=null, pairingShownId=0;
+function clearPairingImage(){const img=$('pairingQr');img.hidden=true;img.removeAttribute('src');pairingShownId=0;clearTimeout(pairingExpiry);clearInterval(pairingCountdown);$('pairingTimer').textContent='';$('pairingWait').hidden=false;$('pairingFrame').classList.add('idle');}
+function stopPairing(){clearTimeout(pairingTimer);pairingTimer=null;clearPairingImage();}
+function showPairing(){if(!$('pairing').hidden)return;$('login').hidden=true;$('app').hidden=true;$('pairing').hidden=false;$('pairingTitle').textContent='بنجهّز رمز الربط…';clearPairingImage();paintIcons();pollPairing();}
+function renderPairing(data){
+  if(data.status==='qr'){
+    $('pairingTitle').textContent='امسح الرمز من واتساب';
+    if(data.id!==pairingShownId){
+      clearPairingImage();pairingShownId=data.id;const img=$('pairingQr');img.src=data.image;img.hidden=false;$('pairingWait').hidden=true;$('pairingFrame').classList.remove('idle');
+      const ends=Date.now()+Math.max(0,data.expiresIn||0);
+      const tick=()=>{const left=Math.ceil((ends-Date.now())/1000);$('pairingTimer').textContent=left>0?`الرمز صالح لـ ${number(left)} ثانية، وبيتحدّث تلقائيًا`:'';};
+      tick();pairingCountdown=setInterval(tick,1000);
+      pairingExpiry=setTimeout(()=>{clearPairingImage();$('pairingTitle').textContent='انتهى الرمز، بستنى رمز جديد…';},Math.max(0,data.expiresIn||0));
+    }
+  } else if(data.status==='connected'){
+    stopPairing();$('pairingTitle').textContent='تم الاتصال بواتساب ✓';$('pairingWait').textContent='جاري فتح اللوحة…';
+  } else {clearPairingImage();$('pairingTitle').textContent='بستنى رمز جديد من واتساب…';}
+}
+async function pollPairing(){
+  clearTimeout(pairingTimer);pairingTimer=null;
+  if($('pairing').hidden)return;
+  try{
+    const data=await request('pairing');if($('pairing').hidden)return;renderPairing(data);
+    if(data.status==='connected'){$('pairing').hidden=true;$('pairingWait').textContent='بستنى رمز جديد من واتساب…';await bootstrap().catch(showError);return;}
+  }catch(error){if($('pairing').hidden)return;$('pairingTitle').textContent=error.message;}
+  pairingTimer=setTimeout(pollPairing,3000);
 }
 function scoped(route) { return route+'?'+new URLSearchParams({kingdom:$('scope').value,page:String(page),q:query}); }
 async function bootstrap() {
@@ -649,7 +678,7 @@ $('paletteInput').addEventListener('keydown',event=>{
 $('palette').addEventListener('click',event=>{if(event.target===$('palette'))$('palette').close()});
 $('openPalette').addEventListener('click',openPalette);$('openPaletteSide').addEventListener('click',openPalette);
 document.addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();openPalette();}});
-$('loginForm').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;$('loginNotice').textContent='';try{csrf=(await request('login','POST',{password:$('password').value})).csrf;await bootstrap();}catch(error){$('loginNotice').textContent=error.message;}finally{submit.disabled=false;}});
+$('loginForm').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;$('loginNotice').textContent='';try{csrf=(await request('login','POST',{password:$('password').value})).csrf;$('password').value='';await bootstrap();}catch(error){if(error.code!=='not_connected')$('loginNotice').textContent=error.message;}finally{submit.disabled=false;}});
 $('logout').addEventListener('click',()=>request('logout','POST').finally(()=>location.reload()));
 $('restart').addEventListener('click',async()=>{if(!confirm('سيتم قطع اتصال واتساب لحظيًا وإعادة تشغيل البوت. هل تريد المتابعة؟'))return;try{await request('restart','POST');toast('بدأت إعادة التشغيل؛ انتظر عودة البوت.');}catch(error){showError(error);}});
 $('refresh').addEventListener('click',()=>{templates=[];bootstrap().catch(showError)});
@@ -657,4 +686,5 @@ $('scope').addEventListener('change',()=>{page=1;load().catch(showError)});
 $('closeEditor').addEventListener('click',()=>$('editor').close());$('cancelEditor').addEventListener('click',()=>$('editor').close());
 $('editorForm').addEventListener('submit',async event=>{event.preventDefault();$('saveEditor').disabled=true;$('editorError').textContent='';try{await saveAction();}catch(error){$('editorError').textContent=error.message;}finally{$('saveEditor').disabled=false;}});
 section=Object.hasOwn(labels,location.hash.slice(1))?location.hash.slice(1):'overview';paintIcons();
-bootstrap().catch(error=>{if(error.message!=='يلزم تسجيل الدخول')$('loginNotice').textContent=error.message;});
+$('pairingLogout').addEventListener('click',()=>request('logout','POST').finally(()=>location.reload()));
+bootstrap().catch(error=>{if(error.message!=='يلزم تسجيل الدخول'&&error.code!=='not_connected')$('loginNotice').textContent=error.message;});

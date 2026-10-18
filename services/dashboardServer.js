@@ -16,6 +16,7 @@ import { TEMPLATE_DEFINITIONS, validateTemplate, refreshDashboardTemplates } fro
 import { validateEndpoint } from './dashboardApiSafety.js';
 import { runConfiguredApi, runSeriesService, readDashboardPath } from './dashboardRuntime.js';
 import { handleBusinessRoute } from './businessDashboard.js';
+import { pairingSnapshot } from './whatsappPairing.js';
 
 const assets = new Map([
   ['/dashboard', ['../dashboard/index.html', 'text/html']],
@@ -204,7 +205,8 @@ export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKin
       const url = new URL(req.url, 'http://localhost');
       if (req.method === 'GET' && serveSitePage(url.pathname, res, getSock)) return;
       if (!url.pathname.startsWith('/dashboard')) return json(res,404,{error:'غير موجود'});
-      if (!getBotStatus().connected) return json(res,503,{error:'البوت غير متصل بواتساب؛ اللوحة غير متاحة حاليًا'});
+      // اللوحة متاحة وهو غير متصل لتسجيل الدخول وعرض رمز الربط فقط؛ باقي الأقسام تنتظر الاتصال
+      const botStatus = getBotStatus();
       if (!password) return json(res,503,{error:'كلمة مرور اللوحة غير مضبوطة'});
       const now = Date.now();
       for (const [id,s] of sessions) if (s.expires < now) sessions.delete(id);
@@ -231,6 +233,8 @@ export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKin
       if (!session) return json(res,401,{error:'يلزم تسجيل الدخول'});
       if (req.method !== 'GET' && req.headers['x-dashboard-csrf'] !== session.csrf) return json(res,403,{error:'انتهت صلاحية الطلب؛ حدّث الصفحة'});
       if (route === 'logout' && req.method === 'POST') { sessions.delete(id); res.setHeader('Set-Cookie','sam_dashboard_session=; Path=/dashboard; HttpOnly; Secure; SameSite=Strict; Max-Age=0'); return json(res,200,{ok:true}); }
+      if (route === 'pairing' && req.method === 'GET') return json(res,200,pairingSnapshot(botStatus));
+      if (!botStatus.connected && route !== 'restart') return json(res,503,{error:'البوت غير متصل بواتساب؛ امسح رمز الربط من اللوحة',code:'not_connected'});
       if (route === 'controls' && req.method === 'GET') return json(res,200,{ labels: CONTROL_LABELS, controls: controlSnapshot() });
       if (route === 'controls' && req.method === 'PUT') {
         const body = await readJson(req);

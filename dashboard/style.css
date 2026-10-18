@@ -340,3 +340,9 @@ input.switch:disabled{opacity:.4;cursor:not-allowed}
   #toast{left:12px;right:12px;bottom:12px;max-width:none}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.pairing-card{text-align:center}
+.pairing-frame{display:grid;place-items:center;width:min(300px,100%);aspect-ratio:1;margin:18px auto 4px;border-radius:18px;background:#fff;padding:10px}
+.pairing-frame img{width:100%;height:auto;image-rendering:pixelated}
+.pairing-frame.idle{background:#ffffff0d;border:1px dashed var(--line-strong)}
+.pairing-wait{color:var(--muted);font-size:13.5px;padding:12px}
+.pairing-card .secondary{margin-top:14px;min-height:42px}
