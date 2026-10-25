@@ -3,6 +3,7 @@ import PersonalItem from "../database/personalItemModel.js";
 import { featureEnabled, withBotContext } from "../services/botControls.js";
 import { DEFAULT_TIME_ZONE, getTimeZoneParts, zonedTimeToUtc } from "./quran.js";
 import { runDailyPlanTick } from "./dailyPlan.js";
+import { forgetUserMemory, formatUserMemory, getUserMemory, rememberUserFacts, wipeUserMemory } from "./userMemory.js";
 
 const TIME_ZONE = process.env.PERSONAL_REMINDER_TIMEZONE || DEFAULT_TIME_ZONE;
 const CHECK_INTERVAL_MS = 30 * 1000;
@@ -274,6 +275,10 @@ const COMMANDS = [
   { names: ["حذف ملاحظه"], action: "deleteNote" },
   { names: ["ملاحظاتي"], action: "listNotes" },
   { names: ["ملاحظه"], action: "addNote" },
+  { names: ["ذاكرتي", "شو بتعرف عني"], action: "showMemory" },
+  { names: ["تذكر", "احفظ عني"], action: "addMemory" },
+  { names: ["انسي"], action: "forgetMemory" },
+  { names: ["امسح ذاكرتي"], action: "wipeMemory" },
   { names: ["مساعدي", "المساعد"], action: "help" }
 ];
 
@@ -338,7 +343,12 @@ export function buildPersonalHelp() {
     "*📝 الملاحظات*",
     "▪️ /ملاحظة <النص> — حفظ ملاحظة",
     "▪️ /ملاحظاتي — عرض الملاحظات",
-    "▪️ /حذف_ملاحظة <رقم>"
+    "▪️ /حذف_ملاحظة <رقم>",
+    "",
+    "*🧠 الذاكرة* (سام بيتذكر المهم عنك وآخر أحاديثكم)",
+    "▪️ /ذاكرتي — شو بتذكر عنك",
+    "▪️ /تذكر <معلومة> — احفظ معلومة",
+    "▪️ /انسى <رقم> · /انسى الكل"
   ].join("\n");
 }
 
@@ -459,6 +469,30 @@ async function runAction(sock, jid, sender, action, args, now) {
       if (!item) return reply("❌ رقم غير صحيح. اعرض ملاحظاتك أولًا: /ملاحظاتي");
       await PersonalItem.deleteOne({ _id: item._id, userJid: sender });
       return reply(`🗑️ حذفت الملاحظة: ${item.text}`);
+    }
+
+    case "showMemory":
+      return replyPrivately(formatUserMemory(await getUserMemory(sender)));
+
+    case "addMemory": {
+      const text = cleanInput(args);
+      if (!text) return reply("✍️ اكتب المعلومة بعد الأمر.\nمثال: /تذكر بشتغل محاسب وبحب القهوة سادة");
+      await rememberUserFacts(sender, [text], now);
+      return reply("🧠 حفظتها، رح أتذكرها.\nشو بتذكر عنك: /ذاكرتي");
+    }
+
+    case "wipeMemory":
+      await wipeUserMemory(sender);
+      return reply("🧹 مسحت كل اشي بتذكره عنك.");
+
+    case "forgetMemory": {
+      if (/^(الكل|كل|كلشي|كل اشي|all)$/i.test(cleanInput(args))) {
+        await wipeUserMemory(sender);
+        return reply("🧹 مسحت كل اشي بتذكره عنك.");
+      }
+      const fact = await forgetUserMemory(sender, parseIndex(args));
+      if (!fact) return reply("❌ رقم غير صحيح. شوف القائمة أولًا: /ذاكرتي");
+      return reply(`🗑️ نسيت: ${fact.text}`);
     }
 
     default:

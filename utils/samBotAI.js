@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { recordSamBotAIUsage } from "./samBotUsage.js";
-import { SAM_CAPABILITIES, assistantActionInstruction, currentTimeContext } from "./samCapabilities.js";
+import { SAM_CAPABILITIES, USER_MEMORY_INSTRUCTION, assistantActionInstruction, currentTimeContext } from "./samCapabilities.js";
 import { personalEnabled } from "../services/botMode.js";
 
 const DEFAULT_MODEL = "gemini-3.1-flash-lite";
@@ -189,7 +189,8 @@ function buildPrivateAssistantInstruction() {
       SAM_CAPABILITIES,
       "إذا سألك المستخدم شو بتقدر تعمل أو كيف تساعده، اشرح هاي الخدمات بشكل مرتب مع مثال لكل وحدة واذكر الأوامر.",
       assistantActionInstruction(),
-      "لتنفيذ أمر: اكتب بآخر ردك سطر لحاله بالشكل [[CMD: /الأمر]] وهو بينفذ تلقائيًا. بدون هذا السطر لا تقل إنك نفذت أي إجراء."
+      "لتنفيذ أمر: اكتب بآخر ردك سطر لحاله بالشكل [[CMD: /الأمر]] وهو بينفذ تلقائيًا. بدون هذا السطر لا تقل إنك نفذت أي إجراء.",
+      USER_MEMORY_INSTRUCTION
     ] : ["إذا سألك عن الأوامر، قله يكتب /أوامر."]),
     "لا تكشف أرقام الهواتف أو المعرفات أو كلمات المرور أو أي بيانات حساسة.",
     "المطور: سام آل جابر."

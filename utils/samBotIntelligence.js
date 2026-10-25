@@ -14,6 +14,13 @@ import {
   rememberSamBotTurn
 } from "./samBotMemory.js";
 import {
+  buildUserMemoryContext,
+  extractMemoryNotes,
+  getUserMemory,
+  queueTurnsForSummary,
+  rememberUserFacts
+} from "./userMemory.js";
+import {
   buildSamBotKingdomContext,
   resolveSamBotDirectoryQuestion
 } from "./samBotKingdomContext.js";
@@ -436,7 +443,13 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     return true;
   }
 
-  const memoryContext = buildSamBotMemoryContext(memory, nickname);
+  // الذاكرة الطويلة بالخاص بس، حتى ما تطلع معلومات شخصية بالقروبات
+  const longTermMemory = isPrivateChat(jid) && personalEnabled();
+  const userMemory = longTermMemory ? await getUserMemory(sender).catch(() => null) : null;
+  const memoryContext = [
+    buildUserMemoryContext(userMemory),
+    buildSamBotMemoryContext(memory, nickname)
+  ].filter(Boolean).join("\n");
   const kingdomContext = !ambientSocial
     ? await buildSamBotKingdomContext(jid, text)
     : "";
@@ -460,10 +473,15 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
         kingdomContext
       })
     : "";
+  // سطر [[MEM: ...]] معلومة مهمة عن الشخص، بتنحفظ وما بتوصله
+  const { reply: replyWithoutNotes, notes } = extractMemoryNotes(rawAIReply);
+  if (longTermMemory && notes.length) {
+    rememberUserFacts(sender, notes).catch((error) => console.error("❌ Sam memory save failed:", error.message));
+  }
   // بالخاص الذكاء الاصطناعي ممكن يطلب تنفيذ أمر (تذكير، مهمة...) بسطر [[CMD: ...]]
   const { reply: aiReply, command } = isPrivateChat(jid)
-    ? extractAssistantCommand(rawAIReply)
-    : { reply: rawAIReply, command: null };
+    ? extractAssistantCommand(replyWithoutNotes)
+    : { reply: replyWithoutNotes, command: null };
   const allowCommand = command && personalEnabled();
   const reply = repeatedReply || aiReply || buildReply(intent, nickname, text);
   if (aiReply && isPrivateChat(jid) && personalEnabled() && await isVoiceReplyEnabled(sender)) {
@@ -485,7 +503,8 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     nickname,
     intent,
     userMessage: text,
-    botReply: reply
+    botReply: reply,
+    onEvicted: longTermMemory ? (turns) => queueTurnsForSummary(sender, turns) : null
   });
 
   return true;

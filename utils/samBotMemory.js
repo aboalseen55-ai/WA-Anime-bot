@@ -94,7 +94,7 @@ export function getRepeatedSocialReply(memory, intent, nickname) {
   return "";
 }
 
-export async function rememberSamBotTurn({ memory, groupJid, userJid, kingdomId, nickname, intent, userMessage, botReply, mentionTargetJid = null }) {
+export async function rememberSamBotTurn({ memory, groupJid, userJid, kingdomId, nickname, intent, userMessage, botReply, mentionTargetJid = null, onEvicted = null }) {
   if (!groupJid || !userJid) return null;
 
   const target = memory || await getSamBotMemory({ groupJid, userJid, kingdomId, nickname });
@@ -110,12 +110,19 @@ export async function rememberSamBotTurn({ memory, groupJid, userJid, kingdomId,
   target.lastInteractionAt = new Date();
   target.summary = summarizeMemory(target, nickname || target.nickname);
 
-  target.recentTurns = [
+  const turns = [
     ...(target.recentTurns || []),
     { role: "user", text: trimText(userMessage), intent },
     { role: "bot", text: trimText(botReply), intent }
-  ].slice(-MAX_RECENT_TURNS);
+  ];
+  const evicted = turns.slice(0, -MAX_RECENT_TURNS);
+  target.recentTurns = turns.slice(-MAX_RECENT_TURNS);
 
   await target.save();
+  // الرسائل اللي طلعت من النافذة بتنضغط بالذاكرة الطويلة بدل ما تضيع
+  if (evicted.length && onEvicted) {
+    const plain = evicted.map((turn) => ({ role: turn.role, text: turn.text, intent: turn.intent, at: turn.at }));
+    Promise.resolve(onEvicted(plain)).catch((error) => console.error("❌ Sam memory compaction failed:", error.message));
+  }
   return target;
 }
