@@ -12,6 +12,7 @@ import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleSta
 import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js';
 import { handleBusinessMessage } from '../services/businessMode.js';
 import { handleAssistantText } from "../utils/assistantText.js";
+import { handleVoicePickReply } from "../utils/voiceReplies.js";
 import { funEnabled, personalEnabled } from '../services/botMode.js';
 import { handleFirstContact } from "../utils/assistantHome.js";
 import { handleMediaAssistant } from "../utils/mediaAssistant.js";
@@ -136,8 +137,9 @@ export async function messageHandler(sock, msg) {
 
   // الأوامر
   // اختيار رقم من نتائج أمر داشبورد (بكل الأوضاع، لأنه أوامر الداشبورد شغالة بكل الأوضاع)
-  // رقم من قائمة /أوامر المفتوحة
+  // رقم من قائمة /أوامر المفتوحة أو من اختيار الصوت
   if (await handleCommandsMenuChoice(sock, jid, sender, trimmedText)) return;
+  if (personal && await handleVoicePickReply(sock, jid, sender, trimmedText)) return;
   if (await handleSeriesSelection(sock, jid, sender, trimmedText, msg)) return;
   if (await handleSlashCommand(sock, jid, sender, trimmedText, msg)) return;
   if (await handleQuranText(sock, jid, trimmedText)) return;

@@ -45,15 +45,15 @@ function describeError(error) {
   }
 }
 
-/** يعيد { audio: Buffer, mimetype } أو null عند الفشل. */
-export async function createVoiceNote(text, { http = axios, styleTags = "" } = {}) {
+/** يعيد { audio: Buffer, mimetype } أو null عند الفشل. voiceId = الصوت اللي اختاره المستخدم، وإلا الافتراضي. */
+export async function createVoiceNote(text, { http = axios, styleTags = "", voiceId = "" } = {}) {
   const spoken = String(text || "").trim().slice(0, getVoiceMaxChars());
   if (!spoken || !isElevenLabsConfigured()) return null;
   const content = applyStyleTags(spoken, styleTags);
 
   try {
     const response = await http.post(
-      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(env("ELEVENLABS_VOICE_ID"))}`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId || env("ELEVENLABS_VOICE_ID"))}`,
       {
         text: content,
         model_id: getModelId(),
@@ -96,4 +96,117 @@ export async function getElevenLabsUsage({ http = axios } = {}) {
     console.warn(`ElevenLabs usage failed${status ? ` (${status})` : ""}:`, describeError(error));
     return { error: status === 401 || status === 403 ? "permission" : "failed" };
   }
+}
+
+// ============================================
+// أصوات يختار منها المستخدم: صوتين بنات وصوتين شباب بالعربي
+// ============================================
+
+const VOICES_PER_GENDER = 2;
+const CATALOG_TTL_MS = 24 * 60 * 60 * 1000;
+let catalogCache = null;
+
+function apiHeaders() {
+  return { "xi-api-key": env("ELEVENLABS_API_KEY") };
+}
+
+/** ELEVENLABS_VOICE_CHOICES="ليلى|female|voiceId;سامي|male|voiceId" بتثبت الأصوات بدون ما نسأل ElevenLabs. */
+export function parseVoiceChoices(value = env("ELEVENLABS_VOICE_CHOICES")) {
+  return String(value || "")
+    .split(/[;\n]+/)
+    .map((row) => row.split("|").map((part) => part.trim()))
+    .filter(([name, gender, id]) => name && id && /^(female|male)$/i.test(gender))
+    .map(([name, gender, id]) => ({ id, name, gender: gender.toLowerCase(), source: "env" }));
+}
+
+function isArabic(voice) {
+  const labels = voice?.labels || {};
+  const languages = [labels.language, voice?.language, ...(voice?.verified_languages || []).map((l) => l?.language)];
+  return languages.some((language) => /^(ar|arabic)$/i.test(String(language || "").trim()));
+}
+
+function genderOf(voice) {
+  const gender = String(voice?.labels?.gender || voice?.gender || "").toLowerCase();
+  return gender === "female" || gender === "male" ? gender : null;
+}
+
+function cleanName(name) {
+  return String(name || "").split(/\s*[-–|(]/)[0].trim().slice(0, 30) || "صوت";
+}
+
+/**
+ * 4 أصوات عربية: أول اشي من ELEVENLABS_VOICE_CHOICES، بعدين الأصوات العربية بحساب ElevenLabs،
+ * وبعدين الأكثر استخدامًا من مكتبة الأصوات المشتركة (محادثة أو سرد، مناسبة لمساعد شخصي).
+ */
+export async function getVoiceCatalog({ http = axios, refresh = false, now = Date.now() } = {}) {
+  const pinned = parseVoiceChoices();
+  if (pinned.length) return pinned;
+  if (!isElevenLabsConfigured()) return [];
+  if (!refresh && catalogCache && now - catalogCache.at < CATALOG_TTL_MS) return catalogCache.voices;
+
+  const picked = { female: [], male: [] };
+  const add = (voice) => {
+    const gender = genderOf(voice);
+    if (!gender || picked[gender].length >= VOICES_PER_GENDER) return;
+    if (picked[gender].some((v) => v.id === voice.voice_id)) return;
+    picked[gender].push({
+      id: voice.voice_id,
+      name: cleanName(voice.name),
+      gender,
+      previewUrl: voice.preview_url || "",
+      ownerId: voice.public_owner_id || "",
+      source: voice.public_owner_id ? "library" : "account"
+    });
+  };
+
+  try {
+    const { data } = await http.get("https://api.elevenlabs.io/v1/voices", { timeout: 15000, headers: apiHeaders() });
+    (data?.voices || []).filter(isArabic).forEach(add);
+  } catch (error) {
+    console.warn("ElevenLabs voices list failed:", describeError(error));
+  }
+
+  for (const gender of ["female", "male"]) {
+    if (picked[gender].length >= VOICES_PER_GENDER) continue;
+    try {
+      const { data } = await http.get("https://api.elevenlabs.io/v1/shared-voices", {
+        timeout: 15000,
+        headers: apiHeaders(),
+        params: { language: "ar", gender, page_size: 30, sort: "usage_character_count_1y" }
+      });
+      const voices = (data?.voices || []).filter((voice) => genderOf(voice) === gender);
+      // للمساعد: أصوات محادثة أو سرد أول اشي، مش أصوات شخصيات أو إعلانات
+      const fits = (voice) => /conversational|narrat|informative|social/i.test(String(voice.use_case || voice.category || ""));
+      [...voices.filter(fits), ...voices.filter((voice) => !fits(voice))].forEach(add);
+    } catch (error) {
+      console.warn(`ElevenLabs shared voices (${gender}) failed:`, describeError(error));
+    }
+  }
+
+  const voices = [...picked.female, ...picked.male];
+  if (voices.length) catalogCache = { at: now, voices };
+  return voices;
+}
+
+/** صوت من المكتبة المشتركة لازم ينضاف للحساب قبل ما نستعمله. يعيد true إذا صار جاهز. */
+export async function ensureVoiceInAccount(voice, { http = axios } = {}) {
+  if (!voice?.ownerId || voice.source !== "library") return true;
+  try {
+    await http.post(
+      `https://api.elevenlabs.io/v1/voices/add/${encodeURIComponent(voice.ownerId)}/${encodeURIComponent(voice.id)}`,
+      { new_name: `سام ${voice.name}` },
+      { timeout: 15000, headers: { ...apiHeaders(), "Content-Type": "application/json" } }
+    );
+    return true;
+  } catch (error) {
+    const message = describeError(error);
+    // موجود من قبل = تمام
+    if (/already|exists/i.test(message)) return true;
+    console.warn("ElevenLabs add voice failed:", message);
+    return false;
+  }
+}
+
+export function resetVoiceCatalogCache() {
+  catalogCache = null;
 }

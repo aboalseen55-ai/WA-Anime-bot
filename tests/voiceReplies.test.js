@@ -129,3 +129,83 @@ test('/فويس رصيد reports remaining ElevenLabs characters', async (t) => 
   assert.equal(denied.error, 'permission');
   assert.match(formatUsage(denied), /User = Read/);
 });
+
+test('voice catalog: pinned env choices, else 2 Arabic female + 2 male voices', async (t) => {
+  const { getVoiceCatalog, parseVoiceChoices, resetVoiceCatalogCache } = await import('../services/elevenLabsService.js');
+  withEnv(t, { ELEVENLABS_API_KEY: 'k', ELEVENLABS_VOICE_ID: 'v', ELEVENLABS_VOICE_CHOICES: 'ليلى|female|f1; سامي|male|m1;غلط|x|z' });
+  assert.deepEqual(parseVoiceChoices().map(v => [v.name, v.gender, v.id]), [['ليلى', 'female', 'f1'], ['سامي', 'male', 'm1']]);
+
+  delete process.env.ELEVENLABS_VOICE_CHOICES;
+  resetVoiceCatalogCache();
+  const calls = [];
+  const http = {
+    get: async (url, opts) => {
+      calls.push({ url, params: opts.params });
+      if (url.endsWith('/v1/voices')) {
+        return { data: { voices: [
+          { voice_id: 'acc-f', name: 'Rana - warm', labels: { gender: 'female', language: 'ar' } },
+          { voice_id: 'en-m', name: 'Adam', labels: { gender: 'male', language: 'en' } }
+        ] } };
+      }
+      const g = opts.params.gender;
+      return { data: { voices: [
+        { voice_id: `${g}-ad`, name: `${g} ad`, gender: g, use_case: 'advertisement', public_owner_id: 'o' },
+        { voice_id: `${g}-chat`, name: `${g} chat`, gender: g, use_case: 'conversational', public_owner_id: 'o', preview_url: 'https://p/1.mp3' },
+        { voice_id: `${g}-story`, name: `${g} story`, gender: g, use_case: 'narrative_story', public_owner_id: 'o' }
+      ] } };
+    }
+  };
+  const voices = await getVoiceCatalog({ http });
+  assert.deepEqual(voices.map(v => v.id), ['acc-f', 'female-chat', 'male-chat', 'male-story']);
+  assert.equal(voices[0].name, 'Rana');
+  assert.equal(voices[0].source, 'account');
+  assert.equal(voices[1].source, 'library');
+  assert.ok(calls.some(c => c.params?.language === 'ar' && c.params?.gender === 'male'));
+  // من الكاش بدون طلبات جديدة
+  const before = calls.length;
+  await getVoiceCatalog({ http });
+  assert.equal(calls.length, before);
+});
+
+test('/فويس صوت lists numbered voices and a number reply picks and saves one', async (t) => {
+  const axios = (await import('axios')).default;
+  const { handleVoicePickReply } = await import('../utils/voiceReplies.js');
+  withEnv(t, { ELEVENLABS_API_KEY: 'k', ELEVENLABS_VOICE_ID: 'v', ELEVENLABS_VOICE_PUBLIC: 'true', ELEVENLABS_VOICE_CHOICES: 'ليلى|female|f1;نور|female|f2;سامي|male|m1;كريم|male|m2' });
+  t.mock.method(AssistantProfile, 'findOne', () => ({ lean: async () => null }));
+  const updates = [];
+  t.mock.method(AssistantProfile, 'updateOne', async (q, u) => { updates.push(u.$set); return { modifiedCount: 1 }; });
+  const ttsCalls = [];
+  t.mock.method(axios, 'post', async (url) => { ttsCalls.push(url); return { data: new Uint8Array([1, 2]) }; });
+  const sock = fakeSock();
+
+  await handleVoiceCommand(sock, USER, USER, '/فويس صوت');
+  const list = sock.sent.at(-1).content.text;
+  assert.match(list, /1\. 👩 بنت: ليلى/);
+  assert.match(list, /4\. 👨 شب: كريم/);
+  assert.match(list, /5\. 🔁 الصوت الافتراضي/);
+
+  assert.equal(await handleVoicePickReply(sock, USER, USER, '٣'), true);
+  assert.match(ttsCalls[0], /text-to-speech\/m1$/);
+  assert.deepEqual(updates.at(-1), { voiceId: 'm1', voiceName: 'سامي' });
+  assert.ok(sock.sent.some(m => m.content.ptt));
+  // الاختيار تسكر بعد النجاح
+  assert.equal(await handleVoicePickReply(sock, USER, USER, '1'), false);
+
+  // رقم مباشر مع الأمر، و5 = الافتراضي
+  await handleVoiceCommand(sock, USER, USER, '/فويس صوت 5');
+  assert.deepEqual(updates.at(-1), { voiceId: null, voiceName: null });
+});
+
+test('a voice that fails the TTS check is not saved', async (t) => {
+  const axios = (await import('axios')).default;
+  withEnv(t, { ELEVENLABS_API_KEY: 'k', ELEVENLABS_VOICE_ID: 'v', ELEVENLABS_VOICE_PUBLIC: 'true', ELEVENLABS_VOICE_CHOICES: 'ليلى|female|f1' });
+  t.mock.method(AssistantProfile, 'findOne', () => ({ lean: async () => null }));
+  const updates = [];
+  t.mock.method(AssistantProfile, 'updateOne', async (q, u) => { updates.push(u.$set); return {}; });
+  t.mock.method(axios, 'post', async () => { const e = new Error('402'); e.response = { status: 402 }; throw e; });
+  t.mock.method(console, 'warn', () => {});
+  const sock = fakeSock();
+  await handleVoiceCommand(sock, USER, USER, '/فويس صوت 1');
+  assert.equal(updates.length, 0);
+  assert.match(sock.sent.at(-1).content.text, /ما اشتغل/);
+});

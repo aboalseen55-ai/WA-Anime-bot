@@ -1,6 +1,6 @@
 // وضع المحادثة الصوتية: سام يرد بفويس (ElevenLabs) بدل النص في الخاص
 import AssistantProfile from "../database/assistantProfileModel.js";
-import { createVoiceNote, getElevenLabsUsage, getVoiceMaxChars, isElevenLabsConfigured, modelSupportsAudioTags } from "../services/elevenLabsService.js";
+import { createVoiceNote, ensureVoiceInAccount, getElevenLabsUsage, getVoiceCatalog, getVoiceMaxChars, isElevenLabsConfigured, modelSupportsAudioTags } from "../services/elevenLabsService.js";
 import { isUnlimitedUser } from "./assistantQuota.js";
 import { SAM_CAPABILITIES, assistantActionInstruction, currentTimeContext } from "./samCapabilities.js";
 
@@ -41,10 +41,14 @@ function defaultStyle() {
   return String(process.env.ELEVENLABS_STYLE_TAGS || "").trim();
 }
 
+async function getVoicePrefs(jid) {
+  if (!jid) return { style: defaultStyle(), voiceId: "", voiceName: "" };
+  const profile = await AssistantProfile.findOne({ jid }, { voiceStyle: 1, voiceId: 1, voiceName: 1 }).lean().catch(() => null);
+  return { style: profile?.voiceStyle ?? defaultStyle(), voiceId: profile?.voiceId || "", voiceName: profile?.voiceName || "" };
+}
+
 async function getVoiceStyle(jid) {
-  if (!jid) return defaultStyle();
-  const profile = await AssistantProfile.findOne({ jid }, { voiceStyle: 1 }).lean().catch(() => null);
-  return profile?.voiceStyle ?? defaultStyle();
+  return (await getVoicePrefs(jid)).style;
 }
 
 /** الصوت يكلف رصيد ElevenLabs، فافتراضيًا للمطور والأدمنز فقط. */
@@ -84,7 +88,8 @@ export async function sendVoiceOrText(sock, jid, text, { quoted, mentions, userJ
     } catch {
       // اختياري
     }
-    const voice = await createVoiceNote(speakable, { styleTags: await getVoiceStyle(userJid || jid) });
+    const prefs = await getVoicePrefs(userJid || jid);
+    const voice = await createVoiceNote(speakable, { styleTags: prefs.style, voiceId: prefs.voiceId });
     if (voice) {
       await sock.sendMessage(jid, { audio: voice.audio, mimetype: voice.mimetype, ptt: true }, quoted ? { quoted } : undefined);
       return "voice";
@@ -116,7 +121,96 @@ function normalize(text) {
   return String(text || "").trim().replace(/_/g, " ").replace(/[أإآ]/g, "ا").replace(/\s+/g, " ").toLowerCase();
 }
 
-/** /فويس تشغيل | /فويس ايقاف | /فويس */
+// ============================================
+// اختيار الصوت: /فويس صوت بيعرض 4 أصوات مرقمة، والرد برقم بيختار
+// ============================================
+
+const PICK_TTL_MS = 10 * 60 * 1000;
+const voicePicks = new Map();
+const GENDER_LABEL = { female: "👩 بنت", male: "👨 شب" };
+
+function formatVoiceList(voices, currentId) {
+  return [
+    "🎙️ *اختار صوت سام*",
+    "",
+    ...voices.map((voice, i) => `${i + 1}. ${GENDER_LABEL[voice.gender]}: ${voice.name}${voice.id === currentId ? " ✅" : ""}`),
+    `${voices.length + 1}. 🔁 الصوت الافتراضي`,
+    "",
+    "ارسل رقم الصوت."
+  ].join("\n");
+}
+
+async function sendVoicePreviews(sock, jid, voices) {
+  for (const [i, voice] of voices.entries()) {
+    if (!voice.previewUrl) continue;
+    try {
+      await sock.sendMessage(jid, { audio: { url: voice.previewUrl }, mimetype: "audio/mpeg" });
+    } catch (error) {
+      console.warn(`Voice preview ${i + 1} failed:`, error.message);
+    }
+  }
+}
+
+async function chooseVoice(sock, jid, sender, voices, number) {
+  const reply = (body) => sock.sendMessage(jid, { text: body });
+  if (number === voices.length + 1) {
+    await AssistantProfile.updateOne({ jid: sender }, { $set: { voiceId: null, voiceName: null } }, { upsert: true });
+    await reply("🔁 رجعت للصوت الافتراضي.");
+    return true;
+  }
+  const voice = voices[number - 1];
+  if (!voice) {
+    await reply(`❌ اختار رقم من 1 لـ ${voices.length + 1}.`);
+    return false;
+  }
+  if (!await ensureVoiceInAccount(voice)) {
+    await reply("❌ ما قدرت أضيف هاد الصوت لحساب ElevenLabs (ممكن الخطة المجانية ما بتسمح بأصوات المكتبة). جرب صوت ثاني.");
+    return false;
+  }
+  // نجرب الصوت بجملة قصيرة قبل ما نحفظه، حتى ما يرجع سام يرد كتابة بصمت لو الصوت ما بيشتغل
+  const sample = await createVoiceNote(`أهلين، أنا سام بصوت ${voice.name}. شو رأيك فيه؟`, { voiceId: voice.id, styleTags: (await getVoicePrefs(sender)).style });
+  if (!sample) {
+    await reply("❌ هاد الصوت ما اشتغل مع حساب ElevenLabs (ممكن الخطة الحالية ما بتسمح بأصوات المكتبة عبر الـAPI). جرب صوت ثاني.");
+    return false;
+  }
+  await AssistantProfile.updateOne({ jid: sender }, { $set: { voiceId: voice.id, voiceName: voice.name } }, { upsert: true });
+  await sock.sendMessage(jid, { audio: sample.audio, mimetype: sample.mimetype, ptt: true });
+  const enabled = await isVoiceReplyEnabled(sender);
+  await reply(`✅ صار صوت سام: ${voice.name}${enabled ? "" : "\nشغّل الردود الصوتية: /فويس تشغيل"}`);
+  return true;
+}
+
+async function showVoicePicker(sock, jid, sender, numberArg) {
+  const voices = await getVoiceCatalog();
+  if (!voices.length) {
+    await sock.sendMessage(jid, { text: "❌ ما قدرت أجيب الأصوات من ElevenLabs هسا.\nالمطور بقدر يثبتها بمتغير ELEVENLABS_VOICE_CHOICES." });
+    return;
+  }
+  if (numberArg) {
+    await chooseVoice(sock, jid, sender, voices, numberArg);
+    return;
+  }
+  const { voiceId } = await getVoicePrefs(sender);
+  voicePicks.set(`${jid}|${sender}`, { voices, at: Date.now() });
+  await sock.sendMessage(jid, { text: formatVoiceList(voices, voiceId) });
+  await sendVoicePreviews(sock, jid, voices);
+}
+
+/** رد برقم بعد /فويس صوت. أي رسالة ثانية بتسكر الاختيار. */
+export async function handleVoicePickReply(sock, jid, sender, text) {
+  const key = `${jid}|${sender}`;
+  const pick = voicePicks.get(key);
+  if (!pick) return false;
+  const choice = String(text || "").trim().replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  if (!/^\d{1,2}$/.test(choice) || Date.now() - pick.at > PICK_TTL_MS) {
+    voicePicks.delete(key);
+    return false;
+  }
+  if (await chooseVoice(sock, jid, sender, pick.voices, Number(choice))) voicePicks.delete(key);
+  return true;
+}
+
+/** /فويس تشغيل | /فويس ايقاف | /فويس صوت | /فويس */
 export async function handleVoiceCommand(sock, jid, sender, text) {
   const trimmed = String(text || "").trim();
   if (!trimmed.startsWith("/")) return false;
@@ -137,6 +231,12 @@ export async function handleVoiceCommand(sock, jid, sender, text) {
 
   if (/^(رصيد|الرصيد|حد|الحد|usage)/.test(args)) {
     await reply(formatUsage(await getElevenLabsUsage()));
+    return true;
+  }
+
+  if (/^(صوت|الصوت|اصوات|الاصوات|voice)(\s|$)/.test(args)) {
+    const number = Number(args.split(" ")[1]?.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))));
+    await showVoicePicker(sock, jid, sender, Number.isInteger(number) && number > 0 ? number : null);
     return true;
   }
 
@@ -178,7 +278,7 @@ export async function handleVoiceCommand(sock, jid, sender, text) {
 
   const enabled = await isVoiceReplyEnabled(sender);
   await reply(enabled
-    ? "🎙️ الردود الصوتية شغالة. للإيقاف: /فويس ايقاف\n🎭 لتغيير أسلوب الصوت: /فويس اسلوب ناعم هادي\n📊 الرصيد: /فويس رصيد"
+    ? "🎙️ الردود الصوتية شغالة. للإيقاف: /فويس ايقاف\n🗣️ لاختيار الصوت: /فويس صوت\n🎭 لتغيير أسلوب الصوت: /فويس اسلوب ناعم هادي\n📊 الرصيد: /فويس رصيد"
     : "🎙️ بقدر أرد عليك بفويس بالخاص بدل الكتابة.\nللتشغيل: /فويس تشغيل");
   return true;
 }

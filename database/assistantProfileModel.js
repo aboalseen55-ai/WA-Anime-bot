@@ -34,6 +34,15 @@ const assistantProfileSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  // صوت ElevenLabs اللي اختاره المستخدم (/فويس صوت). null = ELEVENLABS_VOICE_ID
+  voiceId: {
+    type: String,
+    default: null
+  },
+  voiceName: {
+    type: String,
+    default: null
+  },
   // الملخص الصباحي
   brief: {
     enabled: { type: Boolean, default: false },
