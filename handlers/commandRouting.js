@@ -13,6 +13,8 @@ import { handleBotStatusCommand } from "../utils/botStatus.js";
 import { handleAssistantHomeCommand } from "../utils/assistantHome.js";
 import { handleVoiceCommand } from "../utils/voiceReplies.js";
 import { handleExpenseCommand } from "../utils/expenses.js";
+import { handleExpenseQuestionCommand } from "../utils/expenseInsights.js";
+import { handleDailyPlanCommand } from "../utils/dailyPlan.js";
 import { handleGroupCommand } from "../utils/groupTools.js";
 import { handleDashboardCommand, getSeriesSession, selectSeriesResult } from "../services/dashboardRuntime.js";
 import { handleBotDeletion } from '../services/botMessageDeletion.js';
@@ -70,7 +72,9 @@ export async function handleSlashCommand(sock, jid, sender, trimmedText, msg) {
   }
   if (await handleGroupCommand(sock, jid, sender, trimmedText, msg)) return true;
   if (personal) {
+    if (await handleExpenseQuestionCommand(sock, jid, sender, trimmedText)) return true;
     if (await handleExpenseCommand(sock, jid, sender, trimmedText)) return true;
+    if (await handleDailyPlanCommand(sock, jid, sender, trimmedText)) return true;
     if (await handlePersonalCommand(sock, jid, sender, trimmedText)) return true;
   }
   if (await handleBotStatusCommand(sock, jid, sender, trimmedText)) return true;

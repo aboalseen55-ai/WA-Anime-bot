@@ -11,6 +11,8 @@ import { handleKingdomEditStep, handleStartKingdomEdit } from "../utils/kingdomE
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 import { handleSamBotInteraction } from "../utils/samBotIntelligence.js";
 import { handleNaturalExpense } from "../utils/expenses.js";
+import { handleNaturalExpenseQuestion } from "../utils/expenseInsights.js";
+import { handleDailyPlanReply, handleNaturalDailyPlan } from "../utils/dailyPlan.js";
 import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js';
 import { handleBusinessMessage } from '../services/businessMode.js';
 import { funEnabled, personalEnabled } from '../services/botMode.js';
@@ -153,7 +155,13 @@ export async function messageHandler(sock, msg) {
 
   // تفاعل سام بوت الذكي: يرد فقط إذا الكلام موجه له أو في الخاص أو بالرد على رسالته.
   // "صرفت 5 على قهوة" بالخاص = مصروف، مش ملاحظة
+  // "خلصت" / "لسا" رد على سؤال خطة اليوم
+  if (personal && await handleDailyPlanReply(sock, jid, sender, trimmedText)) return;
   if (personal && await handleNaturalExpense(sock, jid, sender, trimmedText)) return;
+  // "قديش صرفت على البنزين هالشهر؟" بيجاوبها الذكاء من سجل المصاريف
+  if (personal && await handleNaturalExpenseQuestion(sock, jid, sender, trimmedText)) return;
+  // "بكرة بدي أروح عالبنك الساعة 10 وأخلص التقرير" = خطة يوم
+  if (personal && await handleNaturalDailyPlan(sock, jid, sender, trimmedText)) return;
   if (featureEnabled('ai')) {
     await handleSamBotInteraction(sock, jid, sender, text, msg);
   }

@@ -2,6 +2,7 @@
 import PersonalItem from "../database/personalItemModel.js";
 import { featureEnabled, withBotContext } from "../services/botControls.js";
 import { DEFAULT_TIME_ZONE, getTimeZoneParts, zonedTimeToUtc } from "./quran.js";
+import { runDailyPlanTick } from "./dailyPlan.js";
 
 const TIME_ZONE = process.env.PERSONAL_REMINDER_TIMEZONE || DEFAULT_TIME_ZONE;
 const CHECK_INTERVAL_MS = 30 * 1000;
@@ -330,6 +331,10 @@ export function buildPersonalHelp() {
     "▪️ /تم <رقم> — إنجاز مهمة",
     "▪️ /حذف_مهمة <رقم>",
     "",
+    "*📋 خطة اليوم* (بذكرك وبتابع معك)",
+    "▪️ /خطة أروح عالبنك الساعة 10، أخلص التقرير، أتصل بأحمد العصر",
+    "▪️ /خطة_بكرة ... · /خطتي · خلصت 2 · /انقل_لبكرة",
+    "",
     "*📝 الملاحظات*",
     "▪️ /ملاحظة <النص> — حفظ ملاحظة",
     "▪️ /ملاحظاتي — عرض الملاحظات",
@@ -529,6 +534,7 @@ export function schedulePersonalReminders(sock, { intervalMs = CHECK_INTERVAL_MS
       // نفس بوابات تذكير القرآن اليومي: الرسائل التلقائية + التذكيرات المجدولة
       if (featureEnabled("automatic") && featureEnabled("reminders")) {
         await withBotContext("automatic", () => deliverDueReminders(sock));
+        await withBotContext("automatic", () => runDailyPlanTick(sock));
       }
     } catch (error) {
       console.warn("Personal reminders interrupted:", error.message);
