@@ -77,6 +77,19 @@ function sanitizeReply(reply) {
     .trim();
 }
 
+// Gemini بيكتب Markdown (**عريض**، ### عناوين، * نقاط)، وواتساب بده *عريض* و_مائل_
+export function toWhatsAppFormatting(text) {
+  return String(text || "")
+    .split("\n")
+    .map((line) => line
+      .replace(/^(\s*)#{1,6}\s+(.+?)\s*#*\s*$/, (_, indent, title) => `${indent}*${title.replace(/\*+/g, "")}*`)
+      .replace(/^(\s*)[*-]\s+/, "$1• "))
+    .join("\n")
+    .replace(/\*{2,3}([^*\n]+?)\*{2,3}/g, "*$1*")
+    .replace(/__([^_\n]+?)__/g, "_$1_")
+    .replace(/~~([^~\n]+?)~~/g, "~$1~");
+}
+
 async function safelyRecordUsage(payload) {
   try {
     await recordSamBotAIUsage(payload);
@@ -145,7 +158,8 @@ async function generateSamBotAIText({
         success: true
       });
 
-      return sanitizeReply(result.response?.text());
+      const text = sanitizeReply(result.response?.text());
+      return responseMimeType ? text : toWhatsAppFormatting(text);
     } catch (error) {
       lastError = error;
       if (isInvalidApiKeyError(error) && index < apiKeys.length - 1) {
@@ -270,5 +284,35 @@ export async function generateSamBotAIFromParts({ systemInstruction, parts, maxO
     outputTokenCap: MEDIA_MAX_OUTPUT_TOKENS,
     responseMimeType: json ? "application/json" : undefined,
     timeoutMs: envNumber("SAM_BOT_MEDIA_TIMEOUT_MS", 60000)
+  });
+}
+
+// رد طبيعي مبني على بيانات أمر (ذاكرتي، مهامي، تذكيراتي...) بدل ما نرمي القائمة زي ما هي
+export async function generateCommandAnswer({ userMessage, commandOutput, nickname, spoken = false }) {
+  const systemInstruction = [
+    "أنت سام، مساعد شخصي على واتساب.",
+    "المستخدم طلب معلومات، والنظام جاب البيانات الحقيقية تحت data.",
+    "جاوبه بلهجته وبشكل طبيعي وذكي من البيانات فقط: لخص، رتب، ونبه على المهم (مواعيد قريبة، أشياء متأخرة).",
+    "إذا طلب قائمة صراحة اعرض العناصر كلها مرتبة، وإلا جاوب سؤاله بالضبط.",
+    "لا تخترع اشي مش موجود بالبيانات، وإذا البيانات فاضية قله بلطف وكيف يضيف.",
+    "خلي أرقام العناصر زي ما هي إذا ذكرتها، لأنه بيستعملها بالأوامر.",
+    spoken
+      ? "ردك رح ينقرأ بصوت: جمل محكية قصيرة بدون إيموجي أو رموز أو نقاط."
+      : "تنسيق واتساب: *عريض* بنجمة وحدة، فقرات قصيرة أو نقاط •، بدون جداول.",
+    "لا تكشف أرقام هواتف أو معرفات."
+  ].join(" ");
+  const prompt = [
+    currentTimeContext(),
+    `name:${nickname || "-"}`,
+    `asked:${userMessage}`,
+    `data:\n${String(commandOutput || "").slice(0, 4000)}`
+  ].join("\n");
+  return generateSamBotAIText({
+    systemInstruction,
+    prompt,
+    temperature: 0.4,
+    maxOutputTokens: PRIVATE_MAX_OUTPUT_TOKENS,
+    outputTokenCap: PRIVATE_MAX_OUTPUT_TOKENS,
+    timeoutMs: envNumber("SAM_BOT_PRIVATE_TIMEOUT_MS", 25000)
   });
 }

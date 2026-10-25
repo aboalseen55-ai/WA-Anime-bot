@@ -27,7 +27,23 @@ export const SAM_CAPABILITIES = [
 ].join("\n");
 
 // الأوامر اللي مسموح للذكاء الاصطناعي ينفذها نيابة عن المستخدم بالخاص
-const ALLOWED_COMMANDS = ["ذكرني", "نبهني", "مهمة", "مهمه", "ملاحظة", "ملاحظه", "تذكيراتي", "مهامي", "ملاحظاتي", "صباحي", "مدينتي", "مصروف", "مصاريفي", "تصديرمصاريف", "حللمصاريف", "خطة", "خطه", "خطةبكرة", "خطهبكره", "خطتي"];
+const ALLOWED_COMMANDS = [
+  "ذكرني", "نبهني", "مهمة", "مهمه", "ملاحظة", "ملاحظه", "تذكيراتي", "مهامي", "ملاحظاتي", "صباحي", "مدينتي",
+  "مصروف", "مصاريفي", "تصديرمصاريف", "حللمصاريف", "خطة", "خطه", "خطةبكرة", "خطهبكره", "خطتي",
+  "تم", "خلصت", "انقللبكرة", "انقللبكره", "الغاءتذكير", "حذفمهمة", "حذفمهمه", "حذفملاحظة", "حذفملاحظه", "حذفمصروف",
+  "ذاكرتي", "تذكر", "انسى", "انسي", "فويس", "قرآن", "قران", "أوامر", "اوامر"
+];
+
+// أوامر بتعرض بيانات: بدل ما نبعت القائمة زي ما هي، سام بيقرأها وبيجاوب بذكاء
+const READ_COMMANDS = ["تذكيراتي", "مهامي", "ملاحظاتي", "مصاريفي", "خطتي", "ذاكرتي"];
+
+function commandName(command) {
+  return String(command || "").trim().slice(1).split(" ")[0].replace(/_/g, "");
+}
+
+export function isReadCommand(command) {
+  return READ_COMMANDS.includes(commandName(command));
+}
 
 export function assistantActionInstruction() {
   return [
@@ -36,7 +52,9 @@ export function assistantActionInstruction() {
     "أي سؤال عن المصاريف (مجموع تصنيف معين، فترة، مقارنة، تحليل، نصيحة توفير) استخدم /حلل_مصاريف <سؤاله كما هو> وليس /مصاريفي، لأن /مصاريفي بتعرض كل المصاريف بس.",
     "أي كلام عن صرف أو دفع مبلغ (صرفت، دفعت، اشتريت بكذا) هو مصروف: استخدم /مصروف <المبلغ بالأرقام مع العملة إذا مش دينار> <على شو>، وأبدًا لا تسجله /ملاحظة.",
     "إذا فيه أكثر من مصروف، حطهم كلهم بأمر /مصروف واحد مفصولين بـ و، مثال: /مصروف 20 دولار كلود و 22.5 انترنت (لا تكرر /مصروف بنفس الأمر).",
-    "الأوامر المسموحة فقط: /ذكرني، /مهمة، /ملاحظة، /تذكيراتي، /مهامي، /ملاحظاتي، /صباحي، /مدينتي، /مصروف، /مصاريفي، /تصدير_مصاريف، /حلل_مصاريف، /خطة، /خطة_بكرة، /خطتي.",
+    "الأوامر المسموحة فقط: /ذكرني، /مهمة، /ملاحظة، /تذكيراتي، /مهامي، /ملاحظاتي، /تم <رقم>، /حذف_مهمة <رقم>، /حذف_ملاحظة <رقم>، /الغاء_تذكير <رقم>، /صباحي، /مدينتي، /مصروف، /مصاريفي، /حذف_مصروف <رقم>، /تصدير_مصاريف، /حلل_مصاريف، /خطة، /خطة_بكرة، /خطتي، /خلصت <رقم>، /انقل_لبكرة، /ذاكرتي، /تذكر <معلومة>، /انسى <رقم>، /فويس تشغيل|ايقاف، /قرآن ...، /أوامر.",
+    "أي طلب يعرض بيانات المستخدم (شو مهامي، شو عندي تذكيرات، اعرضلي ملاحظاتي، وين وصلت بخطتي، شو بتعرف عني، احكيلي ذاكرتي، مصاريفي) حوّله للأمر المناسب (/مهامي، /تذكيراتي، /ملاحظاتي، /خطتي، /ذاكرتي، /مصاريفي) واكتب ردك كلمة وحدة قصيرة بس، لأن النظام رح يجيب البيانات ويجاوبه منها.",
+    "\"تذكر إني ...\" أو \"احفظ عني ...\" -> /تذكر ... ؛ \"شغل الرد بالصوت\" -> /فويس تشغيل ؛ \"شو الأوامر\" أو \"وريني القائمة\" -> /أوامر.",
     "إذا الطلب ناقص (مثلًا تذكير بدون وقت) لا تعطي أمر، واسأله عن الناقص.",
     "لما تعطي أمر، خلي ردك تأكيد قصير طبيعي بدون ما تكرر تفاصيل الأمر، لأن النظام بيبعت التفاصيل."
   ].join(" ");
@@ -59,8 +77,11 @@ export function currentTimeContext(now = new Date()) {
 export function sanitizeAssistantCommand(command) {
   const value = String(command || "").trim().replace(/\s+/g, " ");
   if (!value.startsWith("/") || value.length > 300) return null;
-  const name = value.slice(1).split(" ")[0].replace(/_/g, "");
-  return ALLOWED_COMMANDS.includes(name) ? value : null;
+  const name = commandName(value);
+  if (!ALLOWED_COMMANDS.includes(name)) return null;
+  // المسح الكامل بس بأمر مكتوب من المستخدم نفسه، مش من فهم الذكاء الاصطناعي
+  if (/^(انسى|انسي)$/.test(name) && !/\d/.test(value)) return null;
+  return value;
 }
 
 /** يفصل سطر [[CMD: /...]] عن نص الرد. */
@@ -71,11 +92,43 @@ export function extractAssistantCommand(text) {
   return { reply, command: match ? sanitizeAssistantCommand(match[1]) : null };
 }
 
+/** ينفذ الأمر وبيرجع النصوص اللي كان رح يبعتها بدل ما يبعتها (الملفات زي الإكسل بتنبعت عادي). */
+export async function captureAssistantCommand(sock, jid, sender, command) {
+  const texts = [];
+  const capturing = new Proxy(sock, {
+    get(target, key) {
+      if (key !== "sendMessage") return Reflect.get(target, key);
+      return async (to, payload, options) => {
+        if (payload && typeof payload.text === "string" && Object.keys(payload).every((k) => ["text", "mentions"].includes(k))) {
+          // "بعتلك على الخاص" ما إلها معنى لما الرد نفسه بيوصل
+          if (!/على الخاص\.?$/.test(payload.text.trim())) texts.push(payload.text);
+          return null;
+        }
+        return target.sendMessage(to, payload, options);
+      };
+    }
+  });
+  const ran = await runAssistantCommand(capturing, jid, sender, command);
+  return { ran, text: texts.join("\n\n") };
+}
+
 /** ينفذ الأمر كأنه المستخدم كتبه. يعيد true إذا انتفذ. */
 export async function runAssistantCommand(sock, jid, sender, command) {
   const safe = sanitizeAssistantCommand(command);
   if (!safe) return false;
   try {
+    if (/^\/(أوامر|اوامر)$/.test(safe)) {
+      const { showCommandsList } = await import("../commands/commandsList.js");
+      return await showCommandsList(sock, jid, sender);
+    }
+    if (/^\/(قرآن|قران)/.test(safe)) {
+      const { handleQuranCommand } = await import("./quran.js");
+      return await handleQuranCommand(sock, jid, safe);
+    }
+    if (/^\/(فويس)/.test(safe)) {
+      const { handleVoiceCommand } = await import("./voiceReplies.js");
+      return await handleVoiceCommand(sock, jid, sender, safe);
+    }
     if (await handleAssistantHomeCommand(sock, jid, sender, safe, null)) return true;
     if (await handleExpenseQuestionCommand(sock, jid, sender, safe)) return true;
     if (await handleExpenseCommand(sock, jid, sender, safe)) return true;

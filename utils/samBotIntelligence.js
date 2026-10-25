@@ -5,7 +5,8 @@ import { resolveMentionContext } from "../commands/adminSystem.js";
 import { getKingdomIdFromGroupJid } from "../config.js";
 import { generateSamBotAIReply } from "./samBotAI.js";
 import { isVoiceReplyEnabled, sendVoiceOrText } from "./voiceReplies.js";
-import { extractAssistantCommand, runAssistantCommand } from "./samCapabilities.js";
+import { extractAssistantCommand, isReadCommand, runAssistantCommand } from "./samCapabilities.js";
+import { answerFromCommandData } from "./commandAnswers.js";
 import { personalEnabled } from "../services/botMode.js";
 import {
   buildSamBotMemoryContext,
@@ -483,8 +484,29 @@ export async function handleSamBotInteraction(sock, jid, sender, text, msg) {
     ? extractAssistantCommand(replyWithoutNotes)
     : { reply: replyWithoutNotes, command: null };
   const allowCommand = command && personalEnabled();
+  const useVoice = Boolean(aiReply) && isPrivateChat(jid) && personalEnabled() && await isVoiceReplyEnabled(sender);
+
+  // طلب بيانات (مهامي، ذاكرتي...): بنجاوب من البيانات نفسها بدل الرد الأولي
+  if (allowCommand && isReadCommand(command)) {
+    const answered = await answerFromCommandData(sock, jid, sender, { command, userMessage: text, nickname, voice: useVoice });
+    if (answered !== null) {
+      await rememberSamBotTurn({
+        memory,
+        groupJid: jid,
+        userJid: sender,
+        kingdomId: kingdom,
+        nickname,
+        intent: "data_request",
+        userMessage: text,
+        botReply: answered || command,
+        onEvicted: longTermMemory ? (turns) => queueTurnsForSummary(sender, turns) : null
+      });
+      return true;
+    }
+  }
+
   const reply = repeatedReply || aiReply || buildReply(intent, nickname, text);
-  if (aiReply && isPrivateChat(jid) && personalEnabled() && await isVoiceReplyEnabled(sender)) {
+  if (useVoice) {
     await sendVoiceOrText(sock, jid, reply, { mentions: [sender], userJid: sender });
   } else {
     await sock.sendMessage(jid, {

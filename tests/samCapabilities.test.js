@@ -15,7 +15,12 @@ test('only whitelisted personal commands can be run by the AI', () => {
   assert.equal(sanitizeAssistantCommand('/حماية روابط تشغيل'), null);
   assert.equal(sanitizeAssistantCommand('/نداء يا جماعة'), null);
   assert.equal(sanitizeAssistantCommand('ذكرني بكرة'), null);
-  assert.equal(extractAssistantCommand('ok [[CMD: /فويس تشغيل]]').command, null);
+  // الفويس بيتحقق من الصلاحية بنفسه، والمسح الكامل للذاكرة بس بأمر مكتوب
+  assert.equal(extractAssistantCommand('ok [[CMD: /فويس تشغيل]]').command, '/فويس تشغيل');
+  assert.equal(sanitizeAssistantCommand('/ذاكرتي'), '/ذاكرتي');
+  assert.equal(sanitizeAssistantCommand('/انسى 2'), '/انسى 2');
+  assert.equal(sanitizeAssistantCommand('/انسى الكل'), null);
+  assert.equal(sanitizeAssistantCommand('/امسح_ذاكرتي'), null);
 });
 
 test('runAssistantCommand refuses unsafe commands without sending anything', async () => {

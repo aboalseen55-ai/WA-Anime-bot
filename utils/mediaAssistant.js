@@ -7,7 +7,10 @@ import { consumeAssistantQuota, quotaExceededMessage } from "./assistantQuota.js
 import { canUseVoiceReplies, isVoiceReplyEnabled, sendVoiceOrText, voiceConversationInstruction } from "./voiceReplies.js";
 import { isElevenLabsConfigured } from "../services/elevenLabsService.js";
 import { isReplyToBot } from "./samBotIntelligence.js";
-import { runAssistantCommand, sanitizeAssistantCommand } from "./samCapabilities.js";
+import { handleAssistantText } from "./assistantText.js";
+import { isReadCommand, runAssistantCommand, sanitizeAssistantCommand } from "./samCapabilities.js";
+import { answerFromCommandData } from "./commandAnswers.js";
+import { personalEnabled } from "../services/botMode.js";
 
 const MB = 1024 * 1024;
 const MAX_AUDIO_SECONDS = Number(process.env.ASSISTANT_MAX_AUDIO_SECONDS || 600);
@@ -232,8 +235,15 @@ async function processMedia(sock, jid, sender, target, question, quoted) {
       }
       return;
     }
-    await sendVoiceOrText(sock, jid, answer, { quoted, userJid: sender });
     const command = sanitizeAssistantCommand(result?.command);
+    // "احكيلي شو مهامي" بالفويس: بنجاوبه بصوت من بياناته الحقيقية
+    if (command && isReadCommand(command)) {
+      const answered = await answerFromCommandData(sock, jid, sender, {
+        command, userMessage: result?.transcript || "", voice: true, quoted
+      });
+      if (answered !== null) return;
+    }
+    await sendVoiceOrText(sock, jid, answer, { quoted, userJid: sender });
     if (command) await runAssistantCommand(sock, jid, sender, command);
     return;
   }
@@ -247,6 +257,12 @@ async function processMedia(sock, jid, sender, target, question, quoted) {
     const result = parseJson(raw);
     if (!raw) {
       await reply("❌ صار خطأ أثناء التفريغ، جرب بعد شوي.");
+      return;
+    }
+    // فويس مسجل لسام نفسه بالخاص (مش محوّل من حدا) = حكي معه: بيفهمه وبينفذ الأوامر وبيرد
+    const transcript = String(result?.transcript || "").trim();
+    if (target.talkToSam && transcript && personalEnabled()) {
+      await handleAssistantText(sock, jid, sender, transcript, target.message);
       return;
     }
     await reply(formatTranscription(result || { transcript: raw }, media.seconds));
@@ -313,8 +329,11 @@ export async function handleMediaAssistant(sock, msg, text) {
   if (String(text || media.caption || "").trim().startsWith("/")) return false;
   if (await isBusinessCustomerChat(jid)) return false;
 
+  // الفويس المحوّل بنفرغه، والفويس اللي المستخدم سجله لسام بنتعامل معه كرسالة
+  const forwarded = Boolean(media.node?.contextInfo?.isForwarded);
+  const talkToSam = media.type === "audio" && !forwarded;
   try {
-    await processMedia(sock, jid, sender, { media, message: msg }, "", msg);
+    await processMedia(sock, jid, sender, { media, message: msg, talkToSam }, "", msg);
   } catch (error) {
     console.error("Media assistant failed:", error.message);
     await sock.sendMessage(jid, { text: "❌ صار خطأ، جرب مرة ثانية." }, { quoted: msg });
