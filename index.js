@@ -323,7 +323,8 @@ async function startBot() {
 
       // تحميل المشاركين الحاليين في كل مجموعة استقبال من كل مملكة لمنع إرسال ترحيب قديم
       try {
-        const receptionGroups = Object.values(KINGDOMS)
+        // البوت الشخصي ما بيرحب، فما في داعي يحمّل أعضاء الاستقبال
+        const receptionGroups = !funEnabled() ? [] : Object.values(KINGDOMS)
           .map(k => k.receptionGroup)
           .filter(Boolean);
 
@@ -383,6 +384,8 @@ async function startBot() {
 
   // نظام تسجيل الألقاب التلقائي في مجموعة الاستقبال
   sock.ev.on("group-participants.update", async (update) => {
+    // الترحيب ونظام الألقاب من ميزات بوت الممالك، مطفية بالبوت الشخصي
+    if (!funEnabled()) return;
     if (!featureEnabled('automatic') || !featureEnabled('welcome')) return;
     const { id, participants, action } = update;
     const kingdom = getKingdomFromGroupJid(id);

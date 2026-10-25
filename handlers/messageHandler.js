@@ -1,7 +1,7 @@
 import { handleWelcomeModeStep } from "../commands/adminCommands.js";
 import { addRecentMessage } from "../utils/messageCache.js";
 import User from "../database/userModel.js";
-import { getKingdomIdFromGroupJid } from "../config.js";
+import { getKingdomFromGroupJid, getKingdomIdFromGroupJid } from "../config.js";
 import { handleMafiaCommand, handleMafiaHostPrivateFlow, handleMafiaNicknameRegistration } from "../games/mafia.js";
 import { getCreatorInfoMessage, isCreatorQuestion } from "../utils/creatorInfo.js";
 import { handleDeveloperCommandGuide } from "../utils/developerCommandGuide.js";
@@ -65,6 +65,9 @@ export async function messageHandler(sock, msg) {
   // BOT_MODE بيحدد إذا هاد البوت شخصي أو بوت قروبات أو الاثنين (services/botMode.js)
   const fun = funEnabled();
   const personal = personalEnabled();
+
+  // مجموعات الاستقبال تابعة لبوت الممالك، فالبوت الشخصي ما بيرد فيها أبداً
+  if (!fun && getKingdomFromGroupJid(jid)?.receptionGroup === jid) return;
 
   let kingdom = fun ? await trackMainGroupActivity(sock, msg, jid, sender, text) : null;
 
