@@ -42,7 +42,7 @@ import {
 import { showElite } from "./eliteFunction.js";
 import { pendingMentions } from "../handlers/handlerState.js";
 import { ADMIN_PASSWORD, ADMIN_PASSWORD_CONFIGURED, getKingdomIdFromGroupJid, KINGDOMS, getKingdomFromGroupJid } from "../config.js";
-import { showCommandsList, handleCommandsChoice } from "./commandsList.js";
+import { showCommandsList } from "./commandsList.js";
 import { sendRulesMessage, sendReminderMessage, startReminderSystem } from "../utils/rulesSystem.js";
 import { getKingdomReportTimeZone, getNextDailyReportDate } from "../utils/dailyReports.js";
 import { getRecentMessages, popRecentMessages } from "../utils/messageCache.js";

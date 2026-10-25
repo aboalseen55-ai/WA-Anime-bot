@@ -26,7 +26,8 @@ test('personal bot answers /أوامر with the assistant menu and hides kingdom
   const sock = { sendMessage: async (jid, payload) => { sent.push(payload); } };
   const user = 'u@s.whatsapp.net';
   await handleSlashCommand(sock, user, user, '/أوامر', {});
-  assert.match(sent.at(-1).text, /مصروف/);
+  assert.match(sent.at(-1).text, /المصاريف/);
+  assert.doesNotMatch(sent.at(-1).text, /الممالك|البنك/);
   await handleSlashCommand(sock, user, user, '/ملفي', {});
   assert.match(sent.at(-1).text, /الأمر غير معروف: \/ملفي/);
 });

@@ -181,9 +181,7 @@ test('morning brief lists today and is sent once per day at the chosen time', as
   assert.equal(docs[0].brief.enabled, false);
 });
 
-test('/مساعدة shows the main help', async () => {
+test('assistant home ignores commands it does not own', async () => {
   const sock = fakeSock();
-  assert.equal(await handleAssistantHomeCommand(sock, 'g@g.us', 'u@s.whatsapp.net', '/مساعدة', {}), true);
-  assert.match(sock.sent[0].text, /فرغ/);
   assert.equal(await handleAssistantHomeCommand(sock, 'g@g.us', 'u@s.whatsapp.net', '/ملفي', {}), false);
 });

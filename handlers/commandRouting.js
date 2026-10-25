@@ -1,8 +1,7 @@
 import { dashboardReply } from '../services/dashboardTemplates.js';
 import { userCommands } from "../commands/user.js";
 import { handleAdminCommands } from "../commands/adminCommands.js";
-import { showCommandsList, handleCommandsChoice } from "../commands/commandsList.js";
-import { isModerator } from "../commands/adminSystem.js";
+import { showCommandsList, handleCommandsMenuReply, isMenuTrigger } from "../commands/commandsList.js";
 import { showLeaderboard } from "../games/guessAnime.js";
 import { denyCommandIfPaused } from '../services/botControls.js';
 import { funEnabled, personalEnabled } from '../services/botMode.js';
@@ -18,15 +17,10 @@ import { handleDailyPlanCommand } from "../utils/dailyPlan.js";
 import { handleGroupCommand } from "../utils/groupTools.js";
 import { handleDashboardCommand, getSeriesSession, selectSeriesResult } from "../services/dashboardRuntime.js";
 import { handleBotDeletion } from '../services/botMessageDeletion.js';
-import { awaitingCommandsChoice, awaitingGameChoice } from "./handlerState.js";
-import { sendGamesMenu } from "./gameCommands.js";
 
-// دعم جميع صيغ أمر الأوامر: /أوامر، /اوامر، /الأوامر، /الاوامر
-const commandsTriggers = ["/أوامر", "/اوامر", "/الأوامر", "/الاوامر"];
-
+// /أوامر و/مساعدة بكل صيغها بتفتح القائمة المرقمة حسب المود
 export async function handleCommandsMenuCommand(sock, jid, sender, trimmedText) {
-  if (!commandsTriggers.includes(trimmedText)) return false;
-  awaitingCommandsChoice.add(sender);
+  if (!isMenuTrigger(trimmedText)) return false;
   await showCommandsList(sock, jid, sender);
   return true;
 }
@@ -58,6 +52,8 @@ export async function handleSlashCommand(sock, jid, sender, trimmedText, msg) {
     return true;
   }
 
+  if (await handleCommandsMenuCommand(sock, jid, sender, trimmedText)) return true;
+
   if (isQuranCommand(trimmedText)) {
     await handleQuranCommand(sock, jid, trimmedText);
     return true;
@@ -65,9 +61,7 @@ export async function handleSlashCommand(sock, jid, sender, trimmedText, msg) {
 
   const personal = personalEnabled();
   if (personal) {
-    // بالبوت الشخصي /أوامر بتعرض قائمة المساعد
-    const commandText = !funEnabled() && commandsTriggers.includes(trimmedText) ? "/مساعدة" : trimmedText;
-    if (await handleAssistantHomeCommand(sock, jid, sender, commandText, msg)) return true;
+    if (await handleAssistantHomeCommand(sock, jid, sender, trimmedText, msg)) return true;
     if (await handleVoiceCommand(sock, jid, sender, trimmedText)) return true;
   }
   if (await handleGroupCommand(sock, jid, sender, trimmedText, msg)) return true;
@@ -84,14 +78,11 @@ export async function handleSlashCommand(sock, jid, sender, trimmedText, msg) {
     return true;
   }
 
-  // إذا لم يكن أمر الأوامر (تمت معالجته أعلاه)
-  if (!commandsTriggers.includes(trimmedText)) {
-    const handledByUser = await userCommands(sock, jid, sender, trimmedText, msg);
-    const handledByAdmin = await handleAdminCommands(sock, jid, trimmedText, sender, msg);
+  const handledByUser = await userCommands(sock, jid, sender, trimmedText, msg);
+  const handledByAdmin = await handleAdminCommands(sock, jid, trimmedText, sender, msg);
 
-    if (!handledByUser && !handledByAdmin) {
-      await sock.sendMessage(jid, { text: dashboardReply('reply_e760c62a7333ac5c')`❌ الأمر غير معروف: ${trimmedText}` });
-    }
+  if (!handledByUser && !handledByAdmin) {
+    await sock.sendMessage(jid, { text: dashboardReply('reply_e760c62a7333ac5c')`❌ الأمر غير معروف: ${trimmedText}` });
   }
   return true;
 }
@@ -131,7 +122,6 @@ export async function handleSmartCommandRoute(sock, jid, sender, trimmedText, ms
   }
 
   if (smartCommandRoute.intent === "show_commands") {
-    awaitingCommandsChoice.add(sender);
     await showCommandsList(sock, jid, sender);
     return true;
   }
@@ -145,26 +135,7 @@ export async function handleSmartCommandRoute(sock, jid, sender, trimmedText, ms
   return false;
 }
 
-// معالجة اختيارات قائمة الأوامر
-export async function handleCommandsMenuChoice(sock, jid, sender, text, kingdom) {
-  if (!(awaitingCommandsChoice.has(sender) && /^[1-7]$/.test(text.trim()))) return false;
-
-  const choice = text.trim();
-  if (choice === '2') {
-    // user asked for games list via /أوامر; provide the interactive menu
-    const userIsModerator = await isModerator(sender, kingdom);
-    if (!userIsModerator) {
-      await sock.sendMessage(jid, { text: dashboardReply('reply_2cde6253a66bdae5')(['❌ فقط المشرفون والأدمن يمكنهم بدء الألعاب!']) });
-      awaitingCommandsChoice.delete(sender);
-      return true;
-    }
-    awaitingCommandsChoice.delete(sender);
-    awaitingGameChoice.add(sender);
-    await sendGamesMenu(sock, jid);
-    return true;
-  }
-
-  await handleCommandsChoice(sock, jid, sender, text);
-  awaitingCommandsChoice.delete(sender);
-  return true;
+// رقم من قائمة الأوامر المفتوحة (بكل الأوضاع)
+export async function handleCommandsMenuChoice(sock, jid, sender, text) {
+  return handleCommandsMenuReply(sock, jid, sender, text);
 }

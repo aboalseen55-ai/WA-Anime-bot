@@ -24,7 +24,7 @@ import { trackMainGroupActivity } from "./activityTracking.js";
 import { checkAndSendMilestoneMessage } from "./milestones.js";
 import { handleWordGameSetup, handleGamesMenuCommand, handleGameCommands, handleActiveGameResponses } from "./gameCommands.js";
 import { handleDashboardLinkCommand } from "../utils/dashboardLink.js";
-import { handleCommandsMenuCommand, handleSeriesSelection, handleSlashCommand, handleQuranText, handleSmartCommandRoute, handleCommandsMenuChoice } from "./commandRouting.js";
+import { handleSeriesSelection, handleSlashCommand, handleQuranText, handleSmartCommandRoute, handleCommandsMenuChoice } from "./commandRouting.js";
 import { handlePendingMention, handleReportReason } from "./pendingMentionFlow.js";
 import { handleKickConfirmation, handleEmperorPassword } from "./adminConfirmations.js";
 import { handleWelcomeImageChoice, handleWelcomeConfirmation } from "./welcomeFlow.js";
@@ -131,7 +131,6 @@ export async function messageHandler(sock, msg) {
 
   if (fun) {
     if (await handleGamesMenuCommand(sock, jid, sender, trimmedText, kingdom)) return;
-    if (await handleCommandsMenuCommand(sock, jid, sender, trimmedText)) return;
     if (await handleGameCommands(sock, jid, sender, trimmedText, kingdom)) return;
     if (await handleActiveGameResponses(sock, jid, sender, text)) return;
     if (await handlePendingMention(sock, jid, sender, msg)) return;
@@ -140,6 +139,8 @@ export async function messageHandler(sock, msg) {
 
   // الأوامر
   // اختيار رقم من نتائج أمر داشبورد (بكل الأوضاع، لأنه أوامر الداشبورد شغالة بكل الأوضاع)
+  // رقم من قائمة /أوامر المفتوحة
+  if (await handleCommandsMenuChoice(sock, jid, sender, trimmedText)) return;
   if (await handleSeriesSelection(sock, jid, sender, trimmedText, msg)) return;
   if (await handleSlashCommand(sock, jid, sender, trimmedText, msg)) return;
   if (await handleQuranText(sock, jid, trimmedText)) return;
@@ -151,7 +152,6 @@ export async function messageHandler(sock, msg) {
     if (await handleWelcomeConfirmation(sock, jid, text)) return;
     if (await handleProfileChoice(sock, jid, sender, text)) return;
     if (await handleReportReason(sock, jid, sender, text, kingdom)) return;
-    if (await handleCommandsMenuChoice(sock, jid, sender, text, kingdom)) return;
     if (await handleEmperorPassword(sock, sender, text)) return;
     if (await handleReceptionRegistration(sock, jid, sender, text, msg)) return;
   }
