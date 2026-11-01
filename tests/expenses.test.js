@@ -306,3 +306,26 @@ test('/تصدير_مصاريف adds one AI analysis: importance colors, red top 
   assert.equal(guessImportance('فاتورة الكهرباء'), 'essential');
   assert.equal(guessImportance('نتفلكس'), 'reducible');
 });
+
+test('export analysis tries Gemini first, then OpenAI, then keywords', async () => {
+  const { analyzeExpensesForExport } = await import('../utils/expenseExportInsights.js');
+  const items = [{ amount: 10, label: 'بنزين', spentAt: NOW }, { amount: 5, label: 'دخان', spentAt: NOW }];
+  const good = JSON.stringify({ labels: { 'بنزين': 'essential', 'دخان': 'unnecessary' }, insights: ['x'], tips: ['y'] });
+  const quota = async () => ({ allowed: true });
+  let openaiCalls = 0;
+  const openai = async () => { openaiCalls += 1; return good; };
+
+  const free = await analyzeExpensesForExport(items, USER, { ai: async () => good, aiAvailable: () => true, openai, openaiAvailable: () => true, quota });
+  assert.equal(free.source, 'gemini');
+  assert.equal(openaiCalls, 0);
+
+  const paid = await analyzeExpensesForExport(items, USER, { ai: async () => { throw new Error('quota'); }, aiAvailable: () => true, openai, openaiAvailable: () => true, quota });
+  assert.equal(paid.source, 'openai');
+  assert.equal(openaiCalls, 1);
+  const badJson = await analyzeExpensesForExport(items, USER, { ai: async () => 'oops', aiAvailable: () => true, openai, openaiAvailable: () => true, quota });
+  assert.equal(badJson.source, 'openai');
+
+  const none = await analyzeExpensesForExport(items, USER, { ai: async () => { throw new Error('x'); }, aiAvailable: () => true, openai: async () => { throw new Error('401'); }, openaiAvailable: () => true, quota });
+  assert.equal(none.source, 'code');
+  assert.deepEqual(none.importance, { 'بنزين': 'essential', 'دخان': 'unnecessary' });
+});

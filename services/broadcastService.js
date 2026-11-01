@@ -37,6 +37,22 @@ async function openai(path, init, fetchImpl = globalThis.fetch) {
   return data;
 }
 
+/** طلب نصي لـ OpenAI بيرجع JSON كنص. بيستعمله البوت كبديل مدفوع لما Gemini (المجاني) يفشل. */
+export async function openAIChatJSON({ system, user, maxTokens = 1500, temperature = 0.2, fetchImpl } = {}) {
+  const data = await openai('chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      temperature,
+      max_tokens: maxTokens,
+      response_format: { type: 'json_object' },
+      messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
+    })
+  }, fetchImpl);
+  return String(data?.choices?.[0]?.message?.content || '');
+}
+
 /** القروبات اللي البوت فيها، مع اسم المملكة لكل قروب تابع لمملكة. */
 export async function listBroadcastTargets(getGroups, { kingdomModel = Kingdom } = {}) {
   const groups = getGroups ? await getGroups() : [];

@@ -4,6 +4,7 @@
 import JSZip from "jszip";
 import { generateSamBotAIFromParts, isSamBotAIAvailable } from "./samBotAI.js";
 import { consumeAssistantQuota } from "./assistantQuota.js";
+import { isOpenAIConfigured, openAIChatJSON } from "../services/broadcastService.js";
 
 export const IMPORTANCE = {
   essential: { key: "essential", label: "🟢 أساسي", short: "أساسي", fill: "FFE2F0D9", font: "FF375623", color: "70AD47" },
@@ -108,38 +109,45 @@ function codeInsights(byLabel, byLevel, total, currency) {
 }
 
 /**
- * تحليل المصاريف للإكسل. طلب ذكاء واحد بس (وإذا ما في ذكاء أو خلص الحد، تصنيف بالكلمات).
- * يرجع { importance: {label: level}, byLevel, insights, tips, source }.
+ * تحليل المصاريف للإكسل: Gemini أول (مجاني)، وإذا فشل OpenAI (مدفوع)، وإذا فشلوا الاثنين تصنيف بالكلمات.
+ * يرجع { importance: {label: level}, byLevel, insights, tips, source: "gemini" | "openai" | "code" }.
  */
 export async function analyzeExpensesForExport(items, sender, {
   title = "",
   currency = "دينار",
   ai = generateSamBotAIFromParts,
   aiAvailable = isSamBotAIAvailable,
+  openai = openAIChatJSON,
+  openaiAvailable = isOpenAIConfigured,
   quota = consumeAssistantQuota
 } = {}) {
   const byLabel = labelTotals(items);
   const labels = byLabel.map((e) => e.label);
   const total = round(items.reduce((sum, item) => sum + item.amount, 0));
+  const safe = (check) => { try { return Boolean(check()); } catch { return false; } };
+  const gemini = safe(aiAvailable);
+  const paid = safe(openaiAvailable);
+  let allowed = false;
+  if (labels.length && (gemini || paid)) allowed = (await quota(sender).catch(() => ({ allowed: false })))?.allowed === true;
+
+  const system = instruction(currency);
+  const payload = JSON.stringify({ period: title, total, count: items.length, labels: byLabel.slice(0, MAX_LABELS).map((e) => [e.label, e.count, e.total]) });
   let reply = null;
-  let useAI = false;
-  try {
-    useAI = aiAvailable() && (await quota(sender).catch(() => ({ allowed: false }))).allowed;
-  } catch {
-    useAI = false;
-  }
-  if (useAI && labels.length) {
+  let source = "code";
+  if (allowed && gemini) {
     try {
-      const raw = await ai({
-        systemInstruction: instruction(currency),
-        parts: [{ text: JSON.stringify({ period: title, total, count: items.length, labels: byLabel.slice(0, MAX_LABELS).map((e) => [e.label, e.count, e.total]) }) }],
-        json: true,
-        temperature: 0.2,
-        maxOutputTokens: 1500
-      });
-      reply = parseImportanceReply(raw, labels);
+      reply = parseImportanceReply(await ai({ systemInstruction: system, parts: [{ text: payload }], json: true, temperature: 0.2, maxOutputTokens: 1500 }), labels);
+      if (reply) source = "gemini";
     } catch (error) {
-      console.warn("Expense export analysis failed:", error.message);
+      console.warn("Expense export analysis (Gemini) failed:", error.message);
+    }
+  }
+  if (!reply && allowed && paid) {
+    try {
+      reply = parseImportanceReply(await openai({ system, user: payload, maxTokens: 1500, temperature: 0.2 }), labels);
+      if (reply) source = "openai";
+    } catch (error) {
+      console.warn("Expense export analysis (OpenAI) failed:", error.message);
     }
   }
   const importance = {};
@@ -148,7 +156,7 @@ export async function analyzeExpensesForExport(items, sender, {
   for (const entry of byLabel) byLevel[importance[entry.label]] += entry.total;
   for (const key of IMPORTANCE_ORDER) byLevel[key] = round(byLevel[key]);
   const insights = reply?.insights.length ? reply.insights : codeInsights(byLabel, byLevel, total, currency);
-  return { importance, byLevel, insights, tips: reply?.tips || [], source: reply ? "ai" : "code" };
+  return { importance, byLevel, insights, tips: reply?.tips || [], source };
 }
 
 // ============================================

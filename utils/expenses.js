@@ -390,7 +390,7 @@ function addAnalysisSheet(sheet, { title, items, total, analysis, byLabel }) {
   addTitle(sheet, `📊 تحليل مصاريفك ${title}`.trim(), 6);
   sheet.mergeCells(2, 1, 2, 6);
   const sub = sheet.getCell(2, 1);
-  sub.value = analysis.source === "ai" ? "🤖 التصنيف والملاحظات من سام بالذكاء الاصطناعي، والأرقام محسوبة من سجلك" : "التصنيف تلقائي من أسماء المصاريف";
+  sub.value = analysis.source !== "code" ? "🤖 التصنيف والملاحظات من سام بالذكاء الاصطناعي، والأرقام محسوبة من سجلك" : "التصنيف تلقائي من أسماء المصاريف";
   sub.font = { name: "Arial", size: 10, italic: true, color: { argb: "FF595959" } };
   sub.alignment = { horizontal: "center", readingOrder: "rtl" };
 
