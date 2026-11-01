@@ -6,6 +6,7 @@ import { generateSamBotAIFromParts, isSamBotAIAvailable } from "./samBotAI.js";
 import { consumeAssistantQuota } from "./assistantQuota.js";
 import { getRateToJOD } from "../services/exchangeRates.js";
 import { monthTitle, parseMonthArg } from "./expensePeriods.js";
+import { IMPORTANCE, IMPORTANCE_ORDER, addChartsToWorkbook, analyzeExpensesForExport, labelTotals, sheetRef } from "./expenseExportInsights.js";
 
 const TIME_ZONE = process.env.PERSONAL_REMINDER_TIMEZONE || DEFAULT_TIME_ZONE;
 const CURRENCY = process.env.EXPENSE_CURRENCY || "دينار";
@@ -382,26 +383,123 @@ function addTitle(sheet, text, columns) {
   sheet.getRow(1).height = 28;
 }
 
-/** ملف إكسل مرتب: ورقة بكل المصاريف وسطر مجموع، وورقة ملخص حسب التصنيف. الصفحات من اليمين لليسار. */
-export async function buildExpensesWorkbook(items, title = "") {
+const RED = { fill: "FFF8D7DA", font: "FF9C0006" };
+
+function addAnalysisSheet(sheet, { title, items, total, analysis, byLabel }) {
+  sheet.columns = [{ width: 30 }, { width: 16 }, { width: 11 }, { width: 4 }, { width: 4 }, { width: 4 }];
+  addTitle(sheet, `📊 تحليل مصاريفك ${title}`.trim(), 6);
+  sheet.mergeCells(2, 1, 2, 6);
+  const sub = sheet.getCell(2, 1);
+  sub.value = analysis.source === "ai" ? "🤖 التصنيف والملاحظات من سام بالذكاء الاصطناعي، والأرقام محسوبة من سجلك" : "التصنيف تلقائي من أسماء المصاريف";
+  sub.font = { name: "Arial", size: 10, italic: true, color: { argb: "FF595959" } };
+  sub.alignment = { horizontal: "center", readingOrder: "rtl" };
+
+  const header = (row, values) => {
+    const r = sheet.getRow(row);
+    values.forEach((v, i) => { r.getCell(i + 1).value = v; });
+    styleRow(r, { fill: XLSX_COLORS.header, font: { bold: true, color: { argb: "FFFFFFFF" } } });
+    for (let c = values.length + 1; c <= 6; c += 1) { r.getCell(c).fill = undefined; r.getCell(c).border = undefined; }
+    r.height = 22;
+  };
+  const amountFormat = "#,##0.00";
+  const days = (() => {
+    if (!items.length) return 1;
+    const keys = items.map((item) => { const { year, month, day } = getTimeZoneParts(new Date(item.spentAt), TIME_ZONE); return Date.UTC(year, month - 1, day); });
+    return Math.max(1, Math.round((Math.max(...keys) - Math.min(...keys)) / 86400000) + 1);
+  })();
+  const top = byLabel[0];
+
+  header(4, ["الملخص", "", ""]);
+  sheet.mergeCells(4, 1, 4, 3);
+  const kpis = [
+    ["المجموع", total, amountFormat],
+    ["عدد المصاريف", items.length, "0"],
+    ["المعدل اليومي", Math.round((total / days) * 1000) / 1000, amountFormat],
+    ["أكثر اشي صرفت عليه", top ? `${top.label} (${Number(top.total.toFixed(3))} ${CURRENCY})` : "-", null]
+  ];
+  kpis.forEach(([label, value, format], index) => {
+    const row = sheet.getRow(5 + index);
+    row.getCell(1).value = label;
+    row.getCell(2).value = value;
+    sheet.mergeCells(5 + index, 2, 5 + index, 3);
+    styleRow(row, { font: { bold: index === 0 } });
+    for (let c = 4; c <= 6; c += 1) row.getCell(c).border = undefined;
+    if (format) row.getCell(2).numFmt = format;
+    if (index === 3) row.getCell(2).font = { name: "Arial", size: 11, bold: true, color: { argb: RED.font } };
+  });
+
+  header(10, ["الأهمية", "المبلغ", "النسبة"]);
+  IMPORTANCE_ORDER.forEach((key, index) => {
+    const level = IMPORTANCE[key];
+    const value = analysis.byLevel[key] || 0;
+    const row = sheet.getRow(11 + index);
+    row.getCell(1).value = level.label;
+    row.getCell(2).value = value;
+    row.getCell(3).value = total ? value / total : 0;
+    styleRow(row, { fill: level.fill, font: { bold: true, color: { argb: level.font } } });
+    for (let c = 4; c <= 6; c += 1) { row.getCell(c).fill = undefined; row.getCell(c).border = undefined; }
+    row.getCell(2).numFmt = amountFormat;
+    row.getCell(3).numFmt = "0%";
+  });
+
+  let rowNo = 15;
+  const block = (heading, lines) => {
+    if (!lines.length) return;
+    header(rowNo, [heading]);
+    sheet.mergeCells(rowNo, 1, rowNo, 6);
+    rowNo += 1;
+    for (const line of lines) {
+      sheet.mergeCells(rowNo, 1, rowNo, 6);
+      const cell = sheet.getCell(rowNo, 1);
+      cell.value = `• ${line}`;
+      cell.font = { name: "Arial", size: 11 };
+      cell.alignment = { vertical: "middle", horizontal: "right", wrapText: true, readingOrder: "rtl" };
+      sheet.getRow(rowNo).height = Math.min(90, 20 + Math.ceil(line.length / 55) * 15);
+      rowNo += 1;
+    }
+    rowNo += 1;
+  };
+  block("💡 ملاحظات", analysis.insights);
+  block("✂️ وين بتقدر توفر", analysis.tips);
+  sheet.mergeCells(rowNo, 1, rowNo, 6);
+  const legend = sheet.getCell(rowNo, 1);
+  legend.value = "🔴 الأحمر = أكثر اشي صرفت عليه · 🟢 أساسي · 🟡 ممكن تقلل · 🔴 ما إله داعي";
+  legend.font = { name: "Arial", size: 10, color: { argb: "FF595959" } };
+  legend.alignment = { horizontal: "right", wrapText: true, readingOrder: "rtl" };
+}
+
+/**
+ * ملف إكسل مرتب: ورقة بكل المصاريف وسطر مجموع، وورقة ملخص حسب التصنيف. الصفحات من اليمين لليسار.
+ * مع analysis (من analyzeExpensesForExport): ورقة تحليل أول، عمود أهمية بألوان، الأعلى صرف بالأحمر، وتشارتين.
+ */
+export async function buildExpensesWorkbook(items, title = "", analysis = null) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Sam";
   const sorted = [...items].sort((a, b) => new Date(a.spentAt) - new Date(b.spentAt));
   const amountFormat = "#,##0.00";
+  const byLabel = labelTotals(sorted);
+  const total = Math.round(sorted.reduce((sum, item) => sum + item.amount, 0) * 1000) / 1000;
+  const topLabels = new Set(byLabel.slice(0, 3).filter((e) => e.total > 0).map((e) => e.label));
+  const importanceOf = (label) => (analysis ? IMPORTANCE[analysis.importance[label || "بدون تصنيف"]] : null);
+
+  const analysisSheet = analysis ? workbook.addWorksheet("التحليل", { views: [{ rightToLeft: true }] }) : null;
 
   const sheet = workbook.addWorksheet("المصاريف", { views: [{ rightToLeft: true, state: "frozen", ySplit: 2 }] });
-  const headers = ["التاريخ", "الوقت", "على شو", "المبلغ", "العملة", "المبلغ الأصلي", "العملة الأصلية"];
-  sheet.columns = [{ width: 13 }, { width: 9 }, { width: 28 }, { width: 13 }, { width: 10 }, { width: 14 }, { width: 14 }];
+  const headers = ["التاريخ", "الوقت", "على شو", "المبلغ", "العملة", "المبلغ الأصلي", "العملة الأصلية", ...(analysis ? ["الأهمية"] : [])];
+  sheet.columns = [{ width: 13 }, { width: 9 }, { width: 28 }, { width: 13 }, { width: 10 }, { width: 14 }, { width: 14 }, ...(analysis ? [{ width: 16 }] : [])];
   addTitle(sheet, `💰 مصاريفي ${title}`.trim(), headers.length);
   const headerRow = sheet.addRow(headers);
   headerRow.height = 22;
   styleRow(headerRow, { fill: XLSX_COLORS.header, font: { bold: true, color: { argb: "FFFFFFFF" } } });
 
+  // أكبر 5 مصاريف بالأحمر
+  const biggest = new Set([...sorted].sort((a, b) => b.amount - a.amount).slice(0, Math.min(5, Math.ceil(sorted.length / 3))));
   sorted.forEach((item, index) => {
     const { year, month, day, hour, minute } = getTimeZoneParts(new Date(item.spentAt), TIME_ZONE);
     // إكسل ما بيعرف المناطق الزمنية، فبنحط وقت عمّان كأنه UTC حتى يطلع زي ما هو
     const local = new Date(Date.UTC(year, month - 1, day, hour, minute));
-    const row = sheet.addRow([local, local, item.label || "بدون تصنيف", item.amount, item.currency || CURRENCY, item.originalAmount ?? null, item.originalCurrency || null]);
+    const level = importanceOf(item.label);
+    const row = sheet.addRow([local, local, item.label || "بدون تصنيف", item.amount, item.currency || CURRENCY, item.originalAmount ?? null, item.originalCurrency || null, ...(level ? [level.label] : [])]);
     styleRow(row, { fill: index % 2 ? XLSX_COLORS.band : undefined, font: {} });
     row.getCell(1).numFmt = "dd/mm/yyyy";
     row.getCell(2).numFmt = "hh:mm";
@@ -409,44 +507,81 @@ export async function buildExpensesWorkbook(items, title = "") {
     row.getCell(4).numFmt = amountFormat;
     row.getCell(6).numFmt = amountFormat;
     if (item.originalAmount != null) [6, 7].forEach((n) => { row.getCell(n).font = { name: "Arial", size: 11, color: { argb: XLSX_COLORS.converted } }; });
+    if (biggest.has(item)) row.getCell(4).font = { name: "Arial", size: 11, bold: true, color: { argb: RED.font } };
+    if (level) {
+      row.getCell(8).fill = { type: "pattern", pattern: "solid", fgColor: { argb: level.fill } };
+      row.getCell(8).font = { name: "Arial", size: 11, bold: true, color: { argb: level.font } };
+    }
   });
 
   const firstData = 3;
   const lastData = firstData + sorted.length - 1;
-  const total = Math.round(sorted.reduce((sum, item) => sum + item.amount, 0) * 1000) / 1000;
-  const totalRow = sheet.addRow(["المجموع", "", `${sorted.length} مصروف`, { formula: `SUM(D${firstData}:D${lastData})`, result: total }, CURRENCY, "", ""]);
+  const totalRow = sheet.addRow(["المجموع", "", `${sorted.length} مصروف`, { formula: `SUM(D${firstData}:D${lastData})`, result: total }, CURRENCY, "", "", ...(analysis ? [""] : [])]);
   totalRow.height = 22;
   styleRow(totalRow, { fill: XLSX_COLORS.total, font: { bold: true, size: 12 } });
   totalRow.getCell(4).numFmt = amountFormat;
   sheet.autoFilter = { from: { row: 2, column: 1 }, to: { row: lastData, column: headers.length } };
 
   const summary = workbook.addWorksheet("حسب التصنيف", { views: [{ rightToLeft: true }] });
-  summary.columns = [{ width: 28 }, { width: 14 }, { width: 10 }, { width: 12 }];
-  addTitle(summary, "📊 وين راحت المصاري", 4);
-  styleRow(summary.addRow(["التصنيف", "المجموع", "العدد", "النسبة"]), { fill: XLSX_COLORS.header, font: { bold: true, color: { argb: "FFFFFFFF" } } });
-  const groups = new Map();
-  for (const item of sorted) {
-    const key = item.label || "بدون تصنيف";
-    const group = groups.get(key) || { sum: 0, count: 0 };
-    group.sum += item.amount;
-    group.count += 1;
-    groups.set(key, group);
-  }
-  [...groups.entries()].sort((a, b) => b[1].sum - a[1].sum).forEach(([label, group], index) => {
-    const row = summary.addRow([label, Math.round(group.sum * 1000) / 1000, group.count, total ? group.sum / total : 0]);
-    styleRow(row, { fill: index % 2 ? XLSX_COLORS.band : undefined, font: {} });
+  const summaryHeaders = ["التصنيف", "المجموع", "العدد", "النسبة", ...(analysis ? ["الأهمية"] : [])];
+  summary.columns = [{ width: 28 }, { width: 14 }, { width: 10 }, { width: 12 }, ...(analysis ? [{ width: 16 }] : [])];
+  addTitle(summary, "📊 وين راحت المصاري", summaryHeaders.length);
+  styleRow(summary.addRow(summaryHeaders), { fill: XLSX_COLORS.header, font: { bold: true, color: { argb: "FFFFFFFF" } } });
+  byLabel.forEach((group, index) => {
+    const level = importanceOf(group.label);
+    const row = summary.addRow([group.label, group.total, group.count, total ? group.total / total : 0, ...(level ? [level.label] : [])]);
+    const red = topLabels.has(group.label);
+    styleRow(row, { fill: red ? RED.fill : index % 2 ? XLSX_COLORS.band : undefined, font: red ? { bold: true, color: { argb: RED.font } } : {} });
     row.getCell(1).alignment = { vertical: "middle", horizontal: "right", readingOrder: "rtl" };
     row.getCell(2).numFmt = amountFormat;
     row.getCell(4).numFmt = "0%";
+    if (level) {
+      row.getCell(5).fill = { type: "pattern", pattern: "solid", fgColor: { argb: level.fill } };
+      row.getCell(5).font = { name: "Arial", size: 11, bold: true, color: { argb: level.font } };
+    }
   });
-  styleRow(summary.addRow(["المجموع", total, sorted.length, 1]), { fill: XLSX_COLORS.total, font: { bold: true, size: 12 } });
+  styleRow(summary.addRow(["المجموع", total, sorted.length, 1, ...(analysis ? [""] : [])]), { fill: XLSX_COLORS.total, font: { bold: true, size: 12 } });
   summary.lastRow.getCell(2).numFmt = amountFormat;
   summary.lastRow.getCell(4).numFmt = "0%";
 
-  return Buffer.from(await workbook.xlsx.writeBuffer());
+  if (analysisSheet) addAnalysisSheet(analysisSheet, { title, items: sorted, total, analysis, byLabel });
+
+  const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+  if (!analysis || !byLabel.length) return buffer;
+  try {
+    const shown = byLabel.slice(0, 10);
+    return await addChartsToWorkbook(buffer, "التحليل", [
+      {
+        type: "pie",
+        title: "المصاريف حسب الأهمية",
+        seriesName: "الأهمية",
+        categories: IMPORTANCE_ORDER.map((key) => IMPORTANCE[key].label),
+        values: IMPORTANCE_ORDER.map((key) => analysis.byLevel[key] || 0),
+        colors: IMPORTANCE_ORDER.map((key) => IMPORTANCE[key].color),
+        categoryRef: sheetRef("التحليل", "A", 11, 13),
+        valueRef: sheetRef("التحليل", "B", 11, 13),
+        anchor: [7, 1, 15, 17]
+      },
+      {
+        type: "bar",
+        title: "أكثر اشي صرفت عليه",
+        seriesName: `المبلغ (${CURRENCY})`,
+        categories: shown.map((e) => e.label),
+        values: shown.map((e) => e.total),
+        colors: shown.map((e) => (topLabels.has(e.label) ? "E74C3C" : null)),
+        color: "2E75B6",
+        categoryRef: sheetRef("حسب التصنيف", "A", 3, 2 + shown.length),
+        valueRef: sheetRef("حسب التصنيف", "B", 3, 2 + shown.length),
+        anchor: [7, 18, 15, 18 + Math.max(14, shown.length * 2)]
+      }
+    ]);
+  } catch (error) {
+    console.warn("Adding expense charts failed:", error.message);
+    return buffer;
+  }
 }
 
-async function exportExpenses(sock, jid, sender, args, now) {
+async function exportExpenses(sock, jid, sender, args, now, insightOptions = {}) {
   const range = periodStart(parsePeriod(args, now), now);
   const { title } = range;
   const items = await Expense.find({ userJid: sender, spentAt: spentAtQuery(range) }).sort({ spentAt: 1 }).lean();
@@ -459,11 +594,17 @@ async function exportExpenses(sock, jid, sender, args, now) {
   const fileName = range.month
     ? `مصاريف-${range.month.year}-${pad(range.month.month)}.xlsx`
     : `مصاريف-${year}-${pad(month)}-${pad(day)}.xlsx`;
+  // طلب ذكاء واحد بيصنف الأهمية وبيكتب الملاحظات؛ إذا فشل بنكمل بتصنيف الكلمات
+  const analysis = await analyzeExpensesForExport(items, sender, { title, currency: CURRENCY, ...insightOptions }).catch((error) => {
+    console.warn("Expense export analysis failed:", error.message);
+    return null;
+  });
+  const unnecessary = analysis?.byLevel.unnecessary ? `\n🔴 ما إله داعي: ${formatAmount(analysis.byLevel.unnecessary)}` : "";
   await sock.sendMessage(jid, {
-    document: await buildExpensesWorkbook(items, title),
+    document: await buildExpensesWorkbook(items, title, analysis),
     mimetype: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     fileName,
-    caption: `📊 مصاريفك ${title}: ${items.length} مصروف، المجموع ${formatTotals(items)}\nلفترة ثانية: /تصدير_مصاريف اليوم · الاسبوع · الكل · الشهر الماضي · شهر 10`
+    caption: `📊 مصاريفك ${title}: ${items.length} مصروف، المجموع ${formatTotals(items)}${unnecessary}\nبالملف: ورقة تحليل وتشارت، والأحمر أكثر اشي صرفت عليه\nلفترة ثانية: /تصدير_مصاريف اليوم · الاسبوع · الكل · الشهر الماضي · شهر 10`
   });
 }
 
@@ -487,13 +628,13 @@ export function isExpenseCommand(text) {
 }
 
 /** أوامر المصاريف. بالقروب بتنرد بالخاص حتى تضل مصاريفك إلك. */
-export async function handleExpenseCommand(sock, jid, sender, text, { now = new Date(), extractOptions, rateOptions } = {}) {
+export async function handleExpenseCommand(sock, jid, sender, text, { now = new Date(), extractOptions, rateOptions, insightOptions } = {}) {
   const matched = matchCommand(text);
   if (!matched) return false;
   const target = isPrivateChat(jid) ? jid : sender;
   try {
     if (matched.action === "list") await listExpenses(sock, target, sender, matched.args, now);
-    else if (matched.action === "export") await exportExpenses(sock, target, sender, matched.args, now);
+    else if (matched.action === "export") await exportExpenses(sock, target, sender, matched.args, now, insightOptions);
     else if (matched.action === "delete") await deleteExpense(sock, target, sender, matched.args, now);
     else {
       // مبلغ واحد بسيط بينحفظ مباشرة، وأي اشي أعقد (أكثر من مبلغ، أرقام بالكلام) بيروح للذكاء الاصطناعي

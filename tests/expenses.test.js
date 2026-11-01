@@ -257,3 +257,52 @@ test('/تصدير_مصاريف sends a formatted Excel file with a total row', a
   assert.deepEqual([summary.getCell('A4').value, summary.getCell('B4').value, summary.getCell('C4').value], ['قهوة', 5, 2]);
   assert.equal(sanitizeAssistantCommand('/تصدير_مصاريف'), '/تصدير_مصاريف');
 });
+
+test('/تصدير_مصاريف adds one AI analysis: importance colors, red top spending and real charts', async (t) => {
+  const { default: JSZip } = await import('jszip');
+  const { parseImportanceReply, guessImportance } = await import('../utils/expenseExportInsights.js');
+  const at = (d) => new Date(`2026-10-${d}T09:00:00Z`);
+  const items = [
+    { amount: 25, currency: null, label: 'بنزين', spentAt: at('02') },
+    { amount: 4, currency: null, label: 'دخان', spentAt: at('03') },
+    { amount: 3, currency: null, label: 'قهوة', spentAt: at('04') },
+    { amount: 40, currency: null, label: 'سوبرماركت', spentAt: at('05') },
+    { amount: 4.5, currency: null, label: 'دخان', spentAt: at('06') }
+  ];
+  t.mock.method(Expense, 'find', () => ({ sort: () => ({ lean: async () => items }) }));
+  let calls = 0;
+  const ai = async ({ parts }) => {
+    calls += 1;
+    assert.match(parts[0].text, /سوبرماركت/);
+    return JSON.stringify({ labels: { 'بنزين': 'essential', 'سوبرماركت': 'essential', 'قهوة': 'reducible', 'دخان': 'unnecessary', 'مش موجود': 'essential' }, insights: ['السوبرماركت أكثر اشي'], tips: ['قلل الدخان'] });
+  };
+  const sock = fakeSock();
+  await handleExpenseCommand(sock, USER, USER, '/تصدير_مصاريف شهر 10', { now: new Date('2026-11-01T09:00:00Z'), insightOptions: { ai, aiAvailable: () => true, quota: async () => ({ allowed: true }) } });
+  assert.equal(calls, 1);
+  const sent = sock.sent.at(-1);
+  assert.match(sent.caption, /ما إله داعي: 8\.5 دينار/);
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(sent.document);
+  assert.deepEqual(workbook.worksheets.map((s) => s.name), ['التحليل', 'المصاريف', 'حسب التصنيف']);
+  const analysis = workbook.getWorksheet('التحليل');
+  assert.deepEqual([analysis.getCell('A11').value, analysis.getCell('B11').value], ['🟢 أساسي', 65]);
+  assert.deepEqual([analysis.getCell('A13').value, analysis.getCell('B13').value], ['🔴 ما إله داعي', 8.5]);
+  const sheet = workbook.getWorksheet('المصاريف');
+  assert.equal(sheet.getCell('H2').value, 'الأهمية');
+  assert.equal(sheet.getCell('H4').value, '🔴 ما إله داعي');
+  const summary = workbook.getWorksheet('حسب التصنيف');
+  assert.equal(summary.getCell('A3').value, 'سوبرماركت');
+  assert.equal(summary.getCell('A3').fill.fgColor.argb, 'FFF8D7DA');
+  assert.equal(summary.getCell('E3').value, '🟢 أساسي');
+
+  const zip = await JSZip.loadAsync(sent.document);
+  assert.ok(zip.file('xl/charts/chart1.xml') && zip.file('xl/charts/chart2.xml'));
+  assert.match(await zip.file('xl/worksheets/sheet1.xml').async('string'), /<drawing r:id="rIdSamCharts"\/>/);
+  assert.match(await zip.file('[Content_Types].xml').async('string'), /drawingml\.chart\+xml/);
+
+  assert.equal(parseImportanceReply('nope', ['x']), null);
+  assert.equal(guessImportance('سجاير'), 'unnecessary');
+  assert.equal(guessImportance('فاتورة الكهرباء'), 'essential');
+  assert.equal(guessImportance('نتفلكس'), 'reducible');
+});
