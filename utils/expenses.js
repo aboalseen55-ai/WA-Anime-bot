@@ -5,6 +5,7 @@ import { DEFAULT_TIME_ZONE, getTimeZoneParts, zonedTimeToUtc } from "./quran.js"
 import { generateSamBotAIFromParts, isSamBotAIAvailable } from "./samBotAI.js";
 import { consumeAssistantQuota } from "./assistantQuota.js";
 import { getRateToJOD } from "../services/exchangeRates.js";
+import { monthTitle, parseMonthArg } from "./expensePeriods.js";
 
 const TIME_ZONE = process.env.PERSONAL_REMINDER_TIMEZONE || DEFAULT_TIME_ZONE;
 const CURRENCY = process.env.EXPENSE_CURRENCY || "دينار";
@@ -199,7 +200,15 @@ export async function extractExpenses(text, sender, { ai = generateSamBotAIFromP
 function periodStart(period, now) {
   const { year, month, day } = getTimeZoneParts(now, TIME_ZONE);
   const startOfToday = zonedTimeToUtc(year, month, day, 0, 0, 0, TIME_ZONE);
+  if (period && typeof period === "object") {
+    // شهر محدد: من أول الشهر لأول الشهر اللي بعده
+    const start = zonedTimeToUtc(period.year, period.month, 1, 0, 0, 0, TIME_ZONE);
+    const end = zonedTimeToUtc(period.year, period.month + 1, 1, 0, 0, 0, TIME_ZONE);
+    const current = period.year === year && period.month === month;
+    return { start, end, title: current ? "هالشهر" : `بشهر ${monthTitle(period)}`, month: period };
+  }
   if (period === "today") return { start: startOfToday, title: "اليوم" };
+  if (period === "yesterday") return { start: new Date(startOfToday.getTime() - 86400000), end: startOfToday, title: "امبارح" };
   if (period === "all") return { start: new Date(0), title: "من الأول" };
   if (period === "week") {
     // الأسبوع من السبت
@@ -210,12 +219,20 @@ function periodStart(period, now) {
   return { start: zonedTimeToUtc(year, month, 1, 0, 0, 0, TIME_ZONE), title: "هالشهر" };
 }
 
-function parsePeriod(args) {
-  const value = normalizeName(args);
+function spentAtQuery(range) {
+  return range.end ? { $gte: range.start, $lt: range.end } : { $gte: range.start };
+}
+
+/** اليوم، امبارح، الاسبوع، الكل، أو شهر معين (شهر 10، الشهر الماضي، تشرين الاول، 10/2025). الافتراضي هالشهر. */
+function parsePeriod(args, now = new Date()) {
+  const value = normalizeName(toLatinDigits(args));
+  if (!value) return "month";
   if (/^(اليوم|today)/.test(value)) return "today";
+  if (/^(امبارح|مبارح|امس|yesterday)/.test(value)) return "yesterday";
   if (/^(الاسبوع|اسبوع|هالاسبوع|week)/.test(value)) return "week";
   if (/^(الكل|كل|all)/.test(value)) return "all";
-  return "month";
+  const { year, month } = getTimeZoneParts(now, TIME_ZONE);
+  return parseMonthArg(value, { year, month }) || "month";
 }
 
 const NAME_TO_CODE = { "دولار": "USD", "يورو": "EUR", "ريال": "SAR", "درهم": "AED", "شيكل": "ILS", "جنيه": "EGP", "جنيه استرليني": "GBP" };
@@ -285,15 +302,16 @@ async function addExpenses(sock, jid, sender, rawItems, now, rateOptions) {
     ? [`💸 سجلت مصروف: ${describe(items[0])}`]
     : [`💸 سجلت ${items.length} مصاريف:`, ...items.map((item) => `▪️ ${describe(item)}`)];
   if (monthItems.length) lines.push(`📊 مجموع هالشهر: ${formatTotals(monthItems)}`);
-  lines.push("لعرض مصاريفك: /مصاريفي (أو /مصاريفي اليوم، /مصاريفي الاسبوع)");
+  lines.push("لعرض مصاريفك: /مصاريفي (أو /مصاريفي اليوم، /مصاريفي الاسبوع، /مصاريفي الشهر الماضي)");
   await sock.sendMessage(jid, { text: rtlLines(lines) });
 }
 
 async function listExpenses(sock, jid, sender, args, now) {
-  const { start, title } = periodStart(parsePeriod(args), now);
-  const items = await Expense.find({ userJid: sender, spentAt: { $gte: start } }).sort({ spentAt: -1 }).lean();
+  const range = periodStart(parsePeriod(args, now), now);
+  const { title } = range;
+  const items = await Expense.find({ userJid: sender, spentAt: spentAtQuery(range) }).sort({ spentAt: -1 }).lean();
   if (!items.length) {
-    await sock.sendMessage(jid, { text: `📭 ما في مصاريف مسجلة ${title}.\nللتسجيل: /مصروف 5 قهوة\nأو احكيلي: صرفت 5 دنانير على قهوة` });
+    await sock.sendMessage(jid, { text: `📭 ما في مصاريف مسجلة ${title}.\nللتسجيل: /مصروف 5 قهوة\nأو احكيلي: صرفت 5 دنانير على قهوة\nلشهر سابق: /مصاريفي الشهر الماضي أو /مصاريفي شهر 10` });
     return;
   }
   const byLabel = new Map();
@@ -318,15 +336,19 @@ async function listExpenses(sock, jid, sender, args, now) {
     "*آخر المصاريف:*",
     ...recent,
     "",
-    "للحذف: /حذف_مصروف <رقم من القائمة>"
+    `للحذف: /حذف_مصروف <رقم من القائمة>${args.trim() ? ` ${args.trim()}` : ""}`,
+    "لشهر ثاني: /مصاريفي الشهر الماضي · /مصاريفي شهر 10 · /تصدير_مصاريف شهر 10"
   ];
   await sock.sendMessage(jid, { text: rtlLines(lines) });
 }
 
 async function deleteExpense(sock, jid, sender, args, now) {
-  const index = Number(toLatinDigits(args).match(/\d+/)?.[0] || 1);
-  const { start } = periodStart("month", now);
-  const items = await Expense.find({ userJid: sender, spentAt: { $gte: start } }).sort({ spentAt: -1 }).limit(LIST_LIMIT).lean();
+  // "/حذف_مصروف 3 الشهر الماضي": الرقم من نفس القائمة اللي طلعت بـ /مصاريفي الشهر الماضي
+  const latin = toLatinDigits(args).trim();
+  const lead = latin.match(/^(\d+)\s*(.*)$/);
+  const index = Number(lead?.[1] || latin.match(/\d+/)?.[0] || 1);
+  const range = periodStart(parsePeriod(lead ? lead[2] : "", now), now);
+  const items = await Expense.find({ userJid: sender, spentAt: spentAtQuery(range) }).sort({ spentAt: -1 }).limit(LIST_LIMIT).lean();
   const item = items[index - 1];
   if (!item) {
     await sock.sendMessage(jid, { text: "❌ ما لقيت هالمصروف. شوف الأرقام بـ /مصاريفي" });
@@ -425,18 +447,23 @@ export async function buildExpensesWorkbook(items, title = "") {
 }
 
 async function exportExpenses(sock, jid, sender, args, now) {
-  const { start, title } = periodStart(parsePeriod(args), now);
-  const items = await Expense.find({ userJid: sender, spentAt: { $gte: start } }).sort({ spentAt: 1 }).lean();
+  const range = periodStart(parsePeriod(args, now), now);
+  const { title } = range;
+  const items = await Expense.find({ userJid: sender, spentAt: spentAtQuery(range) }).sort({ spentAt: 1 }).lean();
   if (!items.length) {
     await sock.sendMessage(jid, { text: `📭 ما في مصاريف مسجلة ${title} عشان أصدرها.` });
     return;
   }
   const { year, month, day } = getTimeZoneParts(now, TIME_ZONE);
+  const pad = (n) => String(n).padStart(2, "0");
+  const fileName = range.month
+    ? `مصاريف-${range.month.year}-${pad(range.month.month)}.xlsx`
+    : `مصاريف-${year}-${pad(month)}-${pad(day)}.xlsx`;
   await sock.sendMessage(jid, {
     document: await buildExpensesWorkbook(items, title),
     mimetype: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    fileName: `مصاريف-${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}.xlsx`,
-    caption: `📊 مصاريفك ${title}: ${items.length} مصروف، المجموع ${formatTotals(items)}\nلفترة ثانية: /تصدير_مصاريف اليوم · الاسبوع · الكل`
+    fileName,
+    caption: `📊 مصاريفك ${title}: ${items.length} مصروف، المجموع ${formatTotals(items)}\nلفترة ثانية: /تصدير_مصاريف اليوم · الاسبوع · الكل · الشهر الماضي · شهر 10`
   });
 }
 

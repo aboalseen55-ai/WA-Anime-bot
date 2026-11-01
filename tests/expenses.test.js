@@ -25,7 +25,7 @@ function fakeExpenses(t) {
     return total ? [{ _id: null, total }] : [];
   });
   t.mock.method(Expense, 'find', (q) => {
-    const rows = docs.filter(d => d.userJid === q.userJid && d.spentAt >= q.spentAt.$gte).sort((a, b) => b.spentAt - a.spentAt);
+    const rows = docs.filter(d => d.userJid === q.userJid && d.spentAt >= q.spentAt.$gte && (!q.spentAt.$lt || d.spentAt < q.spentAt.$lt)).sort((a, b) => b.spentAt - a.spentAt);
     const chain = { sort: () => chain, limit: (n) => { rows.splice(n); return chain; }, lean: async () => rows };
     return chain;
   });
@@ -87,6 +87,40 @@ test('/مصروف adds, /مصاريفي totals and /حذف_مصروف removes', 
   await handleExpenseCommand(sock, USER, USER, '/حذف_مصروف 1', { now: NOW, ...NO_AI });
   assert.equal(docs.length, 1);
   assert.equal(docs[0].label, 'قهوة');
+});
+
+test('past months can be listed, exported and deleted from by command (شهر 10، الشهر الماضي)', async (t) => {
+  const docs = fakeExpenses(t);
+  const sock = fakeSock();
+  // 31 أكتوبر 23:30 بعمّان = 20:30 UTC، لازم يضل من شهر 10
+  await handleExpenseCommand(sock, USER, USER, '/مصروف 30 بنزين', { now: new Date('2026-10-31T20:30:00Z'), ...NO_AI });
+  await handleExpenseCommand(sock, USER, USER, '/مصروف 4 قهوة', { now: new Date('2026-10-05T09:00:00Z'), ...NO_AI });
+  await handleExpenseCommand(sock, USER, USER, '/مصروف 7 سبتمبر', { now: new Date('2026-09-10T09:00:00Z'), ...NO_AI });
+  const NOV1 = new Date('2026-11-01T09:00:00Z');
+
+  await handleExpenseCommand(sock, USER, USER, '/مصاريفي', { now: NOV1, ...NO_AI });
+  assert.match(sock.sent.at(-1).text, /ما في مصاريف مسجلة هالشهر/);
+  assert.match(sock.sent.at(-1).text, /الشهر الماضي/);
+
+  for (const args of ['شهر 10', 'الشهر الماضي', 'شهر_10', '10', 'تشرين الاول', 'اكتوبر', '١٠/2026']) {
+    await handleExpenseCommand(sock, USER, USER, `/مصاريفي ${args}`, { now: NOV1, ...NO_AI });
+    const text = sock.sent.at(-1).text;
+    assert.match(text, /مصاريفك بشهر تشرين الأول 2026/, args);
+    assert.match(text, /المجموع: \*34 دينار\* \(2 مصروف\)/, args);
+  }
+  await handleExpenseCommand(sock, USER, USER, '/مصاريفي شهر 9', { now: NOV1, ...NO_AI });
+  assert.match(sock.sent.at(-1).text, /المجموع: \*7 دينار\*/);
+  // شهر 12 لسا ما إجا، فهو من السنة الماضية
+  await handleExpenseCommand(sock, USER, USER, '/مصاريفي شهر 12', { now: NOV1, ...NO_AI });
+  assert.match(sock.sent.at(-1).text, /كانون الأول 2025/);
+
+  await handleExpenseCommand(sock, USER, USER, '/تصدير_مصاريف شهر 10', { now: NOV1, ...NO_AI });
+  assert.equal(sock.sent.at(-1).fileName, 'مصاريف-2026-10.xlsx');
+  assert.match(sock.sent.at(-1).caption, /2 مصروف، المجموع 34 دينار/);
+
+  await handleExpenseCommand(sock, USER, USER, '/حذف_مصروف 2 الشهر الماضي', { now: NOV1, ...NO_AI });
+  assert.match(sock.sent.at(-1).text, /حذفت: 4 دينار · قهوة/);
+  assert.deepEqual(docs.map((d) => d.label).sort(), ['بنزين', 'سبتمبر']);
 });
 
 test('expense commands in a group answer privately and natural text is ignored there', async (t) => {

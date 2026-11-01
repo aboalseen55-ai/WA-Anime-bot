@@ -4,6 +4,7 @@ import Expense from "../database/expenseModel.js";
 import { DEFAULT_TIME_ZONE, getTimeZoneParts, zonedTimeToUtc } from "./quran.js";
 import { generateSamBotAIFromParts, isSamBotAIAvailable } from "./samBotAI.js";
 import { consumeAssistantQuota } from "./assistantQuota.js";
+import { monthKeyRange, parseMonthMention } from "./expensePeriods.js";
 
 const TIME_ZONE = process.env.PERSONAL_REMINDER_TIMEZONE || DEFAULT_TIME_ZONE;
 const CURRENCY = process.env.EXPENSE_CURRENCY || "دينار";
@@ -61,18 +62,29 @@ function addDays(key, days) {
   return date.toISOString().slice(0, 10);
 }
 
+function todayParts(todayKey) {
+  const [year, month] = todayKey.split("-").map(Number);
+  return { year, month };
+}
+
+/** "مصروف شهر 10"، "مصاريف الشهر الماضي": طلب مصاريف فترة سابقة حتى بدون كلمة سؤال. */
+function asksForMonth(value, now = new Date()) {
+  return MONEY_WORDS.test(value) && Boolean(parseMonthMention(value, getTimeZoneParts(now, TIME_ZONE)));
+}
+
 function monthStartKey(now) {
   const { year, month } = getTimeZoneParts(now, TIME_ZONE);
   return `${year}-${String(month).padStart(2, "0")}-01`;
 }
 
 /** سؤال عن المصاريف (مش تسجيل مصروف): فيه كلمة سؤال/تحليل، ومعها كلمة مصاري أو تصنيف صرف عليه المستخدم قبل. */
-export function looksLikeExpenseQuestion(text, knownLabels = []) {
+export function looksLikeExpenseQuestion(text, knownLabels = [], now = new Date()) {
   const raw = String(text || "").trim();
   if (!raw || raw.startsWith("/") || raw.length > 400) return false;
   const value = normalize(raw);
   // "صرفت 5 على قهوة" تسجيل مش سؤال
   if (/^(انا\s+|اليوم\s+|هسا\s+)?(صرفت|دفعت|اشتريت)\s/.test(value) && /\d/.test(value)) return false;
+  if (asksForMonth(value, now)) return true;
   if (!QUESTION_WORDS.test(value)) return false;
   if (MONEY_WORDS.test(value)) return true;
   return knownLabels.some((label) => {
@@ -121,6 +133,7 @@ function planInstruction(todayKey, weekday) {
   return [
     "You turn a user's question about their own personal expenses into a precise query. The user writes Arabic (usually Jordanian dialect).",
     `Today is ${todayKey} (${weekday}) in ${TIME_ZONE}. Weeks start on Saturday. "هالشهر" = from the 1st of this month to today.`,
+    "\"الشهر الماضي\" / \"الشهر اللي فات\" = the whole previous calendar month (1st to its last day). \"شهر 10\" or a month name (تشرين الأول، أكتوبر) = that whole calendar month: this year, or last year if that month has not come yet this year. If the user names a year, use it.",
     "You get the list of expense labels the user has used (label, count, total). Pick ONLY labels from that list, written exactly as listed.",
     "Pick every label that matches the meaning of the question, including synonyms and spelling variants (e.g. بنزين، بنزينه، وقود، تعبئة سيارة، كاز for fuel). Use an empty list when the question is about all spending.",
     "groupBy: how to break the answer down: none, label, month, week or day.",
@@ -182,8 +195,10 @@ const PERIOD_HINTS = [
 /** بدون ذكاء اصطناعي: فترة من كلمات واضحة، وتصنيفات مذكورة بالسؤال حرفيًا. */
 export function fallbackQueryPlan(question, { todayKey, knownLabels }) {
   const value = normalize(question);
-  const hint = PERIOD_HINTS.find(([re]) => re.test(value));
-  const period = hint ? hint[1](todayKey) : { from: `${todayKey.slice(0, 7)}-01`, to: todayKey };
+  const month = parseMonthMention(value, todayParts(todayKey));
+  const hint = month ? null : PERIOD_HINTS.find(([re]) => re.test(value));
+  const period = month ? monthKeyRange(month) : hint ? hint[1](todayKey) : { from: `${todayKey.slice(0, 7)}-01`, to: todayKey };
+  if (period.to > todayKey) period.to = todayKey;
   const labels = knownLabels.filter((label) => {
     const key = normalize(label);
     return key.length >= 2 && value.includes(key);
@@ -382,13 +397,13 @@ export async function handleNaturalExpenseQuestion(sock, jid, sender, text, opti
   if (!isPrivateChat(jid)) return false;
   const model = options.model || Expense;
   const value = normalize(text);
-  if (!QUESTION_WORDS.test(value)) return false;
+  if (!QUESTION_WORDS.test(value) && !asksForMonth(value, options.now)) return false;
   let labels = [];
   if (!MONEY_WORDS.test(value)) {
     const rows = await model.find({ userJid: sender }).sort({ spentAt: -1 }).limit(500).lean().catch(() => []);
     labels = [...new Set(rows.map((row) => row.label).filter(Boolean))];
   }
-  if (!looksLikeExpenseQuestion(text, labels)) return false;
+  if (!looksLikeExpenseQuestion(text, labels, options.now)) return false;
   try {
     const result = await answerExpenseQuestion(text, sender, options);
     if (!result.handled) return false;

@@ -16,7 +16,7 @@ const ROWS = [
 function fakeModel(rows = ROWS) {
   return {
     find: (q) => {
-      const result = rows.filter((r) => r.userJid === q.userJid && (!q.spentAt || r.spentAt >= q.spentAt.$gte));
+      const result = rows.filter((r) => r.userJid === q.userJid && (!q.spentAt || (r.spentAt >= q.spentAt.$gte && (!q.spentAt.$lt || r.spentAt < q.spentAt.$lt))));
       const chain = { sort: () => chain, limit: () => chain, lean: async () => result };
       return chain;
     }
@@ -98,4 +98,22 @@ test('natural DM questions are answered, other chat falls through', async () => 
   assert.equal(await handleExpenseQuestionCommand(sock, '123@g.us', USER, '/حلل_مصاريف كم البنزين', options), true);
   assert.equal(sent.at(-2).jid, USER);
   assert.match(sent.at(-1).text, /الخاص/);
+});
+
+test('past months are understood without a question word: "مصروف شهر 10", "الشهر الماضي"', async () => {
+  const NOV1 = new Date('2026-11-01T09:00:00Z');
+  assert.equal(looksLikeExpenseQuestion('مصروف شهر 10', [], NOV1), true);
+  assert.equal(looksLikeExpenseQuestion('بدي مصاريف الشهر الماضي', [], NOV1), true);
+  assert.equal(looksLikeExpenseQuestion('مصاريفي بتشرين الاول', [], NOV1), true);
+  assert.equal(looksLikeExpenseQuestion('شهر 10 كان حلو', [], NOV1), false);
+
+  assert.deepEqual(fallbackQueryPlan('مصروف شهر 10', { todayKey: '2026-11-01', knownLabels: [] }).from, '2026-10-01');
+  assert.deepEqual(fallbackQueryPlan('مصروف شهر 10', { todayKey: '2026-11-01', knownLabels: [] }).to, '2026-10-31');
+  const last = fallbackQueryPlan('كم صرفت على البنزين الشهر الماضي', { todayKey: '2026-11-01', knownLabels: ['بنزين'] });
+  assert.deepEqual([last.from, last.to, last.labels], ['2026-10-01', '2026-10-31', ['بنزين']]);
+
+  const sock = { sent: [], sendMessage: async (jid, payload) => { sock.sent.push(payload); } };
+  const options = { now: NOV1, model: fakeModel(), aiAvailable: () => false };
+  assert.equal(await handleNaturalExpenseQuestion(sock, USER, USER, 'مصروف شهر 10', options), true);
+  assert.match(sock.sent.at(-1).text, /91\.5 دينار/);
 });
