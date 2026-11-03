@@ -1,7 +1,8 @@
 import OpsWatchState from '../database/opsWatchStateModel.js';
 import { DEVELOPER_JID } from '../config.js';
 
-const ORIGIN = (process.env.ANIMOFOLIO_ORIGIN || 'https://animofolio.com').replace(/\/$/, '');
+// The apex redirects to www, and a cross-origin redirect drops the Authorization header.
+const ORIGIN = (process.env.ANIMOFOLIO_ORIGIN || 'https://www.animofolio.com').replace(/\/$/, '');
 const TIME_ZONE = 'Asia/Amman';
 const TICK_MS = 60 * 1000;
 const SITE_CHECK_MS = 5 * 60 * 1000;
