@@ -48,6 +48,25 @@ function normalizeMediaUrl(value) {
   return markdown?.[1] || text;
 }
 
+// نتيجة فيها قائمة ملفات (مثل medias بانستغرام): كل ملف بيتبعت حسب نوعه.
+// النوع من حقل type بالرد، وإذا مش موجود من امتداد الرابط.
+const MEDIA_TYPE_ALIASES = { video: 'video', reel: 'video', mp4: 'video', image: 'image', photo: 'image', picture: 'image', img: 'image', jpg: 'image', audio: 'audio', music: 'audio', mp3: 'audio' };
+export function mediaListItems(value, limit = 10) {
+  const list = Array.isArray(value) ? value : value && typeof value === 'object' ? (value.medias || value.media || value.items || value.data?.medias || [value]) : [value];
+  const items = [];
+  for (const entry of list) {
+    const url = normalizeMediaUrl(typeof entry === 'string' ? entry : entry?.link || entry?.url || entry?.download_url || entry?.src || '');
+    if (!/^https:\/\//i.test(url)) continue;
+    const declared = MEDIA_TYPE_ALIASES[String(entry?.type || entry?.media_type || '').toLowerCase()];
+    let path = '';
+    try { path = new URL(url).pathname.toLowerCase(); } catch { continue; }
+    const guessed = /\.(mp4|mov|webm|m4v)$/.test(path) ? 'video' : /\.(jpe?g|png|webp|gif|heic)$/.test(path) ? 'image' : /\.(mp3|m4a|ogg|wav|aac)$/.test(path) ? 'audio' : 'video';
+    items.push({ type: declared || guessed, url });
+    if (items.length >= limit) break;
+  }
+  return items;
+}
+
 function applyTemplate(template, { sender, pushName, apiValue, query, args }) {
   return String(template || "")
     .replaceAll("{name}", pushName || "صديقي")
@@ -97,7 +116,7 @@ export async function runConfiguredApi(api, variables) {
         httpsAgent: agent,
         maxContentLength: 1024 * 1024,
         maxBodyLength: 120000,
-        responseType: ["text", "image_url", "video_url", "audio_url"].includes(api.responseType) ? "json" : "arraybuffer",
+        responseType: ["text", "image_url", "video_url", "audio_url", "media_list"].includes(api.responseType) ? "json" : "arraybuffer",
         validateStatus: (status) => status >= 200 && status < 300
       });
       return { data: response.data, responseType: api.responseType };
@@ -425,7 +444,7 @@ async function executeDashboardCommand(sock, jid, sender, command, query, args, 
       await sendSeriesResults(sock, jid, apiResult.results, command.apiId.seriesConfig?.general?.showThumbnails === true);
       return true;
     }
-    const rawData = ["text", "image_url", "video_url", "audio_url"].includes(apiResult?.responseType) ? apiResult.data : null;
+    const rawData = ["text", "image_url", "video_url", "audio_url", "media_list"].includes(apiResult?.responseType) ? apiResult.data : null;
     const apiValue = apiResult && apiResult.step === 'search' ? apiResult.results : readDashboardPath(rawData, command.responsePath);
     const reply = applyTemplate(command.responseTemplate || "تم التنفيذ.", {
       sender,
@@ -434,7 +453,14 @@ async function executeDashboardCommand(sock, jid, sender, command, query, args, 
       query,
       args
     });
-    if (["image_url", "video_url", "audio_url"].includes(apiResult?.responseType)) {
+    if (apiResult?.responseType === 'media_list') {
+      const items = mediaListItems(apiValue ?? rawData);
+      if (!items.length) throw new Error('ما في وسائط بالنتيجة');
+      for (const [index, item] of items.entries()) {
+        const caption = index === 0 ? reply || undefined : undefined;
+        await sock.sendMessage(jid, item.type === 'audio' ? { audio: { url: item.url }, mimetype: 'audio/mpeg' } : { [item.type]: { url: item.url }, ...(caption ? { caption } : {}) });
+      }
+    } else if (["image_url", "video_url", "audio_url"].includes(apiResult?.responseType)) {
       const mediaUrl = normalizeMediaUrl(typeof apiResult.data === 'string' ? apiResult.data : apiValue);
       if (!/^https:\/\//i.test(String(mediaUrl || ''))) throw new Error('نتيجة الوسائط ليست رابط HTTPS');
       const mediaType = apiResult.responseType.replace('_url','');

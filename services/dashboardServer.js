@@ -92,7 +92,7 @@ export function validateApi(input) {
   const result = { name, endpoint, queryTemplate: String(input.queryTemplate || '').trim(), method: input.method, responseType: input.responseType || 'text', timeoutMs: Math.max(1000, Math.min(30000, Number(input.timeoutMs) || 12000)), enabled: input.enabled !== false };
   result.type = type;
   result.fieldOptions = validateRequestFields(input.fieldOptions);
-  if (!['text','image','image_url','video','video_url','audio','audio_url'].includes(result.responseType)) throw new Error('نوع النتيجة غير صالح');
+  if (!['text','image','image_url','video','video_url','audio','audio_url','media_list'].includes(result.responseType)) throw new Error('نوع النتيجة غير صالح');
   for (const [field, destination] of [['headers','encryptedHeaders'],['body','encryptedBody']]) {
     if (Object.hasOwn(input, field)) {
       if (!input[field] || typeof input[field] !== 'object' || Array.isArray(input[field])) throw new Error('الحقول المتقدمة يجب أن تكون JSON object');
@@ -283,7 +283,7 @@ export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKin
           return json(res, 200, { ok: true, step: 'search', downloadTested: false, preview: result.results });
         }
         const result = await runConfiguredApi(api, variables);
-        const raw = ['text', 'image_url', 'video_url', 'audio_url'].includes(result.responseType) ? result.data : null;
+        const raw = ['text', 'image_url', 'video_url', 'audio_url', 'media_list'].includes(result.responseType) ? result.data : null;
         const selected = body.testPath ? readDashboardPath(raw, String(body.testPath)) : raw;
         const preview = Buffer.isBuffer(result.data)
           ? { kind: 'binary', bytes: result.data.length }

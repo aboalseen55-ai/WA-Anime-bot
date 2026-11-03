@@ -10,7 +10,7 @@ const dashboardApiSchema = new mongoose.Schema({
   encryptedBody: { type: String, default: "" },
   timeoutMs: { type: Number, default: 12000, min: 1000, max: 30000 },
   enabled: { type: Boolean, default: true },
-  responseType: { type: String, enum: ["text", "image", "image_url", "video", "video_url", "audio", "audio_url"], default: "text" },
+  responseType: { type: String, enum: ["text", "image", "image_url", "video", "video_url", "audio", "audio_url", "media_list"], default: "text" },
   // type: normal API or series service
   type: { type: String, enum: ["api", "series"], default: "api" },
   // series-specific configuration (optional)

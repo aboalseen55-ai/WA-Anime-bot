@@ -69,3 +69,30 @@ test('validateCommand normalizes numbers and domains', () => {
   assert.throws(() => validateCommand({ ...base, allowedNumbers: '' }));
   assert.throws(() => validateCommand({ ...base, permission: 'everyone', apiId: '', autoLinkDomains: 'instagram.com' }));
 });
+
+test('mediaListItems uses declared types and falls back to the URL extension', async () => {
+  const { mediaListItems } = await import('../services/dashboardRuntime.js');
+  assert.deepEqual(mediaListItems([
+    { type: 'image', link: 'https://cdn.example.com/a.jpg?x=1', img: 'https://cdn.example.com/t.jpg' },
+    { type: 'video', link: 'https://cdn.example.com/b.mp4' },
+    { link: 'https://cdn.example.com/c.webp' },
+    { type: 'video', link: 'http://insecure.example.com/d.mp4' }
+  ]), [
+    { type: 'image', url: 'https://cdn.example.com/a.jpg?x=1' },
+    { type: 'video', url: 'https://cdn.example.com/b.mp4' },
+    { type: 'image', url: 'https://cdn.example.com/c.webp' }
+  ]);
+  assert.equal(mediaListItems({ data: { medias: [{ type: 'video', link: 'https://x.example.com/v' }] } })[0].type, 'video');
+});
+
+test('media_list command sends a carousel post item by item with one caption', async t => {
+  const { sent, sock } = setup(t, [{ ...insta, responsePath: 'data.medias', apiId: { ...insta.apiId, responseType: 'media_list' } }]);
+  setHttpClient(async () => ({ data: { data: { medias: [
+    { type: 'image', link: 'https://cdn.example.com/1.jpg' }, { type: 'video', link: 'https://cdn.example.com/2.mp4' }
+  ] } } }));
+  assert.equal(await handleDashboardAutoLink(sock, '962700000001@s.whatsapp.net', '962700000001@s.whatsapp.net', reel, {}), true);
+  assert.deepEqual(sent.map(item => item.payload), [
+    { image: { url: 'https://cdn.example.com/1.jpg' }, caption: 'تم' },
+    { video: { url: 'https://cdn.example.com/2.mp4' } }
+  ]);
+});
