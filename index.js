@@ -21,6 +21,7 @@ import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import pino from "pino";
 import { startDashboardServer } from "./services/dashboardServer.js";
+import { startAnimofolioWatch } from "./services/animofolioWatch.js";
 import { setPairingQr, invalidatePairingQr } from "./services/whatsappPairing.js";
 import { startShatreenComments } from "./services/shatreenComments.js";
 import { scheduleBusinessSummary } from "./services/businessSummary.js";
@@ -158,6 +159,10 @@ startDashboardServer({
       startBot();
     }
   }
+});
+
+startAnimofolioWatch({
+  getSock: () => (whatsappConnectionState === "open" && outgoingAllowed() ? activeSock : null)
 });
 
 function getDisconnectStatusCode(error) {
