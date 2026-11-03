@@ -1,4 +1,5 @@
 import { createShatreenHook } from './shatreenHook.js';
+import { createXsamerHook } from './xsamerHook.js';
 import { handleBroadcastRoute, isOpenAIConfigured } from './broadcastService.js';
 import { getBotMode } from './botMode.js';
 import http from 'node:http';
@@ -350,8 +351,11 @@ export function startDashboardServer(options) {
   // شاطرين's notifications (/hooks/shatreen) are answered first; everything else is the dashboard.
   const dashboard = createDashboardHandler(options);
   const shatreen = options.getSock ? createShatreenHook({ getSock: options.getSock }) : null;
+  // xsamer.com contact-form inquiries (/hooks/xsamer), HMAC-signed by the website.
+  const xsamer = options.getSock ? createXsamerHook({ getSock: options.getSock }) : null;
   const server = http.createServer(async (req, res) => {
     if (shatreen && (await shatreen(req, res))) return;
+    if (xsamer && (await xsamer(req, res))) return;
     return dashboard(req, res);
   }); server.requestTimeout = 30000; server.headersTimeout = 15000;
   server.listen(Number(process.env.PORT || 3000),'0.0.0.0',()=>console.log('Dashboard server ready')); return server;
