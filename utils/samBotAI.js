@@ -2,10 +2,12 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { recordSamBotAIUsage } from "./samBotUsage.js";
 import { SAM_CAPABILITIES, USER_MEMORY_INSTRUCTION, assistantActionInstruction, currentTimeContext } from "./samCapabilities.js";
 import { personalEnabled } from "../services/botMode.js";
+import { generateOpenAIFallback, isOpenAIFallbackConfigured, openAIFallbackModel } from "./openAIFallback.js";
 
-const DEFAULT_MODEL = "gemini-3.1-flash-lite";
-// SAM_BOT_AI_FALLBACK_MODELS (مفصولة بفواصل) بتغيرها؛ قيمة فاضية بتلغي الاحتياطي
-const DEFAULT_FALLBACK_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"];
+// Flash (مش Lite) لأنه أذكى بفهم الطلب؛ SAM_BOT_AI_MODEL بيغيره
+const DEFAULT_MODEL = "gemini-flash-latest";
+// موديلات Gemini إضافية قبل OpenAI (SAM_BOT_AI_FALLBACK_MODELS مفصولة بفواصل)، افتراضيًا ولا وحدة: بعد Gemini بنروح لـ OpenAI
+const DEFAULT_FALLBACK_MODELS = [];
 const DEFAULT_TIMEOUT_MS = 12000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 80;
 const DEFAULT_BILLING_COOLDOWN_MS = 30 * 60 * 1000;
@@ -101,7 +103,7 @@ async function safelyRecordUsage(payload) {
 }
 
 export function isSamBotAIAvailable() {
-  return Date.now() >= geminiBlockedUntil && getConfiguredApiKeys().length > 0;
+  return (Date.now() >= geminiBlockedUntil && getConfiguredApiKeys().length > 0) || isOpenAIFallbackConfigured();
 }
 
 function resolveMaxOutputTokens(value, cap = MAX_ALLOWED_OUTPUT_TOKENS) {
@@ -133,7 +135,32 @@ export function resolveModelChain(primary, fallbacks = process.env.SAM_BOT_AI_FA
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function generateSamBotAIText({
+async function generateSamBotAIText(options) {
+  // null = Gemini فشل (ضغط/رصيد/مفتاح)؛ نص فاضي = Gemini رد فعلًا بس ما في كلام
+  const fromGemini = await generateWithGemini(options);
+  if (fromGemini !== null) return fromGemini;
+  if (!isOpenAIFallbackConfigured()) return "";
+
+  const { systemInstruction, prompt, temperature = 0.65, maxOutputTokens, outputTokenCap = MAX_ALLOWED_OUTPUT_TOKENS, responseMimeType, timeoutMs } = options;
+  const json = Boolean(responseMimeType);
+  try {
+    const text = sanitizeReply(await generateOpenAIFallback({
+      systemInstruction,
+      prompt,
+      temperature,
+      maxOutputTokens: resolveMaxOutputTokens(maxOutputTokens, outputTokenCap),
+      json,
+      timeoutMs: Number(timeoutMs) > 0 ? Number(timeoutMs) : 30000
+    }));
+    if (text) console.warn(`↪️ Gemini failed; answered with OpenAI ${openAIFallbackModel()}.`);
+    return json ? text : toWhatsAppFormatting(text);
+  } catch (error) {
+    console.error(`❌ Sam Bot OpenAI fallback error (${openAIFallbackModel()}):`, error.message);
+    return "";
+  }
+}
+
+async function generateWithGemini({
   systemInstruction,
   prompt,
   temperature = 0.65,
@@ -143,10 +170,10 @@ async function generateSamBotAIText({
   timeoutMs,
   modelName
 }) {
-  if (Date.now() < geminiBlockedUntil) return "";
+  if (Date.now() < geminiBlockedUntil) return null;
 
   const apiKeys = getConfiguredApiKeys();
-  if (!apiKeys.length) return "";
+  if (!apiKeys.length) return null;
 
   const primaryModel = modelName || process.env.SAM_BOT_AI_MODEL || process.env.GEMINI_MODEL || DEFAULT_MODEL;
   const models = resolveModelChain(primaryModel);
@@ -220,7 +247,7 @@ async function generateSamBotAIText({
     });
   }
 
-  return "";
+  return null;
 }
 
 // في الخاص سام مساعد شخصي: جواب كامل ومفيد بدل الرد القصير الخاص بالمجموعات
