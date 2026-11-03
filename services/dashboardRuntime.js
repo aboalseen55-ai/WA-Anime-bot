@@ -406,7 +406,11 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
       } else await sock.sendMessage(jid, { text: reply });
     }
   } catch (error) {
-    console.warn(`⚠️ Dashboard command ${command.trigger} failed: ${error.message}`);
+    // سبب الرفض من المزود (مثلاً RapidAPI: "You are not subscribed to this API") بيوضح المشكلة أكثر من رقم الحالة
+    const providerData = error.response?.data;
+    const providerMessage = typeof providerData === 'string' ? providerData : (providerData?.message || providerData?.error || '');
+    const host = (() => { try { return new URL(error.config?.url).host; } catch { return ''; } })();
+    console.warn(`⚠️ Dashboard command ${command.trigger} failed: ${error.message}${host ? ` [${host}]` : ''}${providerMessage ? ` — ${String(providerMessage).slice(0, 200)}` : ''}`);
     await sock.sendMessage(jid, { text: "تعذر تنفيذ الأمر الآن." });
   }
   return true;
