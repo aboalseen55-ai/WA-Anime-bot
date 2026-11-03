@@ -4,8 +4,9 @@ import { SAM_CAPABILITIES, USER_MEMORY_INSTRUCTION, assistantActionInstruction, 
 import { personalEnabled } from "../services/botMode.js";
 import { generateOpenAIFallback, isOpenAIFallbackConfigured, openAIFallbackModel } from "./openAIFallback.js";
 
-// Flash (مش Lite) لأنه أذكى بفهم الطلب؛ SAM_BOT_AI_MODEL بيغيره
-const DEFAULT_MODEL = "gemini-flash-latest";
+// Flash-Lite لأنه مجاني بحد يومي كبير (~500 طلب)، بينما أحدث Flash بالفري تير ~20 طلب باليوم بس.
+// إذا فشل (ضغط/حد يومي) بنروح لـ OpenAI. SAM_BOT_AI_MODEL بيغيره
+const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 // موديلات Gemini إضافية قبل OpenAI (SAM_BOT_AI_FALLBACK_MODELS مفصولة بفواصل)، افتراضيًا ولا وحدة: بعد Gemini بنروح لـ OpenAI
 const DEFAULT_FALLBACK_MODELS = [];
 const DEFAULT_TIMEOUT_MS = 12000;
