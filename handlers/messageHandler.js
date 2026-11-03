@@ -11,6 +11,7 @@ import { handleKingdomEditStep, handleStartKingdomEdit } from "../utils/kingdomE
 import { handleDeveloperKingdomCommand, handleKingdomRegistrationStep, handleStartKingdomRegistration } from "../utils/kingdomRegistration.js";
 import { featureEnabled, denyCommandIfPaused } from '../services/botControls.js';
 import { handleBusinessMessage } from '../services/businessMode.js';
+import { handleDashboardAutoLink } from "../services/dashboardRuntime.js";
 import { handleAssistantText } from "../utils/assistantText.js";
 import { handleVoicePickReply } from "../utils/voiceReplies.js";
 import { funEnabled, personalEnabled } from '../services/botMode.js';
@@ -117,6 +118,8 @@ export async function messageHandler(sock, msg) {
     if (await handleKingdomRegistrationStep(sock, jid, sender, trimmedText)) return;
   }
 
+  // رابط من موقع مربوط بأمر داشبورد (مثل انستغرام) بالخاص بيشغّل الأمر لحاله للأرقام المسموحة
+  if (await handleDashboardAutoLink(sock, jid, sender, trimmedText, msg)) return;
   if (personal && await handleBusinessMessage(sock, msg, trimmedText)) return;
 
   // البحث عن المستخدم (بدون تسجيل تلقائي)

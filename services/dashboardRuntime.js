@@ -180,6 +180,7 @@ export async function runSeriesService(service, variables, sessionStore = null, 
     if (await denyCommandIfPaused(sock, jid, userId, command.trigger)) return;
     if (command.permission === 'developer' && !isDeveloper(userId)) throw new Error('الأمر خاص بالمطور');
     if (command.permission === 'moderator' && !isDeveloper(userId) && !(await isModerator(userId, getKingdomIdFromGroupJid(jid)))) throw new Error('الأمر للمشرفين');
+    if (command.permission === 'numbers' && !senderAllowedByNumbers(command, userId, msg)) throw new Error('الأمر غير متاح لك');
     const serviceId = session.serviceId;
     const results = session.results || [];
     if (!Number.isInteger(index) || index < 0 || index >= results.length) throw new Error('Invalid selection');
@@ -341,6 +342,56 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   if (PRIVATE_DEVELOPER_TRIGGERS.has(trigger) && (String(jid).endsWith("@g.us") || !isDeveloper(sender))) return true;
   const command = await DashboardCommand.findOne({ trigger }).populate("apiId");
   if (!command) return false;
+  return executeDashboardCommand(sock, jid, sender, command, query, args, msg);
+}
+
+// رقم المرسل الحقيقي: بالخاص ممكن يوصل الـ JID كـ @lid، فبنجرّب البدائل اللي بيعطيها واتساب
+export function senderPhoneNumbers(sender, msg) {
+  const candidates = [sender, msg?.key?.remoteJid, msg?.key?.remoteJidAlt, msg?.key?.senderPn, msg?.key?.participant, msg?.key?.participantAlt, msg?.key?.participantPn];
+  return [...new Set(candidates.filter(jid => /@s\.whatsapp\.net$/.test(String(jid || ''))).map(jid => normalizeJid(jid).split('@')[0]))];
+}
+
+export function senderAllowedByNumbers(command, sender, msg) {
+  if (isDeveloper(sender)) return true;
+  const allowed = new Set((command.allowedNumbers || []).map(number => String(number).replace(/[^0-9]/g, '')));
+  return senderPhoneNumbers(sender, msg).some(number => allowed.has(number));
+}
+
+// أول رابط بالرسالة إذا كان من موقع من مواقع الأمر (instagram.com بيطابق www.instagram.com كمان)
+export function matchAutoLink(text, domains = []) {
+  for (const [candidate] of String(text || '').matchAll(/https?:\/\/[^\s<>"']+/gi)) {
+    let host;
+    try { host = new URL(candidate).hostname.toLowerCase(); } catch { continue; }
+    if (domains.some(domain => host === domain || host.endsWith(`.${domain}`))) return candidate;
+  }
+  return null;
+}
+
+let autoLinkCache = { expires: 0, commands: [] };
+export function clearAutoLinkCache() { autoLinkCache = { expires: 0, commands: [] }; }
+
+// والد سامر (أو أي رقم مسموح) بيعمل مشاركة لرابط من انستغرام، والبوت بينزّل الفيديو بدون أمر.
+// بالخاص بس، وإذا المرسل مش مسموح الرسالة بتكمل طريقها العادي بصمت.
+export async function handleDashboardAutoLink(sock, jid, sender, text, msg) {
+  if (String(jid).endsWith('@g.us') || String(text || '').startsWith('/')) return false;
+  if (!/https?:\/\//i.test(String(text || ''))) return false;
+  if (autoLinkCache.expires < Date.now()) {
+    const commands = await DashboardCommand.find({ enabled: true, 'autoLinkDomains.0': { $exists: true } }).populate('apiId');
+    autoLinkCache = { expires: Date.now() + 60 * 1000, commands };
+  }
+  for (const command of autoLinkCache.commands) {
+    if (PRIVATE_DEVELOPER_TRIGGERS.has(command.trigger) && !isDeveloper(sender)) continue;
+    const link = matchAutoLink(text, command.autoLinkDomains);
+    if (!link) continue;
+    if (command.permission === 'numbers' && !senderAllowedByNumbers(command, sender, msg)) continue;
+    if (command.permission === 'developer' && !isDeveloper(sender)) continue;
+    if (command.permission === 'moderator' && !isDeveloper(sender)) continue;
+    return executeDashboardCommand(sock, jid, sender, command, link, [link], msg);
+  }
+  return false;
+}
+
+async function executeDashboardCommand(sock, jid, sender, command, query, args, msg) {
   if (command.enabled === false || (command.apiId && (command.apiId.enabled === false || !featureEnabled('services') || controlBlocked(`service:${command.apiId._id}`)))) {
     await sock.sendMessage(jid, {text: controlBlocked(`service:${command.apiId?._id}`)?.message || maintenanceMessage});
     return true;
@@ -353,6 +404,10 @@ export async function handleDashboardCommand(sock, jid, sender, text, msg) {
   }
   if (command.permission === "moderator" && !isDeveloper(sender) && !(await isModerator(sender, kingdom))) {
     await sock.sendMessage(jid, { text: "هذا الأمر للمشرفين فقط." });
+    return true;
+  }
+  if (command.permission === "numbers" && !senderAllowedByNumbers(command, sender, msg)) {
+    await sock.sendMessage(jid, { text: "هذا الأمر غير متاح لك." });
     return true;
   }
 

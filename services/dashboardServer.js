@@ -15,7 +15,7 @@ import { validateRequestFields } from './apiRequestFields.js';
 import { dashboardRead, dashboardWrite, isReservedCommand, audit } from './dashboardData.js';
 import { TEMPLATE_DEFINITIONS, validateTemplate, refreshDashboardTemplates } from './dashboardTemplates.js';
 import { validateEndpoint } from './dashboardApiSafety.js';
-import { runConfiguredApi, runSeriesService, readDashboardPath } from './dashboardRuntime.js';
+import { runConfiguredApi, runSeriesService, readDashboardPath, clearAutoLinkCache } from './dashboardRuntime.js';
 import { handleBusinessRoute } from './businessDashboard.js';
 import { pairingSnapshot } from './whatsappPairing.js';
 
@@ -57,11 +57,24 @@ export function validateCommand(input) {
   if (!/^\/[\p{L}\p{N}_-]{1,48}$/u.test(trigger)) throw new Error('صيغة الأمر غير صالحة');
   if (isReservedCommand(trigger)) throw new Error('هذا أمر أصلي؛ عدّل نصه من قسم الردود');
   if (!String(input.title || '').trim() || String(input.title).length > 80) throw new Error('اسم الأمر مطلوب وبحد أقصى 80 حرف');
-  if (!['everyone', 'moderator', 'developer'].includes(input.permission)) throw new Error('الصلاحية غير صالحة');
+  if (!['everyone', 'moderator', 'developer', 'numbers'].includes(input.permission)) throw new Error('الصلاحية غير صالحة');
+  const allowedNumbers = [...new Set(listInput(input.allowedNumbers).map(value => value.replace(/[^0-9]/g, '').replace(/^00/, '')).filter(Boolean))];
+  if (allowedNumbers.some(number => !/^[1-9][0-9]{7,14}$/.test(number))) throw new Error('رقم غير صالح؛ اكتب الأرقام بالصيغة الدولية مثل 9627xxxxxxxx');
+  if (allowedNumbers.length > 50) throw new Error('الحد الأقصى 50 رقم');
+  if (input.permission === 'numbers' && !allowedNumbers.length) throw new Error('أضف رقم واحد على الأقل');
+  const autoLinkDomains = [...new Set(listInput(input.autoLinkDomains).map(value => value.toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]).filter(Boolean))];
+  if (autoLinkDomains.some(domain => !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain))) throw new Error('موقع غير صالح؛ اكتب مثلاً instagram.com');
+  if (autoLinkDomains.length > 10) throw new Error('الحد الأقصى 10 مواقع');
+  if (autoLinkDomains.length && !input.apiId) throw new Error('التشغيل التلقائي بالروابط بحتاج خدمة مربوطة بالأمر');
   if (input.apiId && !/^[a-f0-9]{24}$/i.test(input.apiId)) throw new Error('الخدمة غير صالحة');
   const responsePath = String(input.responsePath || '').trim();
   if (responsePath.split('.').some(key => ['__proto__','prototype','constructor'].includes(key))) throw new Error('مسار النتيجة غير صالح');
-  return { trigger, title: String(input.title).trim(), responseTemplate: String(input.responseTemplate || ''), permission: input.permission, apiId: input.apiId || null, responsePath, enabled: input.enabled !== false };
+  return { trigger, title: String(input.title).trim(), responseTemplate: String(input.responseTemplate || ''), permission: input.permission, allowedNumbers, autoLinkDomains, apiId: input.apiId || null, responsePath, enabled: input.enabled !== false };
+}
+// القائمة بتيجي من اللوحة كنص (سطر أو فاصلة بين كل قيمة) أو كمصفوفة
+function listInput(value) {
+  const items = Array.isArray(value) ? value : String(value || '').split(/[\n,،]+/);
+  return items.map(item => String(item).trim()).filter(Boolean);
 }
 export function validateApi(input) {
   const type = input.type ?? 'api';
@@ -337,6 +350,7 @@ export function createDashboardHandler({ getBotStatus, getGroups, getSock, onKin
           if(kind==='commands'&&values.apiId&&!await DashboardApi.exists({_id:values.apiId})) throw new Error('الخدمة غير موجودة');
           if(target) await Model.updateOne({_id:target},{$set:values},{runValidators:true}); else await Model.create(values);
         }
+        clearAutoLinkCache();
         await audit(kind+'_'+req.method.toLowerCase(),target||input.trigger||input.name); return json(res,200,{ok:true});
       }
       return json(res,404,{error:'غير موجود'});

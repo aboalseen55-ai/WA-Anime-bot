@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const labels = { overview:'نظرة عامة', commands:'الأوامر والردود', kingdoms:'الممالك', members:'الأعضاء', reports:'إنجازات الإدارة', games:'الألعاب', banks:'البنوك', services:'الخدمات', usage:'استهلاك الذكاء', audit:'سجل التغييرات' };
 const icons = {overview:'layout-dashboard',commands:'message-square-text',kingdoms:'crown',members:'users',reports:'chart-no-axes-combined',games:'gamepad-2',banks:'landmark',services:'plug',usage:'sparkles',audit:'history'};
-const roleNames = {member:'عضو',moderator:'مشرف',admin:'أدمن',super_admin:'أدمن رئيسي',everyone:'الجميع',developer:'المطور'};
+const roleNames = {member:'عضو',moderator:'مشرف',admin:'أدمن',super_admin:'أدمن رئيسي',everyone:'الجميع',developer:'المطور',numbers:'أرقام محددة'};
 labels.controls='التحكم والصيانة'; icons.controls='settings-2';
 labels.business='الأعمال'; icons.business='briefcase';
 labels.broadcast='رسائل جماعية'; icons.broadcast='send';
@@ -254,8 +254,10 @@ async function remove(path,name,body={}) {
   openEditor('حذف '+name,[e('p','هل تريد حذف هذا العنصر؟ لا يمكن التراجع عن الحذف.')],async()=>{await request(path,'DELETE',body);await saved()});
 }
 function editCommand(row={}) {
-  const grid=e('div',undefined,'form-grid');grid.append(field('trigger','الأمر',row.trigger),field('title','الاسم',row.title),field('responseTemplate','الرد',row.responseTemplate,'textarea'),field('permission','متاح لـ',row.permission||'everyone','select',[['everyone','الجميع'],['moderator','المشرفين'],['developer','المطور فقط']]),field('apiId','الخدمة',row.apiId||'','select',[['','بدون خدمة'],...state.apis.map(a=>[a._id,a.name])]),field('responsePath','مسار النتيجة',row.responsePath),field('enabled','مفعّل',row.enabled!==false,'checkbox'));
-  openEditor(row._id?'تعديل الأمر':'إضافة أمر',[grid,e('p','المتغيرات: {name} اسم المرسل، {api} نتيجة الخدمة','help')],async()=>{await request('commands'+(row._id?'/'+row._id:''),row._id?'PUT':'POST',values());await saved()});
+  const grid=e('div',undefined,'form-grid');grid.append(field('trigger','الأمر',row.trigger),field('title','الاسم',row.title),field('responseTemplate','الرد',row.responseTemplate,'textarea'),field('permission','متاح لـ',row.permission||'everyone','select',[['everyone','الجميع'],['moderator','المشرفين'],['developer','المطور فقط'],['numbers','أرقام محددة']]),field('allowedNumbers','الأرقام المسموحة (رقم بكل سطر، بالصيغة الدولية مثل 9627xxxxxxxx)',(row.allowedNumbers||[]).join('\n'),'textarea'),field('apiId','الخدمة',row.apiId||'','select',[['','بدون خدمة'],...state.apis.map(a=>[a._id,a.name])]),field('responsePath','مسار النتيجة',row.responsePath),field('autoLinkDomains','تشغيل تلقائي عند رابط (بالخاص) — مثال: instagram.com',(row.autoLinkDomains||[]).join('\n'),'textarea'),field('enabled','مفعّل',row.enabled!==false,'checkbox'));
+  const numbersWrap=grid.querySelector('#field_allowedNumbers').parentElement,permissionSelect=grid.querySelector('#field_permission');
+  const syncNumbers=()=>{numbersWrap.hidden=permissionSelect.value!=='numbers'};permissionSelect.addEventListener('change',syncNumbers);syncNumbers();
+  openEditor(row._id?'تعديل الأمر':'إضافة أمر',[grid,e('p','المتغيرات: {name} اسم المرسل، {api} نتيجة الخدمة. التشغيل التلقائي: أي رسالة بالخاص فيها رابط من المواقع المكتوبة بتشغّل الأمر والرابط بيروح للخدمة كـ {query}.','help')],async()=>{await request('commands'+(row._id?'/'+row._id:''),row._id?'PUT':'POST',values());await saved()});
 }
 function editApi(row={}) {
   const fieldControllers = {};
