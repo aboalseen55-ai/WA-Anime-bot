@@ -4,6 +4,8 @@ import { SAM_CAPABILITIES, USER_MEMORY_INSTRUCTION, assistantActionInstruction, 
 import { personalEnabled } from "../services/botMode.js";
 
 const DEFAULT_MODEL = "gemini-3.1-flash-lite";
+// SAM_BOT_AI_FALLBACK_MODELS (مفصولة بفواصل) بتغيرها؛ قيمة فاضية بتلغي الاحتياطي
+const DEFAULT_FALLBACK_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"];
 const DEFAULT_TIMEOUT_MS = 12000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 80;
 const DEFAULT_BILLING_COOLDOWN_MS = 30 * 60 * 1000;
@@ -113,6 +115,24 @@ function envNumber(name, fallback) {
   return Number.isFinite(number) && number > 0 ? number : fallback;
 }
 
+// ضغط مؤقت على الموديل (503 high demand / 429 / timeout): بنعيد المحاولة وبعدين بنجرب موديل احتياطي
+export function isTransientGeminiError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return /\b(503|500|502|504|429)\b/.test(message)
+    || message.includes("high demand")
+    || message.includes("overloaded")
+    || message.includes("unavailable")
+    || message.includes("resource exhausted")
+    || message.includes("resource_exhausted");
+}
+
+export function resolveModelChain(primary, fallbacks = process.env.SAM_BOT_AI_FALLBACK_MODELS) {
+  const extra = fallbacks === undefined ? DEFAULT_FALLBACK_MODELS : String(fallbacks).split(",");
+  return [...new Set([primary, ...extra].map((name) => String(name || "").trim()).filter(Boolean))];
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function generateSamBotAIText({
   systemInstruction,
   prompt,
@@ -128,56 +148,73 @@ async function generateSamBotAIText({
   const apiKeys = getConfiguredApiKeys();
   if (!apiKeys.length) return "";
 
-  const resolvedModelName = modelName || process.env.SAM_BOT_AI_MODEL || process.env.GEMINI_MODEL || DEFAULT_MODEL;
+  const primaryModel = modelName || process.env.SAM_BOT_AI_MODEL || process.env.GEMINI_MODEL || DEFAULT_MODEL;
+  const models = resolveModelChain(primaryModel);
   const resolvedTimeoutMs = Number(timeoutMs || process.env.SAM_BOT_AI_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
+  const effectiveTimeoutMs = Number.isFinite(resolvedTimeoutMs) && resolvedTimeoutMs > 0 ? resolvedTimeoutMs : DEFAULT_TIMEOUT_MS;
   const resolvedMaxOutputTokens = resolveMaxOutputTokens(maxOutputTokens, outputTokenCap);
+  const retryDelayMs = envNumber("SAM_BOT_AI_RETRY_DELAY_MS", 1500);
 
   let lastError;
+  let lastModel = primaryModel;
 
-  for (const [index, apiKey] of apiKeys.entries()) {
-    const client = getGeminiClient(apiKey.value);
-    const model = client.getGenerativeModel({
-      model: resolvedModelName,
-      systemInstruction,
-      generationConfig: {
-        temperature,
-        maxOutputTokens: resolvedMaxOutputTokens,
-        ...(responseMimeType ? { responseMimeType } : {})
+  models: for (const [modelIndex, resolvedModelName] of models.entries()) {
+    lastModel = resolvedModelName;
+    // الموديل الأساسي بياخد محاولة إضافية قبل ما ننتقل للاحتياطي
+    const attempts = modelIndex === 0 ? 2 : 1;
+
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      let transient = false;
+
+      for (const [index, apiKey] of apiKeys.entries()) {
+        const client = getGeminiClient(apiKey.value);
+        const model = client.getGenerativeModel({
+          model: resolvedModelName,
+          systemInstruction,
+          generationConfig: {
+            temperature,
+            maxOutputTokens: resolvedMaxOutputTokens,
+            ...(responseMimeType ? { responseMimeType } : {})
+          }
+        });
+
+        try {
+          const result = await withTimeout(model.generateContent(prompt), effectiveTimeoutMs);
+
+          void safelyRecordUsage({
+            modelName: resolvedModelName,
+            usageMetadata: result.response?.usageMetadata,
+            success: true
+          });
+
+          const text = sanitizeReply(result.response?.text());
+          return responseMimeType ? text : toWhatsAppFormatting(text);
+        } catch (error) {
+          lastError = error;
+          if (isInvalidApiKeyError(error) && index < apiKeys.length - 1) {
+            console.warn(`⚠️ ${apiKey.name} is invalid; trying next Gemini key.`);
+            continue;
+          }
+          if (isBillingDepletedError(error)) {
+            geminiBlockedUntil = Date.now() + getBillingCooldownMs();
+            console.warn("⚠️ Gemini billing/credits unavailable; using local fallback temporarily.");
+            break models;
+          }
+          transient = isTransientGeminiError(error);
+          break;
+        }
       }
-    });
 
-    try {
-      const result = await withTimeout(
-        model.generateContent(prompt),
-        Number.isFinite(resolvedTimeoutMs) && resolvedTimeoutMs > 0 ? resolvedTimeoutMs : DEFAULT_TIMEOUT_MS
-      );
-
-      void safelyRecordUsage({
-        modelName: resolvedModelName,
-        usageMetadata: result.response?.usageMetadata,
-        success: true
-      });
-
-      const text = sanitizeReply(result.response?.text());
-      return responseMimeType ? text : toWhatsAppFormatting(text);
-    } catch (error) {
-      lastError = error;
-      if (isInvalidApiKeyError(error) && index < apiKeys.length - 1) {
-        console.warn(`⚠️ ${apiKey.name} is invalid; trying next Gemini key.`);
-        continue;
-      }
-      if (isBillingDepletedError(error)) {
-        geminiBlockedUntil = Date.now() + getBillingCooldownMs();
-        console.warn("⚠️ Gemini billing/credits unavailable; using local fallback temporarily.");
-      }
-      break;
+      if (!transient) break models;
+      console.warn(`⚠️ Gemini ${resolvedModelName} busy (${String(lastError?.message || "").slice(0, 120)}); retrying.`);
+      if (attempt < attempts - 1) await sleep(retryDelayMs);
     }
   }
 
   if (lastError) {
-    console.error("❌ Sam Bot Gemini Error:", lastError.message);
+    console.error(`❌ Sam Bot Gemini Error (${lastModel}):`, lastError.message);
     void safelyRecordUsage({
-      modelName: resolvedModelName,
+      modelName: lastModel,
       success: false,
       errorMessage: lastError.message
     });
