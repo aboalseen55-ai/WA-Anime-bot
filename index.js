@@ -23,6 +23,7 @@ import pino from "pino";
 import { startDashboardServer } from "./services/dashboardServer.js";
 import { startAnimofolioWatch } from "./services/animofolioWatch.js";
 import { setPairingQr, invalidatePairingQr } from "./services/whatsappPairing.js";
+import { clearWhatsAppAuth, isLoggedOutDisconnect } from "./services/whatsappAuth.js";
 import { startShatreenComments } from "./services/shatreenComments.js";
 import { scheduleBusinessSummary } from "./services/businessSummary.js";
 import { getBotMode, funEnabled, personalEnabled } from "./services/botMode.js";
@@ -372,6 +373,19 @@ async function startBot() {
       console.log("❌ انقطع الاتصال:", error?.message, statusCode ? `(status ${statusCode})` : "");
 
       if (shouldReconnect) {
+        scheduleReconnect();
+      } else if (isLoggedOutDisconnect(statusCode)) {
+        // الحساب طلع من الموبايل (أو انحذف الجهاز المرتبط): الجلسة القديمة صارت ميتة.
+        // نمسحها ونعيد التشغيل عشان Baileys يولّد QR جديد يظهر في /dashboard بدل ما يضل البوت واقف.
+        console.log("🚪 واتساب سجّل خروج البوت؛ بمسح الجلسة القديمة وبجهّز QR جديد في لوحة التحكم.");
+        try {
+          sock.ev.removeAllListeners("creds.update");
+          const removed = await clearWhatsAppAuth(AUTH_DIR, { keep: [AUTH_RESET_MARKER_FILE] });
+          console.log(`🧹 تم مسح ${removed} ملف من جلسة واتساب.`);
+        } catch (clearError) {
+          console.error("❌ تعذر مسح جلسة واتساب:", clearError.message);
+        }
+        reconnectAttempts = 0;
         scheduleReconnect();
       } else {
         console.log("🚫 لا يمكن إعادة الاتصال (خطأ مصادقة)");
