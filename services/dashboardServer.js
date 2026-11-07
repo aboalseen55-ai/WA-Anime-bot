@@ -18,6 +18,7 @@ import { validateEndpoint } from './dashboardApiSafety.js';
 import { runConfiguredApi, runSeriesService, readDashboardPath, clearAutoLinkCache } from './dashboardRuntime.js';
 import { handleBusinessRoute } from './businessDashboard.js';
 import { pairingSnapshot } from './whatsappPairing.js';
+import { createPortalHandler } from './tenants/portal.js';
 
 const assets = new Map([
   ['/dashboard', ['../dashboard/index.html', 'text/html']],
@@ -367,7 +368,10 @@ export function startDashboardServer(options) {
   const shatreen = options.getSock ? createShatreenHook({ getSock: options.getSock }) : null;
   // xsamer.com contact-form inquiries (/hooks/xsamer), HMAC-signed by the website.
   const xsamer = options.getSock ? createXsamerHook({ getSock: options.getSock }) : null;
+  // /portal: business accounts, each with its own WhatsApp number (services/tenants)
+  const portal = createPortalHandler({ readJson });
   const server = http.createServer(async (req, res) => {
+    if (await portal(req, res)) return;
     if (shatreen && (await shatreen(req, res))) return;
     if (xsamer && (await xsamer(req, res))) return;
     return dashboard(req, res);

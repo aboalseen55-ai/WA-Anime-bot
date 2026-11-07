@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>بوابة الأعمال</title>
+  <link rel="stylesheet" href="/portal/portal.css">
+  <script src="/portal/portal.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <strong id="title">بوابة الأعمال</strong>
+    <div class="top-actions">
+      <button id="back-admin" class="ghost" hidden>كل الحسابات</button>
+      <button id="logout" class="ghost" hidden>تسجيل خروج</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="login-view" class="card narrow" hidden>
+      <h1>تسجيل الدخول</h1>
+      <form id="login-form">
+        <label>اسم المستخدم<input name="username" autocomplete="username" required dir="ltr"></label>
+        <label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required dir="ltr"></label>
+        <button type="submit">دخول</button>
+        <p class="error" id="login-error"></p>
+      </form>
+    </section>
+
+    <section id="admin-view" hidden>
+      <div class="card">
+        <h2>حساب جديد</h2>
+        <form id="create-form" class="grid">
+          <label>اسم المستخدم (إنجليزي)<input name="slug" required dir="ltr" placeholder="firestone"></label>
+          <label>اسم الحساب<input name="name" placeholder="فايرستون للديكور"></label>
+          <label>كلمة المرور<input name="password" type="password" required minlength="8" dir="ltr"></label>
+          <label>قالب جاهز<select name="preset" id="preset-select"><option value="">بدون</option></select></label>
+          <button type="submit">إنشاء</button>
+          <p class="error" id="create-error"></p>
+        </form>
+      </div>
+      <div class="card">
+        <h2>الحسابات</h2>
+        <div id="tenant-list" class="list"></div>
+      </div>
+    </section>
+
+    <section id="tenant-view" hidden>
+      <div class="card">
+        <h2>ربط واتساب</h2>
+        <p id="wa-status" class="status"></p>
+        <img id="wa-qr" alt="رمز الربط" hidden>
+        <p id="wa-hint" class="muted" hidden>افتح واتساب على رقم المحل ← الأجهزة المرتبطة ← ربط جهاز، وامسح الرمز.</p>
+        <div class="row">
+          <button id="wa-connect">اربط واتساب</button>
+          <button id="wa-disconnect" class="danger" hidden>فصل الرقم</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>إعدادات البوت</h2>
+        <form id="settings-form" class="grid">
+          <label class="check"><input type="checkbox" name="botEnabled"> البوت يرد على الزباين</label>
+          <label>اسم المحل<input name="businessName"></label>
+          <label>البوت بيحكي باسم<input name="assistantName" placeholder="فريق المحل"></label>
+          <label>أرقام التنبيهات (رقم بكل سطر)<textarea name="ownerNumbers" rows="2" dir="ltr"></textarea></label>
+          <label class="wide">معلومات المحل (خدمات، أسعار، عنوان، دوام...)<textarea name="knowledge" rows="12"></textarea></label>
+          <label class="wide">أسلوب الحكي<input name="tone"></label>
+          <label class="check"><input type="checkbox" name="voiceReplies"> يرد بفويس إذا الزبون بعت فويس</label>
+          <label>معرّف صوت ElevenLabs (اختياري)<input name="voiceId" dir="ltr"></label>
+          <label>يسكت كم ساعة لما ترد إنت بنفسك<input name="pauseHours" type="number" min="0" max="48" step="0.5"></label>
+          <button type="submit">حفظ</button>
+          <p class="note" id="settings-note"></p>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>آخر المحادثات</h2>
+        <div id="chat-list" class="list"></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

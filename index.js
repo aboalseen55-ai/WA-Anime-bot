@@ -21,6 +21,7 @@ import { normalizeOutgoingMessageContent } from "./utils/textEncoding.js";
 import { initializeKingdomSystem } from "./utils/kingdomService.js";
 import pino from "pino";
 import { startDashboardServer } from "./services/dashboardServer.js";
+import { startAllTenants } from "./services/tenants/tenantManager.js";
 import { startAnimofolioWatch } from "./services/animofolioWatch.js";
 import { setPairingQr, invalidatePairingQr } from "./services/whatsappPairing.js";
 import { clearWhatsAppAuth, isLoggedOutDisconnect } from "./services/whatsappAuth.js";
@@ -509,3 +510,6 @@ async function startBot() {
 }
 
 startBot();
+
+// حسابات الأعمال (كل حساب برقم واتساب منفصل): /portal
+startAllTenants().catch(error => console.error("❌ تعذر تشغيل حسابات الأعمال:", error.message));
