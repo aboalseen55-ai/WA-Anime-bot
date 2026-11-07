@@ -85,6 +85,19 @@ test('mediaListItems uses declared types and falls back to the URL extension', a
   assert.equal(mediaListItems({ data: { medias: [{ type: 'video', link: 'https://x.example.com/v' }] } })[0].type, 'video');
 });
 
+test('mediaListItems reads Facebook hd_url/sd_url and image-only stories', async () => {
+  const { mediaListItems } = await import('../services/dashboardRuntime.js');
+  assert.deepEqual(mediaListItems({ media: [
+    { type: 'Video', image: 'https://scontent.example.com/thumb.jpg', sd_url: 'https://video.example.com/sd.mp4?dl=1', hd_url: 'https://video.example.com/hd.mp4?dl=1' },
+    { type: 'Video', sd_url: 'https://video.example.com/only-sd.mp4' },
+    { type: 'Image', image: 'https://scontent.example.com/story.jpg' }
+  ] }), [
+    { type: 'video', url: 'https://video.example.com/hd.mp4?dl=1' },
+    { type: 'video', url: 'https://video.example.com/only-sd.mp4' },
+    { type: 'image', url: 'https://scontent.example.com/story.jpg' }
+  ]);
+});
+
 test('media_list command sends a carousel post item by item with one caption', async t => {
   const { sent, sock } = setup(t, [{ ...insta, responsePath: 'data.medias', apiId: { ...insta.apiId, responseType: 'media_list' } }]);
   setHttpClient(async () => ({ data: { data: { medias: [

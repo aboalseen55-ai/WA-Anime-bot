@@ -55,13 +55,15 @@ export function mediaListItems(value, limit = 10) {
   const list = Array.isArray(value) ? value : value && typeof value === 'object' ? (value.medias || value.media || value.items || value.data?.medias || [value]) : [value];
   const items = [];
   for (const entry of list) {
-    const url = normalizeMediaUrl(typeof entry === 'string' ? entry : entry?.link || entry?.url || entry?.download_url || entry?.src || '');
+    // فيسبوك: الفيديو بـ hd_url/sd_url وحقل image صورة مصغرة، فالصورة بتنبعت بس إذا ما في فيديو (ستوري صورة).
+    const direct = typeof entry === 'string' ? entry : entry?.link || entry?.url || entry?.download_url || entry?.hd_url || entry?.sd_url || entry?.src || '';
+    const url = normalizeMediaUrl(direct || entry?.image || '');
     if (!/^https:\/\//i.test(url)) continue;
     const declared = MEDIA_TYPE_ALIASES[String(entry?.type || entry?.media_type || '').toLowerCase()];
     let path = '';
     try { path = new URL(url).pathname.toLowerCase(); } catch { continue; }
     const guessed = /\.(mp4|mov|webm|m4v)$/.test(path) ? 'video' : /\.(jpe?g|png|webp|gif|heic)$/.test(path) ? 'image' : /\.(mp3|m4a|ogg|wav|aac)$/.test(path) ? 'audio' : 'video';
-    items.push({ type: declared || guessed, url });
+    items.push({ type: !direct && entry?.image ? 'image' : declared || guessed, url });
     if (items.length >= limit) break;
   }
   return items;
