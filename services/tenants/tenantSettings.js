@@ -8,7 +8,8 @@ export const DEFAULT_TENANT_SETTINGS = Object.freeze({
   ownerNumbers: [],
   voiceReplies: true,
   voiceId: '',
-  pauseHours: 3
+  pauseHours: 3,
+  summaryAfterMinutes: 15
 });
 
 export const TENANT_PRESETS = Object.freeze({
@@ -17,7 +18,7 @@ export const TENANT_PRESETS = Object.freeze({
     settings: {
       businessName: 'فايرستون للديكور (Firestone Jo)',
       assistantName: 'فريق فايرستون',
-      ownerNumbers: ['962798202604'],
+      ownerNumbers: ['962796391944'],
       knowledge: [
         'فايرستون للديكور (Firestone Jo): تصميم وتنفيذ ديكورات داخلية وخارجية في الأردن، من الفكرة حتى التركيب.',
         'الخبرة: أكثر من 6 سنوات، وأكثر من 50 مشروع منفّذ.',
@@ -66,6 +67,11 @@ export function validateTenantSettings(input = {}, current = {}) {
     const hours = Number(input.pauseHours);
     if (!Number.isFinite(hours) || hours < 0 || hours > 48) throw new Error('مدة السكوت بين 0 و 48 ساعة');
     result.pauseHours = hours;
+  }
+  if (Object.hasOwn(input, 'summaryAfterMinutes')) {
+    const minutes = Number(input.summaryAfterMinutes);
+    if (!Number.isFinite(minutes) || minutes < 0 || minutes > 240) throw new Error('وقت الملخص بين 0 و 240 دقيقة');
+    result.summaryAfterMinutes = minutes;
   }
   return result;
 }

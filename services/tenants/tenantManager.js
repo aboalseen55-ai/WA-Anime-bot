@@ -68,7 +68,7 @@ async function startSocket(runtime, { pairing = false } = {}) {
       runtime.handler = createTenantMessageHandler({
         getTenant: () => runtime.tenant,
         getSock: () => (runtime.connection === 'open' ? runtime.sock : null),
-        generate: ({ systemInstruction, parts }) => generateSamBotAIFromParts({ systemInstruction, parts, temperature: 0.7, maxOutputTokens: 700, json: true }),
+        generate: ({ systemInstruction, parts, json = true }) => generateSamBotAIFromParts({ systemInstruction, parts, temperature: json ? 0.7 : 0.3, maxOutputTokens: 700, json }),
         createVoice: isElevenLabsConfigured() ? (text, { voiceId }) => createVoiceNote(text, { voiceId }) : null,
         download: msg => downloadMediaMessage(msg, 'buffer', {}, { reuploadRequest: runtime.sock?.updateMediaMessage })
       });
@@ -92,6 +92,12 @@ async function startSocket(runtime, { pairing = false } = {}) {
         const phone = String(sock.user?.id || '').split(':')[0].split('@')[0];
         await Tenant.updateOne({ _id: runtime.id }, { $set: { phone, lastConnectedAt: new Date() } }).catch(() => {});
         console.log(`✅ Business account ${runtime.tenant?.slug} connected to WhatsApp`);
+        if (!runtime.summaryTimer) {
+          runtime.summaryTimer = setInterval(() => {
+            runtime.handler.sweepSummaries().catch(error => console.warn(`Tenant ${runtime.tenant?.slug}: summary sweep failed:`, error.message));
+          }, 60_000);
+          runtime.summaryTimer.unref?.();
+        }
       }
       if (connection === 'close') {
         if (runtime.sock === sock) runtime.sock = null;
@@ -137,6 +143,8 @@ function scheduleReconnect(runtime) {
 /** Starts every enabled account that already has a WhatsApp session. */
 export async function startAllTenants() {
   if (String(process.env.TENANTS_ENABLED || '').toLowerCase() === 'false') return;
+  // 2026-11-14: Firestone alerts go to the owner's personal number, not the shop number the bot runs on
+  await Tenant.updateOne({ slug: 'firestone', 'settings.ownerNumbers': ['962798202604'] }, { $set: { 'settings.ownerNumbers': ['962796391944'] } }).catch(() => {});
   const tenants = await Tenant.find({ enabled: true }).select('_id slug').lean();
   for (const tenant of tenants) await startSocket(runtimeFor(tenant._id));
   if (tenants.length) console.log(`🏪 Business accounts loaded: ${tenants.length}`);
@@ -194,5 +202,7 @@ export function tenantStatus(tenantId) {
 
 export async function removeTenantRuntime(tenantId) {
   await disconnectTenant(tenantId);
+  const runtime = runtimes.get(String(tenantId));
+  if (runtime?.summaryTimer) clearInterval(runtime.summaryTimer);
   runtimes.delete(String(tenantId));
 }

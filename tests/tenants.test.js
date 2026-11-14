@@ -17,6 +17,9 @@ function memoryContacts() {
       Object.assign(row, set);
       row.history = [...row.history, ...push];
       rows.set(key, row);
+    },
+    async dueSummaries(tenantId, quietSince) {
+      return [...rows.entries()].filter(([key, row]) => key.startsWith(`${tenantId}:`) && row.conversationStartedAt && row.lastMessageAt <= quietSince && (!row.summarySentAt || row.summarySentAt < row.conversationStartedAt)).map(([, row]) => row);
     }
   };
 }
@@ -36,7 +39,8 @@ function handler(overrides = {}) {
   const h = createTenantMessageHandler({
     getTenant: () => overrides.tenant || tenant,
     getSock: () => sock,
-    generate: async args => { calls.push(args); return overrides.raw ?? JSON.stringify({ reply: 'أهلين شذا، كيفك؟ 🌹', customerArabicName: 'شذا', handoff: false }); },
+    now: overrides.now,
+    generate: async args => { calls.push(args); if (args.json === false) return 'بدها فاير بليس بعمّان\nالمطلوب منك: اتصل فيها'; return overrides.raw ?? JSON.stringify({ reply: 'أهلين شذا، كيفك؟ 🌹', customerArabicName: 'شذا', handoff: false }); },
     createVoice: overrides.createVoice ?? (async () => ({ audio: Buffer.from('ogg'), mimetype: 'audio/ogg; codecs=opus' })),
     download: async () => Buffer.from('media'),
     store,
@@ -102,7 +106,7 @@ test('passwords are hashed with scrypt and verified', () => {
   assert.throws(() => validateNewTenant({ slug: 'admin', password: '12345678', name: 'x' }), /اسم المستخدم/);
   const created = validateNewTenant({ slug: 'firestone', password: '12345678', preset: 'firestone' });
   assert.equal(created.name, 'فايرستون للديكور');
-  assert.deepEqual(created.settings.ownerNumbers, ['962798202604']);
+  assert.deepEqual(created.settings.ownerNumbers, ['962796391944']);
 });
 
 test('mongo auth state round-trips creds and keys with buffers', async () => {
@@ -171,7 +175,7 @@ test('hand-off alerts the owner number', async () => {
   const { h, sock, store } = handler({ raw: JSON.stringify({ reply: 'تمام، رح يتواصل معك المسؤول', handoff: true, handoffSummary: 'بدها معاينة بعمّان' }) });
   await h.onMessages({ type: 'notify', messages: [customerMsg({ conversation: 'بدي احجز معاينة' })] });
   await wait(30);
-  const alert = sock.sent.find(item => item.jid === '962798202604@s.whatsapp.net');
+  const alert = sock.sent.find(item => item.jid === '962796391944@s.whatsapp.net');
   assert.ok(alert);
   assert.match(alert.content.text, /بدها معاينة بعمّان/);
   assert.match(alert.content.text, /wa\.me\/962790000001/);
@@ -194,7 +198,7 @@ test('groups, history sync, owner numbers and the bot\'s own messages are ignore
   const { h, calls } = handler();
   await h.onMessages({ type: 'notify', messages: [{ key: { remoteJid: '1203@g.us', id: 'G', fromMe: false }, message: { conversation: 'hi' } }] });
   await h.onMessages({ type: 'append', messages: [customerMsg({ conversation: 'old' })] });
-  await h.onMessages({ type: 'notify', messages: [{ key: { remoteJid: '962798202604@s.whatsapp.net', id: 'O', fromMe: false }, message: { conversation: 'انا الوالد' } }] });
+  await h.onMessages({ type: 'notify', messages: [{ key: { remoteJid: '962796391944@s.whatsapp.net', id: 'O', fromMe: false }, message: { conversation: 'انا الوالد' } }] });
   await wait(30);
   assert.equal(calls.length, 0);
 });
@@ -208,4 +212,26 @@ test('a disabled bot stays quiet', async () => {
 
 test('owner alert text', () => {
   assert.match(buildOwnerAlert({ businessName: 'فايرستون', contact: { arabicName: 'شذا', phone: '9627' }, summary: 'معاينة' }), /شذا[\s\S]*معاينة/);
+});
+
+test('a quiet conversation sends the owner one summary', async () => {
+  let clock = Date.parse('2026-11-14T10:00:00Z');
+  const { h, sock } = handler({ now: () => clock });
+  await h.onMessages({ type: 'notify', messages: [customerMsg({ conversation: 'بدي فاير بليس بعمّان' })] });
+  await wait(30);
+  assert.equal(await h.sweepSummaries(), 0);
+  clock += 16 * 60_000;
+  assert.equal(await h.sweepSummaries(), 1);
+  const summary = sock.sent.at(-1);
+  assert.equal(summary.jid, '962796391944@s.whatsapp.net');
+  assert.match(summary.content.text, /ملخص محادثة/);
+  assert.match(summary.content.text, /شذا/);
+  assert.match(summary.content.text, /المطلوب منك/);
+  clock += 16 * 60_000;
+  assert.equal(await h.sweepSummaries(), 0);
+});
+
+test('summary validation bounds', () => {
+  assert.equal(validateTenantSettings({ summaryAfterMinutes: 0 }).summaryAfterMinutes, 0);
+  assert.throws(() => validateTenantSettings({ summaryAfterMinutes: 500 }), /240/);
 });

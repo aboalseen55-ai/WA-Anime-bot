@@ -164,7 +164,7 @@
     const body = {};
     for (const field of form.elements) {
       if (!field.name) continue;
-      body[field.name] = field.type === 'checkbox' ? field.checked : field.name === 'pauseHours' ? Number(field.value) : field.value;
+      body[field.name] = field.type === 'checkbox' ? field.checked : ['pauseHours', 'summaryAfterMinutes'].includes(field.name) ? Number(field.value) : field.value;
     }
     $('settings-note').textContent = '';
     try { const result = await api('settings', { method: 'PUT', body }); fillSettings(result.settings); $('settings-note').textContent = '✅ انحفظ'; } catch (error) { $('settings-note').textContent = `❌ ${error.message}`; }

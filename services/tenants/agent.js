@@ -94,3 +94,25 @@ export function buildOwnerAlert({ businessName, contact, summary }) {
   const phone = contact.phone ? `\n📞 wa.me/${contact.phone}` : '';
   return `🔔 ${businessName || 'المحل'}: زبون بحاجة إلك\n👤 ${name}${phone}\n📝 ${summary || 'طلب يحكي مع المسؤول'}`;
 }
+
+export function buildSummaryInstruction(settings) {
+  return [
+    `أنت بتكتب لصاحب "${settings.businessName || 'المحل'}" ملخص محادثة صارت بين البوت وزبون على واتساب.`,
+    'اكتب بالعربي وباختصار (3 لـ 6 أسطر)، نقاط قصيرة: شو بدو الزبون، الخدمة، المنطقة، المقاسات أو الصور إذا بعت، وأي موعد أو طلب.',
+    'آخر سطر: "المطلوب منك:" وشو لازم يعمل صاحب المحل (يتصل، يرتب معاينة، يبعت عرض سعر...)، أو "ولا إشي، استفسار بس".',
+    'لا تخترع إشي مش موجود بالمحادثة. رجّع نص الملخص بس.'
+  ].join('\n');
+}
+
+export function buildSummaryPrompt(contact) {
+  const lines = (contact.history || [])
+    .filter(item => !contact.conversationStartedAt || new Date(item.at || 0) >= new Date(contact.conversationStartedAt))
+    .map(item => `${item.role === 'customer' ? 'الزبون' : item.role === 'owner' ? 'صاحب المحل' : 'البوت'}: ${item.text}`);
+  return `اسم الزبون: ${contact.arabicName || contact.pushName || 'غير معروف'}\n\nالمحادثة:\n${lines.join('\n')}`;
+}
+
+export function buildSummaryAlert({ businessName, contact, summary }) {
+  const name = contact.arabicName || contact.pushName || 'زبون';
+  const phone = contact.phone ? `\n📞 wa.me/${contact.phone}` : '';
+  return `📋 ملخص محادثة · ${businessName || 'المحل'}\n👤 ${name}${phone}\n\n${summary}`;
+}

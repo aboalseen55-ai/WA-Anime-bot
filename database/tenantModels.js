@@ -35,6 +35,8 @@ const tenantContactSchema = new mongoose.Schema({
   pausedUntil: { type: Date, default: null },
   lastMessageAt: { type: Date, default: null },
   handoffAt: { type: Date, default: null },
+  conversationStartedAt: { type: Date, default: null },
+  summarySentAt: { type: Date, default: null },
   handoffSummary: { type: String, default: '', maxlength: 600 },
   messageCount: { type: Number, default: 0 }
 }, { timestamps: true });

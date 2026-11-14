@@ -1,6 +1,6 @@
 // Incoming WhatsApp messages for one business account: batches a customer's quick messages,
 // asks the agent for a reply, answers by voice when the customer spoke, and alerts the owner on hand-off.
-import { buildAgentInstruction, buildConversationText, buildOwnerAlert, HISTORY_LIMIT, parseAgentReply, phoneFromJid, toSpokenText, isNewConversation } from './agent.js';
+import { buildAgentInstruction, buildConversationText, buildOwnerAlert, buildSummaryAlert, buildSummaryInstruction, buildSummaryPrompt, HISTORY_LIMIT, parseAgentReply, phoneFromJid, toSpokenText, isNewConversation } from './agent.js';
 import { tenantSettings } from './tenantSettings.js';
 import { TenantContact } from '../../database/tenantModels.js';
 
@@ -21,6 +21,15 @@ export const mongoContactStore = {
     if (push.length) update.$push = { history: { $each: push, $slice: -HISTORY_LIMIT * 2 } };
     if (push.some(item => item.role === 'customer')) update.$inc = { messageCount: push.filter(item => item.role === 'customer').length };
     await TenantContact.updateOne({ tenantId, jid }, update, { upsert: true });
+  },
+  // conversations that went quiet and whose summary was not sent yet
+  async dueSummaries(tenantId, quietSince) {
+    return TenantContact.find({
+      tenantId,
+      conversationStartedAt: { $ne: null },
+      lastMessageAt: { $lte: quietSince },
+      $expr: { $or: [{ $eq: ['$summarySentAt', null] }, { $lt: ['$summarySentAt', '$conversationStartedAt'] }] }
+    }).limit(20).lean();
   }
 };
 
@@ -147,6 +156,7 @@ export function createTenantMessageHandler({ getTenant, getSock, generate, creat
 
     const at = new Date(now());
     const set = { pushName, phone, lastMessageAt: at };
+    if (isNewConversation(contact, now())) set.conversationStartedAt = at;
     if (result.customerArabicName && !contact.arabicName) set.arabicName = result.customerArabicName;
     const heard = result.heard && voice ? `🎤 ${result.heard}` : '';
     const customerText = [texts.join('\n'), heard].filter(Boolean).join('\n') || customerNote;
@@ -204,7 +214,29 @@ export function createTenantMessageHandler({ getTenant, getSock, generate, creat
     }
   }
 
-  return { onMessages, flush, rememberSent, pending };
+  /** Sends the owner an AI summary of each conversation once it has been quiet for summaryAfterMinutes. */
+  async function sweepSummaries() {
+    const tenant = await getTenant();
+    if (!tenant?.enabled || !getSock() || !store.dueSummaries) return 0;
+    const settings = tenantSettings(tenant);
+    if (!settings.summaryAfterMinutes || !settings.ownerNumbers.length) return 0;
+    const tenantId = String(tenant._id);
+    const due = await store.dueSummaries(tenantId, new Date(now() - settings.summaryAfterMinutes * 60_000));
+    let sent = 0;
+    for (const contact of due) {
+      // mark first so a failing AI call does not retry the same chat every minute
+      await store.save(tenantId, contact.jid, { set: { summarySentAt: new Date(now()) } });
+      const summary = String(await generate({ systemInstruction: buildSummaryInstruction(settings), parts: [{ text: buildSummaryPrompt(contact) }], json: false }) || '').trim();
+      if (!summary) continue;
+      const text = buildSummaryAlert({ businessName: settings.businessName || tenant.name, contact, summary: summary.slice(0, 1500) });
+      for (const number of settings.ownerNumbers) {
+        try { await send(`${number}@s.whatsapp.net`, { text }); sent += 1; } catch (error) { log.warn?.(`Tenant ${tenant.slug}: summary send failed:`, error.message); }
+      }
+    }
+    return sent;
+  }
+
+  return { onMessages, flush, rememberSent, sweepSummaries, pending };
 }
 
 function defaultTypingDelay(text) {
